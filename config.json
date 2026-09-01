@@ -6,7 +6,9 @@
   "curatorCode": "anc-2026",
   "model": {
     "endpoint": "/api/chat",
-    "_endpoint": "шлях до Cloudflare Worker (крок 3). Поки Worker немає — застосунок бере ключ, введений у налаштуваннях, і йде на directEndpoint.",
+    "_endpoint": "адреса проксі. Фаза GitHub Pages — ПОВНИЙ URL воркера (https://…workers.dev/api/chat), бо домени різні. Після переїзду на Cloudflare Pages — відносний /api/chat, і CORS зникає.",
+    "workerReady": false,
+    "_workerReady": "true = проксі задеплоєний і endpoint заповнений. Застосунок питає ЦЕ поле, а не вгадує за виглядом адреси (wsd 1.10: детектор звіряє з оголошенням).",
     "directEndpoint": "https://api.groq.com/openai/v1/chat/completions",
     "_directEndpoint": "прямий виклик Groq. Використовується ЛИШЕ доки ключ лежить у браузері. Після кроку 3 — не використовується.",
     "name": "qwen/qwen3.8-27b",
@@ -18,6 +20,7 @@
     "presence_penalty": 0.3,
     "_presence_penalty": "Groq радить 1.5, але в нас строгий JSON із повторюваними ключами. 0.3 — стартове значення, перевірити обидва на живому прогоні.",
     "max_completion_tokens": 700,
+    "_ladder": "ДРАБИНА живе у worker/ae-proxy.js, не тут: браузер не має права називати модель. Тут — профіль ОСНОВНОЇ моделі, і він чинний лише для прямого режиму (ключ у браузері). Через проксі модель і межі призначає воркер.",
     "_unsupported": "top_k і min_p є в рекомендаціях Qwen, але їх немає в OpenAI-сумісному API. Перевірити фактом, не додавати наосліп."
   },
   "schemas": {
