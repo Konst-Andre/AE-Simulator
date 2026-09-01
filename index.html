@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AE-Simulator</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0F6B4A">
+<style>
+/* ── Палітра і шрифт. Під брендбук АНЦ міняються лише ці значення. ── */
+:root{
+  --paper:#F1F4F1; --ink:#16211C; --soft:#5E6E66; --line:#C9D2CB;
+  --vtm:#0F6B4A; --zf:#A0761B; --loss:#A8402B; --tape:#FBFCFA;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Inter","Segoe UI",-apple-system,system-ui,sans-serif;color:var(--ink);
+  background:var(--paper);min-height:100dvh;font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 18px calc(60px + env(safe-area-inset-bottom,0px))}
+.num{font-family:"SFMono-Regular","Consolas",monospace;font-variant-numeric:tabular-nums}
+.hide{display:none !important}
+
+.lede{max-width:60ch;margin:0 0 6px;font-size:27px;font-weight:620;letter-spacing:-.02em}
+.sub{max-width:64ch;color:var(--soft);margin:0 0 22px}
+
+button{font:inherit}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tabs button{font-size:13.5px;padding:6px 13px;border:1px solid var(--line);
+  background:#fff;border-radius:20px;cursor:pointer;color:var(--soft)}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:#EEF2EF;border-color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:14px 16px 16px;
+  text-align:left;cursor:pointer;color:inherit;display:flex;flex-direction:column;gap:7px}
+.card:hover{border-color:var(--ink)}
+.card:focus-visible{outline:2px solid var(--vtm);outline-offset:2px}
+.ord{font-size:12.5px;color:var(--soft);letter-spacing:.03em}
+.card h3{margin:0;font-size:16.5px;font-weight:600}
+.card p{margin:0;color:var(--soft);font-size:13.5px}
+.cardfoot{margin-top:auto;padding-top:9px;border-top:1px dashed var(--line);
+  font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.trap{color:var(--loss)}
+
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.back{background:none;border:none;color:var(--soft);cursor:pointer;padding:0;text-decoration:underline}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 302px;gap:22px;align-items:start}
+@media(max-width:880px){.stage{grid-template-columns:1fr}}
+
+.brief{background:#fff;border:1px solid var(--line);border-radius:3px;padding:13px 16px;margin-bottom:14px;font-size:13.5px}
+.brief dl{display:grid;grid-template-columns:96px 1fr;gap:3px 12px;margin:0}
+.brief dt{color:var(--soft)}
+.brief dd{margin:0}
+
+.log{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:120px}
+.turn{max-width:82%;padding:10px 14px;border-radius:3px;white-space:pre-wrap}
+.client{background:#fff;border:1px solid var(--line);align-self:flex-start}
+.me{background:var(--ink);color:#EEF2EF;align-self:flex-end}
+.sys{align-self:center;color:var(--soft);font-size:13px;font-style:italic;text-align:center;max-width:90%}
+.who{display:block;font-size:11.5px;letter-spacing:.04em;color:var(--soft);margin-bottom:3px}
+.me .who{color:#93A79B}
+
+.say{display:flex;gap:8px;align-items:flex-end}
+.say textarea{flex:1;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:3px;
+  resize:vertical;min-height:62px;background:#fff;color:inherit}
+.btn{padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#EEF2EF;
+  border-radius:3px;cursor:pointer}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.ghost{background:#fff;color:var(--ink)}
+
+.tape{background:var(--tape);border:1px solid var(--line);border-radius:3px;padding:14px 16px;
+  position:sticky;top:16px;font-size:13.5px}
+.tape h4{margin:0 0 10px;font-size:12.5px;letter-spacing:.05em;color:var(--soft);text-transform:uppercase}
+.tapeline{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
+.tapeline.total{border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-weight:600}
+.big{font-size:19px}
+.bignum{font-size:32px;font-weight:640;letter-spacing:-.02em}
+.tag{font-size:10.5px;padding:1px 5px;border-radius:2px;margin-left:6px;vertical-align:1px}
+.t-vtm{background:var(--vtm);color:#fff}
+.t-zf{background:var(--zf);color:#fff}
+.t-none{background:var(--line);color:var(--ink)}
+
+.field{display:block;margin-bottom:12px}
+.field span{display:block;font-size:13px;color:var(--soft);margin-bottom:4px}
+.field input{width:100%;max-width:420px;font:inherit;padding:9px 12px;border:1px solid var(--line);
+  border-radius:3px;background:#fff;color:inherit}
+
+.mock{margin-top:22px;border:1px dashed var(--zf);border-radius:3px;padding:12px 14px;background:#FFFDF6}
+.mock h4{margin:0 0 4px;font-size:12.5px;letter-spacing:.05em;color:var(--zf);text-transform:uppercase}
+.mock p{margin:0 0 10px;font-size:12.5px;color:var(--soft)}
+.mock label{display:block;font-size:13px;padding:2px 0;cursor:pointer}
+.mockcols{columns:2;column-gap:20px}
+@media(max-width:640px){.mockcols{columns:1}}
+
+.err{background:#FDF3F1;border:1px solid var(--loss);color:var(--loss);
+  border-radius:3px;padding:10px 14px;margin-bottom:14px;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <p class="sub">Завантаження…</p>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   AE-Simulator · крок 1: скелет без AI
+   живе доки: рушій розмови не підключено до Groq (крок 2)
+
+   Двигун розмови — ЗАМІННА ДЕТАЛЬ. Уся гра ходить через engine.turn().
+   На кроці 2 сюди стане Groq, і більше нічого міняти не треба.
+   ═══════════════════════════════════════════════════════════════════ */
+
+const $ = (s,r=document)=>r.querySelector(s);
+const el = (tag,attrs={},kids=[])=>{
+  const n=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)){
+    if(k==='class')n.className=v;
+    else if(k==='html')n.innerHTML=v;
+    else if(k==='text')n.textContent=v;
+    else if(k.startsWith('on'))n.addEventListener(k.slice(2),v);
+    else if(v!==null&&v!==false)n.setAttribute(k,v);
+  }
+  for(const c of [].concat(kids)) if(c) n.append(c);
+  return n;
+};
+
+/* ── СТАН ────────────────────────────────────────────────────────── */
+const S = {
+  cfg:null, CAT:null, ALL:{}, SCEN:[], LABEL:{},
+  me:null,            // {name, pharmacy}
+  screen:'gate',
+  group:'Усі',
+  sc:null,            // поточний сценарій
+  history:[],         // [{role:'user'|'assistant', content}]
+  cart:[],
+  ended:false, feedback:'',
+  shift:null,         // {queue:[…], i:0, rows:[…]}
+};
+
+/* ── ЗАВАНТАЖЕННЯ ────────────────────────────────────────────────── */
+async function boot(){
+  try{
+    const [cfg,cat,scn,pClient,pParts,pDebrief] = await Promise.all([
+      fetch('config.json').then(r=>r.json()),
+      fetch('data/catalog.json').then(r=>r.json()),
+      fetch('data/scenarios.json').then(r=>r.json()),
+      fetch('prompts/client.md').then(r=>r.text()),
+      fetch('prompts/client.parts.md').then(r=>r.text()),
+      fetch('prompts/debrief.md').then(r=>r.text()),
+    ]);
+    S.cfg=cfg;
+    S.P = {
+      client: stripComments(pClient),
+      debrief: stripComments(pDebrief),
+      withNumber: (pParts.match(/## with_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
+      withoutNumber: (pParts.match(/## without_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
+    };
+    if(!S.P.client || !S.P.withNumber) throw new Error('Файли промптів прочитались порожніми');
+    S.CAT={}; S.LABEL={};
+    for(const [k,v] of Object.entries(cat.categories)){
+      S.CAT[k]=v.items; S.LABEL[k]=v.label;
+      for(const it of v.items) S.ALL[it.c]={...it,cat:k};
+    }
+    S.SCEN=scn.scenarios;
+    S.me = JSON.parse(localStorage.getItem('ae_me')||'null');
+    S.screen = S.me ? 'picker' : 'gate';
+    render();
+  }catch(e){
+    $('#app').innerHTML='';
+    $('#app').append(
+      el('div',{class:'err',html:
+        '<b>Дані не завантажились.</b><br>'+e.message+
+        '<br><br>Найчастіша причина: файл відкрито подвійним кліком з диска. '+
+        'Браузер забороняє читати сусідні файли так. Потрібен GitHub Pages або локальний сервер.'}));
+  }
+}
+
+/* ── ГРОШІ І ПІДРАХУНОК ──────────────────────────────────────────── */
+const uah = n => (Math.round(n*100)/100).toFixed(2).replace('.',',');
+const bonusOf = cs => cs.reduce((s,c)=>s+(S.ALL[c]?S.ALL[c].b:0),0);
+const idealOf = sc => S.cfg.rule==='vtm' ? (sc.bv||[]) : (sc.bm||[]);
+const potential = sc => Math.max(1, Math.round(bonusOf(idealOf(sc)) - bonusOf(sc.order)));
+const poolOf = sc => sc.cats.flatMap(k=>S.CAT[k]||[]);
+
+/* Добірка зміни: одна пастка/noSale, одне багатопозиційне, одне
+   рецептурне, решта — випадково. Так само, як в оригіналі. */
+function pickShift(n){
+  const NET = S.SCEN.filter(x=>x.no);
+  const mix = a => a.slice().sort(()=>Math.random()-0.5);
+  const take = (pool,used) => mix(pool.filter(x=>!used.has(x.id)))[0]||null;
+  const out=[], used=new Set();
+  [ NET.filter(x=>x.trap||x.noSale),
+    NET.filter(x=>x.order.length>1),
+    NET.filter(x=>x.grp==='Рецептурні') ].forEach(p=>{
+      const x=take(p,used); if(x){out.push(x);used.add(x.id)}
+    });
+  while(out.length<n){ const x=take(NET,used); if(!x)break; out.push(x); used.add(x.id); }
+  return mix(out).slice(0,n);
+}
+
+/* ═══ ПРОМПТИ ════════════════════════════════════════════════════
+   Тексти лежать у prompts/*.md і читаються при старті. {{отак}} —
+   віконця, куди підставляються дані сценарію. */
+const fill = (tpl,vars) => tpl.replace(/\{\{(\w+)\}\}/g, (m,k)=> k in vars ? vars[k] : m);
+const stripComments = t => t.replace(/<!--[\s\S]*?-->/g,'').trim();
+
+function pluralPos(n){ return n+' '+(n===1?'позиція':n<5?'позиції':'позицій'); }
+
+function buildSystem(sc){
+  const pot = potential(sc);
+  const catalog = poolOf(sc).map(i=>i.c+' | '+i.n).join('\n');
+  const order = sc.order.length
+    ? sc.order.map((c,i)=>(i+1)+'. '+S.ALL[c].n).join('\n')
+    : 'нічого, замовлення ще не оформлене';
+  const numLine = sc.no
+    ? fill(S.P.withNumber, {no:sc.no})
+    : S.P.withoutNumber;
+  return fill(S.P.client, {
+    who:sc.who, mood:sc.mood, mode:sc.mode, numLine,
+    orderCount: pluralPos(sc.order.length), order, open:sc.open,
+    catalog, pot, initialCart: JSON.stringify(sc.order)
+  });
+}
+
+/* ═══ ЗВ'ЯЗОК З МОДЕЛЛЮ ═══════════════════════════════════════════
+   Два режими:
+     ключ у браузері → прямо на Groq (крок 2, для тесту)
+     ключа немає     → на Cloudflare Worker (крок 3, для роботи)
+   ═════════════════════════════════════════════════════════════════ */
+const KEY = {
+  get: ()=>localStorage.getItem('ae_groq_key')||'',
+  set: v=>v?localStorage.setItem('ae_groq_key',v.trim()):localStorage.removeItem('ae_groq_key')
+};
+
+async function callModel(messages, schema){
+  const m = S.cfg.model, key = KEY.get();
+  const url = key ? m.directEndpoint : m.endpoint;
+  const headers = {'Content-Type':'application/json'};
+  if(key) headers['Authorization'] = 'Bearer '+key;
+
+  const body = {
+    model: m.name,
+    messages,
+    temperature: m.temperature,
+    top_p: m.top_p,
+    presence_penalty: m.presence_penalty,
+    max_completion_tokens: m.max_completion_tokens,
+    reasoning_effort: m.reasoning_effort,
+    reasoning_format: m.reasoning_format,
+    response_format: { type:'json_schema', json_schema: schema }
+  };
+
+  let r;
+  try{ r = await fetch(url,{method:'POST',headers,body:JSON.stringify(body)}); }
+  catch(e){ throw new Error('Немає зв’язку з моделлю. Перевірте інтернет. ('+e.message+')'); }
+
+  let d;
+  try{ d = await r.json(); }
+  catch(e){ throw new Error('Відповідь не читається, код '+r.status); }
+
+  if(!r.ok || d.error){
+    const msg = (d.error && (d.error.message||d.error.type)) || ('код '+r.status);
+    if(r.status===401) throw new Error('Ключ Groq не прийнято. Перевірте його в налаштуваннях.');
+    if(r.status===429) throw new Error('Забагато запитів поспіль. Зачекайте хвилину.');
+    if(r.status===404) throw new Error('Модель «'+m.name+'» недоступна на цьому акаунті. '+msg);
+    throw new Error('Модель повернула помилку: '+msg);
+  }
+
+  const txt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+  if(!txt) throw new Error('Модель відповіла порожньо');
+
+  /* Схема гарантує JSON, але страхуємось: якщо модель усе-таки
+     обгорнула відповідь у ```json — знімаємо обгортку. */
+  const clean = txt.replace(/^```(?:json)?/,'').replace(/```$/,'').trim();
+  try{ return JSON.parse(clean); }
+  catch(e){ throw new Error('Відповідь не схожа на очікувану: '+clean.slice(0,120)); }
+}
+
+/* ═══ ДВИГУН РОЗМОВИ ══════════════════════════════════════════════
+   Контракт: turn(sc, history) → {reply, cart, ended, endReason, feedback}
+   Заглушка лишилась під адресою ?mock=1 — на ній перевіряють екрани
+   й арифметику, не витрачаючи токенів.
+   ═════════════════════════════════════════════════════════════════ */
+const MOCK = new URLSearchParams(location.search).has('mock');
+
+const engineMock = {
+  name:'заглушка',
+  async turn(sc, history){
+    await new Promise(r=>setTimeout(r,260));
+    const n = history.filter(m=>m.role==='user').length;
+    const lines = [
+      'Угу. А це те саме, що мені виписали?',
+      'Ну не знаю… а дешевше нічого немає?',
+      'Добре, давайте спробуємо. Тільки швидше, будь ласка.',
+      'Скільки з мене?'
+    ];
+    const ended = n>=4;
+    return {
+      reply: ended ? 'Дякую. Гарного дня.' : lines[(n-1)%lines.length],
+      cart: S.cart.slice(),
+      ended, endReason: ended?'paid':'',
+      feedback: ended ? 'Це заглушка розбору. Орієнтир — приріст близько '+potential(sc)+' ₴.' : ''
+    };
+  }
+};
+
+const engineLive = {
+  name:'Groq · '+'',
+  async turn(sc, history){
+    const messages = [
+      {role:'system', content: buildSystem(sc)},
+      ...history.map(m=>({role:m.role, content:m.content}))
+    ];
+    const r = await callModel(messages, S.cfg.schemas.turn);
+    /* Модель бачить лише коди зі свого асортименту, але підстрахуємось:
+       чужий код у чеку зламав би підрахунок. */
+    const pool = new Set(poolOf(sc).map(i=>i.c));
+    return { ...r, cart: (r.cart||[]).filter(c=>pool.has(c)) };
+  },
+  async debrief(rows){
+    const body = rows.map((r,i)=>{
+      const head = 'Замовлення '+(i+1)+'. «'+r.sc.title+'»'+(r.sc.no?', № '+r.sc.no:'')+'. '
+        + 'У списку: '+(r.sc.order.map(c=>S.ALL[c].n).join('; ')||'нічого')+'. ';
+      const res = r.sc.noSale
+        ? 'Правильна дія — нічого не міняти. Фармацевт '+(r.delta>0?'усе-таки змінив чек':'чек не змінив')+'. '
+        : 'Приріст '+uah(r.delta)+' ₴ з орієнтира '+r.pot+' ₴. ';
+      return head+res+'Розбір розмови: '+(r.fb||'—');
+    }).join('\n\n');
+    const prompt = fill(S.P.debrief, {shiftSize:rows.length, body});
+    return callModel([{role:'user',content:prompt}], S.cfg.schemas.debrief);
+  },
+  async ping(){
+    const r = await callModel(
+      [{role:'user',content:'Поверни reply="працює", cart=[], ended=true, endReason="paid", feedback="".'}],
+      S.cfg.schemas.turn);
+    return r.reply;
+  }
+};
+
+const engine = MOCK ? engineMock : engineLive;
+
+
+/* ── ЕКРАНИ ──────────────────────────────────────────────────────── */
+function render(){
+  const app=$('#app'); app.innerHTML='';
+  ({gate:Gate, picker:Picker, game:Game, result:Result, settings:Settings}[S.screen])(app);
+  window.scrollTo(0,0);
+}
+
+function Settings(root){
+  let val = KEY.get();
+  const status = el('p',{class:'sub',style:'margin:12px 0 0'});
+
+  const test = async ()=>{
+    KEY.set(val);
+    status.style.color='var(--soft)';
+    status.textContent='Перевіряю зв’язок…';
+    try{
+      const t0=Date.now();
+      const r = await engineLive.ping();
+      status.style.color='var(--vtm)';
+      status.textContent='✓ Зв’язок є. Модель відповіла «'+r+'» за '+((Date.now()-t0)/1000).toFixed(1)+' с.';
+    }catch(e){
+      status.style.color='var(--loss)';
+      status.textContent='✗ '+e.message;
+    }
+  };
+
+  root.append(
+    el('div',{class:'top'},[
+      el('button',{class:'back',text:'← назад',onclick:()=>{S.screen=S.me?'picker':'gate';render()}}),
+      el('h2',{style:'margin:0;font-size:20px',text:'Налаштування'})
+    ]),
+    el('h1',{class:'lede',text:'Ключ Groq'}),
+    el('p',{class:'sub',html:
+      'Клієнта грає модель, і за неї треба платити. Ключ береться на '+
+      '<b>console.groq.com</b> → API Keys → Create Key. Він зберігається лише '+
+      'у цьому браузері, на сервер не потрапляє.<br><br>'+
+      '<b>Це тимчасовий спосіб — для перевірки.</b> Ключ у браузері може побачити '+
+      'той, хто відкриє консоль розробника. Для роботи з людьми ключ переїде '+
+      'на сервер (крок 3), і це поле стане непотрібним.'}),
+    el('label',{class:'field'},[
+      el('span',{text:'Ключ (починається на gsk_)'}),
+      el('input',{type:'password', value:val, placeholder:'gsk_…',
+        oninput:e=>val=e.target.value, onkeydown:e=>e.key==='Enter'&&test()})
+    ]),
+    el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[
+      el('button',{class:'btn',text:'Зберегти й перевірити',onclick:test}),
+      el('button',{class:'btn ghost',text:'Стерти ключ',onclick:()=>{
+        KEY.set(''); val=''; root.querySelector('input').value='';
+        status.style.color='var(--soft)'; status.textContent='Ключ стерто.';
+      }})
+    ]),
+    status,
+    el('div',{class:'brief',style:'margin-top:24px;max-width:520px'},[
+      el('div',{class:'tapeline'},[el('span',{text:'Модель'}),el('span',{class:'num',text:S.cfg.model.name})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Режим'}),el('span',{class:'num',text:'reasoning: '+S.cfg.model.reasoning_effort})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Замовлень у зміні'}),el('span',{class:'num',text:S.cfg.shiftSize})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Правило оцінки'}),el('span',{class:'num',text:S.cfg.rule.toUpperCase()})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Сценаріїв'}),el('span',{class:'num',text:S.SCEN.length})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Двигун'}),el('span',{class:'num',text:engine.name})])
+    ])
+  );
+}
+
+function Gate(root){
+  let n='', a='';
+  const go=()=>{
+    if(!n.trim()||!a.trim())return;
+    S.me={name:n.trim(),pharmacy:a.trim()};
+    localStorage.setItem('ae_me',JSON.stringify(S.me));
+    S.screen='picker'; render();
+  };
+  root.append(
+    el('h1',{class:'lede',text:'Тренажер інтернет-замовлень'}),
+    el('p',{class:'sub',text:'Перш ніж почати — представтесь. Це потрібно, щоб куратор бачив ваші результати.'}),
+    el('label',{class:'field'},[el('span',{text:'Ім’я та прізвище'}),
+      el('input',{oninput:e=>n=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
+    el('label',{class:'field'},[el('span',{text:'Аптека'}),
+      el('input',{placeholder:'напр. 67, Калинова 1', oninput:e=>a=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
+    el('button',{class:'btn',onclick:go,text:'Далі'})
+  );
+}
+
+function Picker(root){
+  const groups=['Усі',...new Set(S.SCEN.map(s=>s.grp))];
+  const list = S.group==='Усі' ? S.SCEN : S.SCEN.filter(s=>s.grp===S.group);
+  root.append(
+    el('h1',{class:'lede',text:'Вітаю, '+S.me.name.split(' ')[0]}),
+    el('p',{class:'sub',text:'Оберіть замовлення для тренування — або відпрацюйте цілу зміну з '+S.cfg.shiftSize+' замовлень поспіль.'}),
+    (!MOCK && !KEY.get() && S.cfg.model.endpoint.startsWith('/'))
+      ? el('div',{class:'err',html:'<b>Ключ Groq не введено.</b> Без нього клієнт не відповідатиме. '
+          +'Відкрийте «Налаштування» і вставте ключ.'}) : null,
+    el('div',{style:'margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap'},[
+      el('button',{class:'btn',text:'Почати зміну ('+S.cfg.shiftSize+' замовлень)',onclick:()=>{
+        S.shift={queue:pickShift(S.cfg.shiftSize),i:0,rows:[]};
+        openScenario(S.shift.queue[0]);
+      }}),
+      el('button',{class:'btn ghost',text:'Налаштування',onclick:()=>{S.screen='settings';render()}}),
+      el('button',{class:'btn ghost',text:'Змінити ім’я',onclick:()=>{
+        localStorage.removeItem('ae_me'); S.me=null; S.screen='gate'; render();
+      }})
+    ]),
+    el('div',{class:'tabs'}, groups.map(g=>el('button',{
+      'aria-pressed':String(g===S.group), onclick:()=>{S.group=g;render()},
+      text: g+' ('+(g==='Усі'?S.SCEN.length:S.SCEN.filter(s=>s.grp===g).length)+')'
+    }))),
+    el('div',{class:'grid'}, list.map(s=>el('button',{class:'card',onclick:()=>{S.shift=null;openScenario(s)}},[
+      el('span',{class:'ord',text: s.no ? 'Замовлення № '+s.no : 'Без номера — оформлення на місці'}),
+      el('h3',{text:s.title}),
+      el('p',{text:s.who+' · '+s.mode}),
+      el('div',{class:'cardfoot'},[
+        el('span',{text:(s.order.length||'—')+' поз. · орієнтир '+potential(s)+' ₴'}),
+        s.trap?el('span',{class:'trap',text:'пастка'}):s.noSale?el('span',{class:'trap',text:'не міняти'}):null
+      ])
+    ])))
+  );
+}
+
+function openScenario(sc){
+  S.sc=sc; S.cart=sc.order.slice(); S.history=[]; S.ended=false; S.feedback='';
+  S.screen='game'; render();
+}
+
+function Game(root){
+  const sc=S.sc, pot=potential(sc);
+  let draft='';
+
+  const log = el('div',{class:'log'});
+  const paint = ()=>{
+    log.innerHTML='';
+    log.append(el('div',{class:'turn client'},[el('span',{class:'who',text:'КЛІЄНТ'}),el('span',{text:sc.open})]));
+    for(const m of S.history)
+      log.append(el('div',{class:'turn '+(m.role==='user'?'me':'client')},[
+        el('span',{class:'who',text:m.role==='user'?'ВИ':'КЛІЄНТ'}),
+        el('span',{text:m.content})]));
+    if(S.ended){
+      log.append(el('div',{class:'turn sys',text:'— розмову завершено —'}));
+      if(S.feedback) log.append(el('div',{class:'turn client'},[
+        el('span',{class:'who',text:'РОЗБІР'}),el('span',{text:S.feedback})]));
+    }
+    log.scrollIntoView({block:'end'});
+  };
+
+  const send = async ()=>{
+    const line=draft.trim(); if(!line||S.ended)return;
+    S.history.push({role:'user',content:line});
+    draft=''; ta.value=''; btn.disabled=true; btn.textContent='…'; paint();
+    try{
+      const r = await engine.turn(sc, S.history);
+      S.history.push({role:'assistant',content:r.reply});
+      S.cart = r.cart;
+      S.ended = r.ended; S.feedback = r.feedback||'';
+      paint(); tape();
+      if(S.ended) finishBtn.classList.remove('hide');
+    }catch(e){
+      root.prepend(el('div',{class:'err',text:'Двигун відповів помилкою: '+e.message}));
+    }finally{ btn.disabled=false; btn.textContent='Сказати'; }
+  };
+
+  const ta = el('textarea',{placeholder:'Що ви кажете клієнтові…',oninput:e=>draft=e.target.value,
+    onkeydown:e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))send()}});
+  const btn = el('button',{class:'btn',text:'Сказати',onclick:send});
+
+  /* ── стрічка чека ── */
+  const tapeBox = el('div',{class:'tape'});
+  const tape = ()=>{
+    const base=bonusOf(sc.order), now=bonusOf(S.cart), delta=now-base;
+    const dcol = delta<0?'var(--loss)':delta>0?'var(--vtm)':'var(--ink)';
+    tapeBox.innerHTML='';
+    tapeBox.append(el('h4',{text:'Чек'}));
+    if(!S.cart.length) tapeBox.append(el('p',{class:'sub',style:'font-size:13px;margin:0 0 10px',text:'порожньо'}));
+    for(const c of S.cart){
+      const it=S.ALL[c]; if(!it)continue;
+      tapeBox.append(el('div',{class:'tapeline'},[
+        el('span',{html: it.n + '<span class="tag '+(it.k==='ВТМ'?'t-vtm':it.k==='ЗФ'?'t-zf':'t-none')+'">'+(it.k||'—')+'</span>'}),
+        el('span',{class:'num',text:uah(it.b)})
+      ]));
+    }
+    tapeBox.append(
+      el('div',{class:'tapeline'},[el('span',{text:'Було в замовленні'}),el('span',{class:'num',text:uah(base)})]),
+      el('div',{class:'tapeline total'},[el('span',{text:'Стало'}),el('span',{class:'num',text:uah(now)})]),
+      el('div',{class:'tapeline total'},[
+        el('span',{text:'Приріст розмови'}),
+        el('span',{class:'num big',style:'color:'+dcol,text:(delta>0?'+':'')+uah(delta)+' ₴'})]),
+      el('div',{class:'tapeline',style:'color:var(--soft)'},[
+        el('span',{text:'Орієнтир'}),el('span',{class:'num',text:pot+' ₴'})])
+    );
+  };
+
+  const finishBtn = el('button',{class:'btn hide',style:'margin-top:14px',
+    text: S.shift ? 'Наступне замовлення' : 'До списку', onclick:()=>{
+      if(S.shift){
+        const delta=bonusOf(S.cart)-bonusOf(sc.order);
+        S.shift.rows.push({sc,delta,pot,fb:S.feedback});
+        S.shift.i++;
+        if(S.shift.i<S.shift.queue.length) openScenario(S.shift.queue[S.shift.i]);
+        else { S.screen='result'; render(); }
+      } else { S.screen='picker'; render(); }
+    }});
+
+  /* ── ПАНЕЛЬ ПЕРЕВІРКИ (тільки крок 1, зникає на кроці 2) ── */
+  const mock = !MOCK ? null : el('div',{class:'mock'},[
+    el('h4',{text:'Панель перевірки · крок 1'}),
+    el('p',{text:'Живої моделі ще немає. Тут ви руками складаєте чек так, ніби клієнт погодився — щоб перевірити, що приріст рахується правильно. На кроці 2 ця панель зникне.'}),
+    el('div',{class:'mockcols'}, poolOf(sc).map(it=>{
+      const id='m_'+it.c;
+      return el('label',{for:id},[
+        el('input',{type:'checkbox',id,...(S.cart.includes(it.c)?{checked:'checked'}:{}),
+          onchange:e=>{
+            S.cart = e.target.checked ? [...S.cart,it.c] : S.cart.filter(x=>x!==it.c);
+            tape();
+          }}),
+        el('span',{text:' '+it.n+' · '+uah(it.b)+' ₴ · '+(it.k||'—')})
+      ]);
+    }))
+  ]);
+
+  root.append(
+    el('div',{class:'top'},[
+      el('button',{class:'back',text:'← до списку',onclick:()=>{S.shift=null;S.screen='picker';render()}}),
+      el('h2',{style:'margin:0;font-size:20px',text:sc.title}),
+      S.shift?el('span',{class:'ord',text:'замовлення '+(S.shift.i+1)+' з '+S.shift.queue.length}):null
+    ]),
+    el('div',{class:'stage'},[
+      el('div',{},[
+        el('div',{class:'brief'},[el('dl',{},[
+          el('dt',{text:'Номер'}), el('dd',{text: sc.no ? '№ '+sc.no : 'без номера, оформлення на місці'}),
+          el('dt',{text:'Клієнт'}), el('dd',{text:sc.who}),
+          el('dt',{text:'Умови'}), el('dd',{text:sc.mode}),
+          el('dt',{text:'Категорії'}), el('dd',{text:sc.cats.map(k=>S.LABEL[k]||k).join(' · ')}),
+          el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
+        ])]),
+        log,
+        el('div',{class:'say'},[ta,btn]),
+        finishBtn,
+        mock
+      ]),
+      tapeBox
+    ])
+  );
+  paint(); tape();
+}
+
+function Result(root){
+  const rows=S.shift.rows, scored=rows.filter(r=>!r.sc.noSale);
+  const debriefBox = el('div',{class:'brief',style:'max-width:640px;margin-top:18px'},
+    [el('p',{class:'sub',style:'margin:0',text: MOCK
+      ? 'Заглушка: у робочому режимі тут зʼявиться розбір від наставника.'
+      : 'Наставник читає вашу зміну…'})]);
+  const bullets=(t,arr)=>(arr&&arr.length)?el('div',{style:'margin-top:14px'},[
+      el('div',{class:'who',text:t}),
+      el('ul',{style:'margin:4px 0 0;padding-left:20px'}, arr.map(x=>el('li',{text:x})))]):null;
+  if(!MOCK) engineLive.debrief(rows).then(d=>{
+    debriefBox.innerHTML='';
+    debriefBox.append(
+      el('p',{style:'margin:0 0 4px',text:d.overall}),
+      bullets('ЩО ПОВТОРЮЄТЬСЯ', d.mistakes),
+      bullets('ЩО ВИЙШЛО', d.strengths),
+      bullets('НА НАСТУПНИЙ РАЗ', d.rules));
+    S.shift.curatorNote = d.curator;
+  }).catch(e=>{
+    debriefBox.innerHTML='';
+    debriefBox.append(el('p',{style:'margin:0;color:var(--loss)',
+      text:'Розбір не вдався: '+e.message+' Результат зміни збережено — його видно вище.'}));
+  });
+  const got=scored.reduce((a,r)=>a+r.delta,0);
+  const pot=scored.reduce((a,r)=>a+r.pot,0)||1;
+  const pct=Math.max(0,Math.min(100,Math.round(got/pot*100)));
+  const slips=rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
+  root.append(
+    el('h1',{class:'lede',text:'Зміну завершено'}),
+    el('p',{class:'sub',text:S.me.name+' · аптека '+S.me.pharmacy}),
+    el('div',{class:'brief',style:'max-width:420px'},[
+      el('div',{class:'bignum',style:'color:'+(got>0?'var(--vtm)':'var(--ink)'),
+        text:(got>0?'+':'')+uah(got)+' ₴'}),
+      el('div',{class:'tapeline'},[el('span',{text:'Орієнтир зміни'}),el('span',{class:'num',text:uah(pot)+' ₴'})]),
+      el('div',{class:'tapeline total'},[el('span',{text:'Виконано'}),el('span',{class:'num',text:pct+'%'})]),
+      el('div',{class:'tapeline'},[el('span',{text:'Замовлень'}),el('span',{class:'num',text:rows.length})]),
+      slips.length?el('div',{class:'tapeline'},[el('span',{class:'trap',text:'Промахів'}),
+        el('span',{class:'num trap',text:slips.length})]):null
+    ]),
+    debriefBox,
+    el('button',{class:'btn',style:'margin-top:16px',text:'До списку',
+      onclick:()=>{S.shift=null;S.screen='picker';render()}})
+  );
+}
+
+/* Відкриваємо стан назовні: потрібно для смоук-тестів і зручно для дебагу
+   (у консолі браузера можна подивитись S.cart, S.sc, S.cfg). */
+window.S = S; window.render = render; window.ENGINE = engine;
+window.engineLive = engineLive; window.KEY = KEY; window.buildSystem = buildSystem;
+
+boot();
+</script>
+</body>
+</html>
