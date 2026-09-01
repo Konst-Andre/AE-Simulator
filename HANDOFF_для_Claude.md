@@ -92,6 +92,16 @@ engine.turn(scenario, history) → {reply, cart, ended, endReason, feedback}
 - ⬜ **6а** — перевірка файлу сценаріїв просто в браузері, без Node *(наступний)*
 - ⬜ **6б** — редактор сценаріїв формою, щоб Оля не бачила JSON
 
+## PWA-захист — не прибирати
+У CSS є блок «анти-веб-патерн»: `user-select:none` на body, `touch-callout:none`,
+`tap-highlight-color:transparent`, `overscroll-behavior:none`, `touch-action:manipulation`,
+`user-scalable=no` у viewport. Він робить так, щоб застосунок не видавав себе за
+сторінку. Виняток зроблено для `input`/`textarea` і для `.turn`/`.brief dd`/`.tape` —
+цей текст має сенс копіювати.
+
+**`font-size:16px` у полях вводу — обов'язково.** Менший розмір змушує iOS
+зумити сторінку при фокусі, і назад вона не повертається.
+
 ## Чого не робити
 - Не переходь на React, Vue чи збірку. Один файл, ванільний JS — свідоме рішення:
   Оля має відкрити проєкт через рік і зрозуміти його без інструментів.
