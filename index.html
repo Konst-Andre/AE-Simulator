@@ -272,7 +272,10 @@ async function callModel(messages, schema){
   const url = key ? m.directEndpoint : m.endpoint;
   const headers = {'Content-Type':'application/json'};
   if(key) headers['Authorization'] = 'Bearer '+key;
-  else if(NET.get()) headers['x-ae-code'] = NET.get();
+  /* Заголовки HTTP несуть тільки латиницю (ISO-8859-1). Кодове слово може бути
+     кирилицею — тому кодуємо у %-послідовність. Воркер декодує назад.
+     Без цього fetch падає ще до виходу в мережу: «non ISO-8859-1 code point». */
+  else if(NET.get()) headers['x-ae-code'] = encodeURIComponent(NET.get());
 
   const body = {
     model: m.name,
@@ -417,27 +420,23 @@ function Settings(root){
       el('button',{class:'back',text:'← назад',onclick:()=>{S.screen=S.me?'picker':'gate';render()}}),
       el('h2',{style:'margin:0;font-size:20px',text:'Налаштування'})
     ]),
-    el('h1',{class:'lede',text:'Кодове слово'}),
-    el('p',{class:'sub',text:
-      'Одне на всіх, видає куратор. Сервер за ним впізнає своїх — без нього '+
-      'клієнт не відповідатиме. Вводиться один раз на цьому телефоні.'}),
+    el('h1',{class:'lede',text:'Технічне'}),
+    el('p',{class:'sub',style:'margin:0 0 14px',html:
+      'Модель зараз: <b>'+(LIVE.model || S.cfg.model.name)+'</b>'+
+      (LIVE.rung ? ' — <b>резервна</b>' : '')+'.'}),
     el('label',{class:'field'},[
-      el('span',{text:'Кодове слово мережі'}),
-      el('input',{value:code, placeholder:'напр. anc-2026', oninput:e=>code=e.target.value})
+      el('span',{text:'Кодове слово мережі — лише якщо сервер його вимагає'}),
+      el('input',{value:code, placeholder:'порожньо = не потрібне', oninput:e=>code=e.target.value})
     ]),
     el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[
-      el('button',{class:'btn',text:'Зберегти',onclick:()=>{
+      el('button',{class:'btn ghost',text:'Зберегти кодове слово',onclick:()=>{
         NET.set(code); codeSt.style.color='var(--vtm)';
         codeSt.textContent = code.trim() ? '✓ Збережено.' : 'Стерто.';
       }})
     ]),
     codeSt,
-    el('div',{style:'height:28px'}),
-    el('h2',{style:'margin:0 0 4px;font-size:17px',text:'Технічне'}),
-    el('p',{class:'sub',style:'margin:0 0 14px',html:
-      'Модель зараз: <b>'+(LIVE.model || S.cfg.model.name)+'</b>'+
-      (LIVE.rung ? ' — <b>резервна</b>' : '')+'.'}),
-    el('h1',{class:'lede',style:'font-size:22px',text:'Ключ Groq'}),
+    el('div',{style:'height:24px'}),
+    el('h2',{style:'margin:0 0 10px;font-size:17px',text:'Ключ Groq'}),
     el('p',{class:'sub',html:
       'Запасний вхід для перевірки: ключ у браузері обходить сервер. '+
       'Для роботи з людьми поле лишається порожнім. Ключ береться на '+
@@ -471,12 +470,9 @@ function Settings(root){
 }
 
 function Gate(root){
-  let n='', a='', c=NET.get();
-  const needCode = !MOCK && S.cfg.model.workerReady && !KEY.get();
+  let n='', a='';
   const go=()=>{
     if(!n.trim()||!a.trim())return;
-    if(needCode && !c.trim())return;
-    NET.set(c);
     S.me={name:n.trim(),pharmacy:a.trim()};
     localStorage.setItem('ae_me',JSON.stringify(S.me));
     S.screen='picker'; render();
@@ -488,9 +484,6 @@ function Gate(root){
       el('input',{oninput:e=>n=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
     el('label',{class:'field'},[el('span',{text:'Аптека'}),
       el('input',{placeholder:'напр. 67, Калинова 1', oninput:e=>a=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
-    needCode ? el('label',{class:'field'},[el('span',{text:'Кодове слово'}),
-      el('input',{value:c, placeholder:'видає куратор, одне на всіх',
-        oninput:e=>c=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]) : null,
     el('button',{class:'btn',onclick:go,text:'Далі'})
   );
 }
@@ -504,9 +497,6 @@ function Picker(root){
     (!MOCK && !KEY.get() && !S.cfg.model.workerReady)
       ? el('div',{class:'err',html:'<b>Модель не підключена.</b> Сервер ще не налаштований, '
           +'а ключа в браузері немає. Відкрийте «Налаштування».'}) : null,
-    (!MOCK && !KEY.get() && S.cfg.model.workerReady && !NET.get())
-      ? el('div',{class:'err',html:'<b>Кодове слово не введено.</b> Без нього сервер не '
-          +'пропустить запит. Відкрийте «Налаштування».'}) : null,
     el('div',{style:'margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap'},[
       el('button',{class:'btn',text:'Почати зміну ('+S.cfg.shiftSize+' замовлень)',onclick:()=>{
         S.shift={queue:pickShift(S.cfg.shiftSize),i:0,rows:[]};

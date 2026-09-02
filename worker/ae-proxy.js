@@ -91,8 +91,15 @@ async function handle(request, env) {
   if (origin && !ok) return say(403, 'Запит із чужого домену.', null, cors);
 
   if (!env.GROQ_KEY) return say(500, 'Ключ моделі не налаштований на сервері.', null, cors);
-  if (env.AE_CODE && request.headers.get('x-ae-code') !== env.AE_CODE)
-    return say(401, 'Кодове слово мережі не підходить. Перевірте його в налаштуваннях.', null, cors);
+  /* Кодове слово. Якщо змінної AE_CODE немає — перевірки немає взагалі.
+     Браузер шле слово %-кодованим (заголовки HTTP несуть тільки латиницю),
+     тому декодуємо перед звіркою. */
+  if (env.AE_CODE) {
+    let got = request.headers.get('x-ae-code') || '';
+    try { got = decodeURIComponent(got); } catch { /* лишаємо як є */ }
+    if (got !== env.AE_CODE)
+      return say(401, 'Кодове слово мережі не підходить. Перевірте його в налаштуваннях.', null, cors);
+  }
 
   let inBody;
   try { inBody = await request.json(); }
