@@ -1,0 +1,23 @@
+# Гейт цілісності даних AE-Simulator.
+# живе доки: tools/ae_validate.js лишається гейтом даних
+#
+# Запускається на кожен push і кожен pull request. Нічого не деплоїть,
+# нічого не міняє — тільки читає data/*.json і каже ✓ або ✗.
+# ✗ = червоний хрестик біля коміту + лист авторові правки.
+name: Перевірка даних
+on:
+  push:
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js']
+  pull_request:
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js']
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: node tools/ae_validate.js
+        run: node tools/ae_validate.js
