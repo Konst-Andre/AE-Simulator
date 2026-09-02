@@ -61,7 +61,7 @@ const w=dom.window;
   T('картки на місці', d.querySelectorAll('.card').length===43);
   T('чипів фільтрів 7', d.querySelectorAll('.tabs button').length===7);
   T('[джерело] ряд фільтрів не переносить', /\.tabs\{[^}]*flex-wrap:nowrap/.test(src));
-  T('[джерело] край ряду згасає маскою', /\.tabs\{[\s\S]{0,400}mask-image:linear-gradient\(90deg/.test(src));
+  T('[джерело] край ряду згасає маскою', /\.tabs\{[\s\S]{0,900}mask-image:linear-gradient\(90deg/.test(src));
   T('[джерело] радіус узятий шкалою, літералів 3px немає',
     /--r-lg:\s*16px/.test(src) && !/border-radius:3px/.test(src));
   T('[джерело] прес є на картці, чипі, кнопці й «назад»',
@@ -69,6 +69,26 @@ const w=dom.window;
     && /\.btn:active\{transform:scale/.test(src) && /\.back:active\{transform:scale/.test(src));
   T('[джерело] :active увімкнено слухачем дотику (iOS)',
     /addEventListener\('touchstart'/.test(src));
+
+  T('[джерело] снапу на ряді фільтрів немає (інерція iOS)',
+    !/scroll-snap-type/.test(src) && !/scroll-snap-align/.test(src));
+
+  console.log('\n— шапка й панель розмови —');
+  d.querySelector('.card').click();
+  T('шапка — дві сходинки', !!d.querySelector('.top .toprow') && !!d.querySelector('.top .toptitle'));
+  T('заголовок сценарію в своєму рядку',
+    d.querySelector('.toptitle').textContent===S.sc.title);
+  const chat=d.querySelector('.chat');
+  T('панель розмови існує', !!chat);
+  T('репліки лежать усередині панелі', !!chat && !!chat.querySelector('.log .turn'));
+  T('поле вводу лежить усередині панелі', !!chat && !!chat.querySelector('.say textarea'));
+  T('кнопка «Сказати» лежить усередині панелі',
+    !!chat && [...chat.querySelectorAll('button')].some(b=>b.textContent.trim()==='Сказати'));
+  T('підказка видима, доки розмови немає',
+    !!chat && !chat.querySelector('.chat-hint').classList.contains('hide'));
+  T('[джерело] фон панелі темніший за сторінку', /--chat:#E7ECE8/.test(src));
+  T('[джерело] крапки «клієнт друкує» є', /\.dots i\{/.test(src) && /S\.waiting/.test(src));
+  S.screen='picker'; w.render();
 
   console.log('\n— кнопка «назад» —');
   d.querySelector('.card').click();
