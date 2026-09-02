@@ -5,9 +5,9 @@
   "_rule": "vtm = ідеал по власній марці (поле bv у сценарії). stm = поле bm.",
   "curatorCode": "anc-2026",
   "model": {
-    "endpoint": "/api/chat",
+    "endpoint": "https://ae-proxy.konstandre.workers.dev/api/chat",
     "_endpoint": "адреса проксі. Фаза GitHub Pages — ПОВНИЙ URL воркера (https://…workers.dev/api/chat), бо домени різні. Після переїзду на Cloudflare Pages — відносний /api/chat, і CORS зникає.",
-    "workerReady": false,
+    "workerReady": true,
     "_workerReady": "true = проксі задеплоєний і endpoint заповнений. Застосунок питає ЦЕ поле, а не вгадує за виглядом адреси (wsd 1.10: детектор звіряє з оголошенням).",
     "directEndpoint": "https://api.groq.com/openai/v1/chat/completions",
     "_directEndpoint": "прямий виклик Groq. Використовується ЛИШЕ доки ключ лежить у браузері. Після кроку 3 — не використовується.",
