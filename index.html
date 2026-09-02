@@ -120,7 +120,12 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .back:active{transform:scale(.94);transition:transform var(--press-in) ease-out}
 .back svg{width:14px;height:14px;flex:0 0 auto;display:block}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 302px;gap:22px;align-items:start}
-@media(max-width:880px){.stage{grid-template-columns:1fr}}
+/* minmax(0,1fr), а не 1fr. У CSS Grid колонка `1fr` має min-width:auto —
+   тобто вона роздувається під найширшу дитину і тягне за собою всю
+   сторінку. Десктопне правило вище це враховує, мобільне — ні, тому
+   будь-яка дитина, ширша за колонку, робила сторінку ширшою за екран:
+   з'являвся горизонтальний скрол, і все «прилипало» до правого краю. */
+@media(max-width:880px){.stage{grid-template-columns:minmax(0,1fr)}}
 
 .brief{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:13px 16px;margin-bottom:14px;font-size:13.5px}
 .brief dl{display:grid;grid-template-columns:96px 1fr;gap:3px 12px;margin:0}
@@ -136,12 +141,16 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
    Фон панелі мусить бути ТЕМНІШИЙ за білу бульбашку клієнта — інакше
    репліки зникають у ньому. */
 .chat{background:var(--chat);border:1px solid var(--line);border-radius:var(--r-lg);
-  padding:12px 12px 0;margin-bottom:14px}
+  margin-bottom:14px;overflow:hidden}
+/* Від'ємних полів усередині панелі немає свідомо: смуга вводу притиснута
+   до країв не витягуванням себе за батька, а тим, що падінг живе на
+   внутрішньому блоці. Дитина, ширша за батька, — це те, що ламало сітку. */
+.chat-body{padding:12px 12px 0}
 .chat-h{display:flex;align-items:center;gap:8px;padding:2px 3px 10px;
   font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--soft)}
 .chat-h::after{content:'';flex:1;height:1px;background:var(--line)}
 .chat-hint{font-size:12.5px;color:var(--soft);text-align:center;padding:2px 12px 4px}
-.log{display:flex;flex-direction:column;gap:12px;margin-bottom:12px;min-height:120px}
+.log{display:flex;flex-direction:column;gap:12px;margin-bottom:12px;min-height:88px}
 
 /* Крапки «клієнт друкує». Раніше очікування показувала тільки кнопка,
    яка ставала «…» — тобто відповідь готувалась не там, де вона зʼявиться. */
@@ -152,17 +161,24 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .dots i:nth-child(3){animation-delay:.3s}
 @keyframes dot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 @media(prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.5}}
-.turn{max-width:82%;padding:10px 14px;border-radius:var(--r-bub);white-space:pre-wrap}
+.turn{max-width:82%;padding:10px 14px;border-radius:var(--r-bub);white-space:pre-wrap;
+  overflow-wrap:anywhere}
 .client{background:#fff;border:1px solid var(--line);align-self:flex-start}
 .me{background:var(--ink);color:#EEF2EF;align-self:flex-end}
+/* РОЗБІР писав наставник, а не клієнт — але виглядав він як репліка
+   клієнта, у такій самій білій бульбашці. Читалось так, ніби це клієнт
+   раптом заговорив про «принцип лаконічності». Даємо йому власну форму:
+   на всю ширину, без хвоста бульбашки, з зеленою межею збоку. */
+.review{align-self:stretch;max-width:100%;background:#fff;
+  border:1px solid var(--line);border-left:3px solid var(--vtm);
+  border-radius:var(--r-bub)}
+.review .who{color:var(--vtm)}
 .sys{align-self:center;color:var(--soft);font-size:13px;font-style:italic;text-align:center;max-width:90%}
 .who{display:block;font-size:11.5px;letter-spacing:.04em;color:var(--soft);margin-bottom:3px}
 .me .who{color:#93A79B}
 
 .say{display:flex;gap:8px;align-items:flex-end;
-  margin:0 -12px;padding:10px 12px;background:#fff;
-  border-top:1px solid var(--line);
-  border-radius:0 0 calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px)}
+  padding:10px 12px;background:#fff;border-top:1px solid var(--line)}
 .say textarea{flex:1;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);
   resize:vertical;min-height:62px;background:#fff;color:inherit}
 .btn{padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#EEF2EF;
@@ -662,10 +678,15 @@ function Game(root){
       el('span',{class:'dots',html:'<i></i><i></i><i></i>'})]));
     if(S.ended){
       log.append(el('div',{class:'turn sys',text:'— розмову завершено —'}));
-      if(S.feedback) log.append(el('div',{class:'turn client'},[
+      if(S.feedback) log.append(el('div',{class:'turn review'},[
         el('span',{class:'who',text:'РОЗБІР'}),el('span',{text:S.feedback})]));
     }
     hint.classList.toggle('hide', S.history.length>0 || S.ended);
+    /* Після «розмову завершено» send() усе одно нічого не робив, але поле
+       й кнопка виглядали робочими — людина пише репліку в нікуди. Орган
+       керування, який нічого не робить, мусить це показувати. */
+    ta.disabled = S.ended; btn.disabled = S.ended || S.waiting;
+    ta.placeholder = S.ended ? 'Розмову завершено' : 'Що ви кажете клієнтові…';
     log.scrollIntoView({block:'end'});
   };
   const hint = el('p',{class:'chat-hint',
@@ -764,9 +785,11 @@ function Game(root){
           el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
         ])]),
         el('div',{class:'chat'},[
-          el('div',{class:'chat-h'},[el('span',{text:'Розмова'})]),
-          log,
-          hint,
+          el('div',{class:'chat-body'},[
+            el('div',{class:'chat-h'},[el('span',{text:'Розмова'})]),
+            log,
+            hint
+          ]),
           el('div',{class:'say'},[ta,btn])
         ]),
         finishBtn,
