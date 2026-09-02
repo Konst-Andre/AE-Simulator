@@ -889,6 +889,7 @@ function Game(root){
         el('div',{class:'brief'},[el('dl',{},[
           el('dt',{text:'Номер'}), el('dd',{text: sc.no ? '№ '+sc.no : 'без номера, оформлення на місці'}),
           el('dt',{text:'Клієнт'}), el('dd',{text:sc.who}),
+          el('dt',{text:'Настрій'}), el('dd',{text:sc.mood}),
           el('dt',{text:'Умови'}), el('dd',{text:sc.mode}),
           el('dt',{text:'Категорії'}), el('dd',{text:sc.cats.map(k=>S.LABEL[k]||k).join(' · ')}),
           el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
