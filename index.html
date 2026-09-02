@@ -652,7 +652,8 @@ function Settings(root){
         el('div',{class:'tapeline'},[el('span',{text:'Замовлень у зміні'}),el('span',{class:'num',text:S.cfg.shiftSize})]),
         el('div',{class:'tapeline'},[el('span',{text:'Правило оцінки'}),el('span',{class:'num',text:S.cfg.rule.toUpperCase()})]),
         el('div',{class:'tapeline'},[el('span',{text:'Сценаріїв'}),el('span',{class:'num',text:S.SCEN.length})]),
-        el('div',{class:'tapeline'},[el('span',{text:'Двигун'}),el('span',{class:'num',text:engine.name})])
+        el('div',{class:'tapeline'},[el('span',{text:'Двигун'}),el('span',{class:'num',text:engine.name})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Збірка'}),el('span',{class:'num',text:S.cfg.build||'—'})])
       ])
     ])
   );
@@ -673,7 +674,11 @@ function Gate(root){
       el('input',{oninput:e=>n=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
     el('label',{class:'field'},[el('span',{text:'Аптека'}),
       el('input',{placeholder:'напр. 67, Калинова 1', oninput:e=>a=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
-    el('button',{class:'btn',onclick:go,text:'Далі'})
+    el('button',{class:'btn',onclick:go,text:'Далі'}),
+    /* Марка збірки. Значення тільки з config.json: зашитий у код номер
+       перестають оновлювати вже на другій видачі, і марка починає брехати. */
+    el('p',{class:'sub',style:'margin-top:22px;font-size:12px',
+      text:'Збірка '+(S.cfg.build||'—')})
   );
 }
 
