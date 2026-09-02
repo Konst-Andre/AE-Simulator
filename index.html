@@ -16,6 +16,18 @@
 :root{
   --paper:#F1F4F1; --ink:#16211C; --soft:#5E6E66; --line:#C9D2CB;
   --vtm:#0F6B4A; --zf:#A0761B; --loss:#A8402B; --tape:#FBFCFA;
+
+  /* Радіуси — шкалою, не літералами. Три ролі: велика поверхня,
+     орган керування, бульбашка розмови. Підкрутити вигляд усього
+     застосунку = змінити тут три числа. */
+  --r-lg:16px;   /* картки, brief, чек, помилка, жовта панель */
+  --r-md:12px;   /* кнопки, поля, textarea, «назад» */
+  --r-bub:14px;  /* репліки в розмові */
+
+  /* Прес. Натиск різкий і короткий, повернення довше і з пружиною —
+     тому дві різні тривалості, а не одна. */
+  --press-in:90ms; --press-out:280ms;
+  --press-ease:cubic-bezier(.34,1.5,.64,1);
 }
 *{box-sizing:border-box}
 
@@ -49,15 +61,32 @@ body{font-family:"Inter","Segoe UI",-apple-system,system-ui,sans-serif;color:var
 .sub{max-width:64ch;color:var(--soft);margin:0 0 22px}
 
 button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-.tabs button{font-size:13.5px;padding:6px 13px;border:1px solid var(--line);
-  background:#fff;border-radius:20px;cursor:pointer;color:var(--soft)}
+/* Ряд фільтрів — один рядок із горизонтальним скролом, а не три абзаци.
+   Від'ємні поля прорізають падінг .wrap, щоб ряд ішов від краю екрана
+   до краю: інакше він обривається всередині сторінки і читається як
+   помилка верстки. Маска гасить чипи саме на краях. */
+.tabs{display:flex;flex-wrap:nowrap;gap:6px;margin:0 -18px 16px;padding:2px 18px 4px;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%);
+          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;white-space:nowrap;scroll-snap-align:center;
+  font-size:13.5px;padding:6px 13px;border:1px solid var(--line);
+  background:#fff;border-radius:20px;cursor:pointer;color:var(--soft);
+  transition:transform var(--press-out) var(--press-ease)}
+.tabs button:active{transform:scale(.92);transition:transform var(--press-in) ease-out}
 .tabs button[aria-pressed="true"]{background:var(--ink);color:#EEF2EF;border-color:var(--ink)}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:14px}
-.card{background:#fff;border:1px solid var(--line);border-radius:3px;padding:14px 16px 16px;
-  text-align:left;cursor:pointer;color:inherit;display:flex;flex-direction:column;gap:7px}
-.card:hover{border-color:var(--ink)}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px 16px;
+  text-align:left;cursor:pointer;color:inherit;display:flex;flex-direction:column;gap:7px;
+  transition:transform var(--press-out) var(--press-ease)}
+/* Картка велика — натиск має бути ледь помітним. Що більший елемент,
+   то меншу частку розміру він втрачає під пальцем. */
+.card:active{transform:scale(.985);transition:transform var(--press-in) ease-out}
+/* hover лише там, де є миша: на iOS він «залипає» після тапу */
+@media(hover:hover){.card:hover{border-color:var(--ink)}}
 .card:focus-visible{outline:2px solid var(--vtm);outline-offset:2px}
 .ord{font-size:12.5px;color:var(--soft);letter-spacing:.03em}
 .card h3{margin:0;font-size:16.5px;font-weight:600}
@@ -66,18 +95,26 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
   font-size:13px;display:flex;justify-content:space-between;gap:10px}
 .trap{color:var(--loss)}
 
-.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-.back{background:none;border:none;color:var(--soft);cursor:pointer;padding:0;text-decoration:underline}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+/* «Назад» — орган керування, а не посилання в тексті: у застосунку
+   підкреслений текст читається як веб-сторінка. Шеврон — інлайновий
+   SVG, не символ і не емодзі: гліф ← у різних шрифтах різного розміру. */
+.back{display:inline-flex;align-items:center;gap:5px;
+  background:#fff;border:1px solid var(--line);color:var(--soft);cursor:pointer;
+  border-radius:var(--r-md);padding:6px 12px 6px 9px;font-size:13.5px;line-height:1;
+  text-decoration:none;transition:transform var(--press-out) var(--press-ease)}
+.back:active{transform:scale(.94);transition:transform var(--press-in) ease-out}
+.back svg{width:14px;height:14px;flex:0 0 auto;display:block}
 .stage{display:grid;grid-template-columns:minmax(0,1fr) 302px;gap:22px;align-items:start}
 @media(max-width:880px){.stage{grid-template-columns:1fr}}
 
-.brief{background:#fff;border:1px solid var(--line);border-radius:3px;padding:13px 16px;margin-bottom:14px;font-size:13.5px}
+.brief{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:13px 16px;margin-bottom:14px;font-size:13.5px}
 .brief dl{display:grid;grid-template-columns:96px 1fr;gap:3px 12px;margin:0}
 .brief dt{color:var(--soft)}
 .brief dd{margin:0}
 
 .log{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:120px}
-.turn{max-width:82%;padding:10px 14px;border-radius:3px;white-space:pre-wrap}
+.turn{max-width:82%;padding:10px 14px;border-radius:var(--r-bub);white-space:pre-wrap}
 .client{background:#fff;border:1px solid var(--line);align-self:flex-start}
 .me{background:var(--ink);color:#EEF2EF;align-self:flex-end}
 .sys{align-self:center;color:var(--soft);font-size:13px;font-style:italic;text-align:center;max-width:90%}
@@ -85,14 +122,17 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .me .who{color:#93A79B}
 
 .say{display:flex;gap:8px;align-items:flex-end}
-.say textarea{flex:1;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;
+.say textarea{flex:1;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);
   resize:vertical;min-height:62px;background:#fff;color:inherit}
 .btn{padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#EEF2EF;
-  border-radius:3px;cursor:pointer}
+  border-radius:var(--r-md);cursor:pointer;
+  transition:transform var(--press-out) var(--press-ease)}
+.btn:active{transform:scale(.96);transition:transform var(--press-in) ease-out}
+.btn[disabled]:active{transform:none}
 .btn[disabled]{opacity:.45;cursor:default}
 .btn.ghost{background:#fff;color:var(--ink)}
 
-.tape{background:var(--tape);border:1px solid var(--line);border-radius:3px;padding:14px 16px;
+.tape{background:var(--tape);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px 16px;
   position:sticky;top:16px;font-size:13.5px}
 .tape h4{margin:0 0 10px;font-size:12.5px;letter-spacing:.05em;color:var(--soft);text-transform:uppercase}
 .tapeline{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
@@ -107,9 +147,27 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .field{display:block;margin-bottom:12px}
 .field span{display:block;font-size:13px;color:var(--soft);margin-bottom:4px}
 .field input{width:100%;max-width:420px;font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);
-  border-radius:3px;background:#fff;color:inherit}
+  border-radius:var(--r-md);background:#fff;color:inherit}
 
-.mock{margin-top:22px;border:1px dashed var(--zf);border-radius:3px;padding:12px 14px;background:#FFFDF6}
+/* Акордеон. Технічний текст потрібен рідко, а місця на телефоні їсть
+   багато: тримаємо його згорнутим. Нативний <details> — щоб не писати
+   свій перемикач; дефолтний трикутник Safari гаситься окремим правилом,
+   інакше маркерів буде два. */
+.acc{border:1px solid var(--line);border-radius:var(--r-md);background:#fff;
+  padding:0 14px;margin:0 0 14px;max-width:520px}
+.acc summary{list-style:none;cursor:pointer;padding:11px 0;font-size:13.5px;
+  color:var(--soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:'';width:7px;height:7px;flex:0 0 auto;margin-right:2px;
+  border-right:1.6px solid var(--soft);border-bottom:1.6px solid var(--soft);
+  transform:rotate(45deg) translate(-2px,-2px);transition:transform .18s ease}
+.acc[open] summary::after{transform:rotate(-135deg) translate(-2px,-2px)}
+.acc .accbody{padding:0 0 13px;font-size:13.5px;color:var(--soft)}
+.acc .accbody p{margin:0 0 8px}
+.acc .accbody p:last-child{margin:0}
+.acc .tapeline{font-size:13px}
+
+.mock{margin-top:22px;border:1px dashed var(--zf);border-radius:var(--r-lg);padding:12px 14px;background:#FFFDF6}
 .mock h4{margin:0 0 4px;font-size:12.5px;letter-spacing:.05em;color:var(--zf);text-transform:uppercase}
 .mock p{margin:0 0 10px;font-size:12.5px;color:var(--soft)}
 .mock label{display:block;font-size:13px;padding:2px 0;cursor:pointer}
@@ -117,7 +175,7 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 @media(max-width:640px){.mockcols{columns:1}}
 
 .err{background:#FDF3F1;border:1px solid var(--loss);color:var(--loss);
-  border-radius:3px;padding:10px 14px;margin-bottom:14px;font-size:13.5px}
+  border-radius:var(--r-lg);padding:10px 14px;margin-bottom:14px;font-size:13.5px}
 </style>
 </head>
 <body>
@@ -147,6 +205,20 @@ const el = (tag,attrs={},kids=[])=>{
   for(const c of [].concat(kids)) if(c) n.append(c);
   return n;
 };
+
+/* Нативний root.append(null) НЕ пропускає порожнє повз себе — він робить
+   з null текстовий вузол «null», і той друкується на екрані. Саме так
+   на списку замовлень зʼявлялось слово «null» над кнопкою «Почати зміну».
+   el() своїх дітей фільтрує, тому екрани збираємо тільки через put(). */
+const put = (root,...kids)=>{ for(const c of kids) if(c) root.append(c); };
+
+/* Шеврон «назад». Інлайновий SVG, а не символ ← : гліф у різних шрифтах
+   різного розміру й ваги, а тут він мусить збігатися з текстом поруч. */
+const CHEVRON = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">'
+  + '<path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.7" '
+  + 'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const backBtn = (label,onclick)=>el('button',{class:'back',onclick,
+  'aria-label':label, html:CHEVRON+'<span>'+label+'</span>'});
 
 /* ── СТАН ────────────────────────────────────────────────────────── */
 const S = {
@@ -396,9 +468,16 @@ function render(){
 }
 
 function Settings(root){
-  let val = KEY.get(), code = NET.get();
-  const codeSt = el('p',{class:'sub',style:'margin:8px 0 0'});
+  /* Кодового слова мережі тут більше немає: змінної AE_CODE у Cloudflare
+     не заведено, тож поле нічого не вмикало. Константа NET у коді ЛИШАЄТЬСЯ —
+     воркер уміє її читати, якщо колись повернемо стіну перед дверима. */
+  let val = KEY.get();
   const status = el('p',{class:'sub',style:'margin:12px 0 0'});
+  /* Поле ключа тримаємо посиланням. Раніше «Стерти ключ» шукало
+     root.querySelector('input') — тобто ПЕРШИЙ інпут на екрані, а першим
+     було чуже поле. Порядок елементів не має керувати логікою. */
+  const keyInput = el('input',{type:'password', value:val, placeholder:'gsk_…',
+    oninput:e=>val=e.target.value, onkeydown:e=>e.key==='Enter'&&test()});
 
   const test = async ()=>{
     KEY.set(val);
@@ -415,56 +494,52 @@ function Settings(root){
     }
   };
 
-  root.append(
+  put(root,
     el('div',{class:'top'},[
-      el('button',{class:'back',text:'← назад',onclick:()=>{S.screen=S.me?'picker':'gate';render()}}),
+      backBtn('назад',()=>{S.screen=S.me?'picker':'gate';render()}),
       el('h2',{style:'margin:0;font-size:20px',text:'Налаштування'})
     ]),
     el('h1',{class:'lede',text:'Технічне'}),
-    el('p',{class:'sub',style:'margin:0 0 14px',html:
+    el('p',{class:'sub',style:'margin:0 0 18px',html:
       'Модель зараз: <b>'+(LIVE.model || S.cfg.model.name)+'</b>'+
       (LIVE.rung ? ' — <b>резервна</b>' : '')+'.'}),
-    el('label',{class:'field'},[
-      el('span',{text:'Кодове слово мережі — лише якщо сервер його вимагає'}),
-      el('input',{value:code, placeholder:'порожньо = не потрібне', oninput:e=>code=e.target.value})
-    ]),
-    el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[
-      el('button',{class:'btn ghost',text:'Зберегти кодове слово',onclick:()=>{
-        NET.set(code); codeSt.style.color='var(--vtm)';
-        codeSt.textContent = code.trim() ? '✓ Збережено.' : 'Стерто.';
-      }})
-    ]),
-    codeSt,
-    el('div',{style:'height:24px'}),
     el('h2',{style:'margin:0 0 10px;font-size:17px',text:'Ключ Groq'}),
-    el('p',{class:'sub',html:
-      'Запасний вхід для перевірки: ключ у браузері обходить сервер. '+
-      'Для роботи з людьми поле лишається порожнім. Ключ береться на '+
-      '<b>console.groq.com</b> → API Keys → Create Key. Він зберігається лише '+
-      'у цьому браузері, на сервер не потрапляє.<br><br>'+
-      '<b>Це тимчасовий спосіб — для перевірки.</b> Ключ у браузері може побачити '+
-      'той, хто відкриє консоль розробника. Для роботи з людьми ключ переїде '+
-      'на сервер (крок 3), і це поле стане непотрібним.'}),
+    el('details',{class:'acc'},[
+      el('summary',{text:'Навіщо це поле і чому воно тимчасове'}),
+      el('div',{class:'accbody'},[
+        el('p',{html:
+          'Запасний вхід для перевірки: ключ у браузері обходить сервер. '+
+          'Для роботи з людьми поле лишається порожнім. Ключ береться на '+
+          '<b>console.groq.com</b> → API Keys → Create Key. Він зберігається лише '+
+          'у цьому браузері, на сервер не потрапляє.'}),
+        el('p',{html:
+          '<b>Це тимчасовий спосіб — для перевірки.</b> Ключ у браузері може побачити '+
+          'той, хто відкриє консоль розробника. Для роботи з людьми ключ уже переїхав '+
+          'на сервер, і це поле потрібне тільки тоді, коли сервер треба обійти.'})
+      ])
+    ]),
     el('label',{class:'field'},[
       el('span',{text:'Ключ (починається на gsk_)'}),
-      el('input',{type:'password', value:val, placeholder:'gsk_…',
-        oninput:e=>val=e.target.value, onkeydown:e=>e.key==='Enter'&&test()})
+      keyInput
     ]),
     el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[
       el('button',{class:'btn',text:'Зберегти й перевірити',onclick:test}),
       el('button',{class:'btn ghost',text:'Стерти ключ',onclick:()=>{
-        KEY.set(''); val=''; root.querySelector('input').value='';
+        KEY.set(''); val=''; keyInput.value='';
         status.style.color='var(--soft)'; status.textContent='Ключ стерто.';
       }})
     ]),
     status,
-    el('div',{class:'brief',style:'margin-top:24px;max-width:520px'},[
-      el('div',{class:'tapeline'},[el('span',{text:'Модель'}),el('span',{class:'num',text:S.cfg.model.name})]),
-      el('div',{class:'tapeline'},[el('span',{text:'Режим'}),el('span',{class:'num',text:'reasoning: '+S.cfg.model.reasoning_effort})]),
-      el('div',{class:'tapeline'},[el('span',{text:'Замовлень у зміні'}),el('span',{class:'num',text:S.cfg.shiftSize})]),
-      el('div',{class:'tapeline'},[el('span',{text:'Правило оцінки'}),el('span',{class:'num',text:S.cfg.rule.toUpperCase()})]),
-      el('div',{class:'tapeline'},[el('span',{text:'Сценаріїв'}),el('span',{class:'num',text:S.SCEN.length})]),
-      el('div',{class:'tapeline'},[el('span',{text:'Двигун'}),el('span',{class:'num',text:engine.name})])
+    el('details',{class:'acc',style:'margin-top:24px'},[
+      el('summary',{text:'Технічні дані'}),
+      el('div',{class:'accbody'},[
+        el('div',{class:'tapeline'},[el('span',{text:'Модель'}),el('span',{class:'num',text:S.cfg.model.name})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Режим'}),el('span',{class:'num',text:'reasoning: '+S.cfg.model.reasoning_effort})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Замовлень у зміні'}),el('span',{class:'num',text:S.cfg.shiftSize})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Правило оцінки'}),el('span',{class:'num',text:S.cfg.rule.toUpperCase()})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Сценаріїв'}),el('span',{class:'num',text:S.SCEN.length})]),
+        el('div',{class:'tapeline'},[el('span',{text:'Двигун'}),el('span',{class:'num',text:engine.name})])
+      ])
     ])
   );
 }
@@ -477,7 +552,7 @@ function Gate(root){
     localStorage.setItem('ae_me',JSON.stringify(S.me));
     S.screen='picker'; render();
   };
-  root.append(
+  put(root,
     el('h1',{class:'lede',text:'Тренажер інтернет-замовлень'}),
     el('p',{class:'sub',text:'Перш ніж почати — представтесь. Це потрібно, щоб куратор бачив ваші результати.'}),
     el('label',{class:'field'},[el('span',{text:'Ім’я та прізвище'}),
@@ -491,7 +566,7 @@ function Gate(root){
 function Picker(root){
   const groups=['Усі',...new Set(S.SCEN.map(s=>s.grp))];
   const list = S.group==='Усі' ? S.SCEN : S.SCEN.filter(s=>s.grp===S.group);
-  root.append(
+  put(root,
     el('h1',{class:'lede',text:'Вітаю, '+S.me.name.split(' ')[0]}),
     el('p',{class:'sub',text:'Оберіть замовлення для тренування — або відпрацюйте цілу зміну з '+S.cfg.shiftSize+' замовлень поспіль.'}),
     (!MOCK && !KEY.get() && !S.cfg.model.workerReady)
@@ -622,9 +697,9 @@ function Game(root){
     }))
   ]);
 
-  root.append(
+  put(root,
     el('div',{class:'top'},[
-      el('button',{class:'back',text:'← до списку',onclick:()=>{S.shift=null;S.screen='picker';render()}}),
+      backBtn('до списку',()=>{S.shift=null;S.screen='picker';render()}),
       el('h2',{style:'margin:0;font-size:20px',text:sc.title}),
       S.shift?el('span',{class:'ord',text:'замовлення '+(S.shift.i+1)+' з '+S.shift.queue.length}):null
     ]),
@@ -674,7 +749,7 @@ function Result(root){
   const pot=scored.reduce((a,r)=>a+r.pot,0)||1;
   const pct=Math.max(0,Math.min(100,Math.round(got/pot*100)));
   const slips=rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
-  root.append(
+  put(root,
     el('h1',{class:'lede',text:'Зміну завершено'}),
     el('p',{class:'sub',text:S.me.name+' · аптека '+S.me.pharmacy}),
     el('div',{class:'brief',style:'max-width:420px'},[
@@ -696,6 +771,12 @@ function Result(root){
    (у консолі браузера можна подивитись S.cart, S.sc, S.cfg). */
 window.S = S; window.render = render; window.ENGINE = engine;
 window.engineLive = engineLive; window.KEY = KEY; window.buildSystem = buildSystem;
+
+/* iOS Safari не застосовує :active, доки на сторінці немає жодного
+   слухача дотику. Порожній слухач на документі — умова вмикання:
+   без нього весь прес на кнопках і картках мовчить саме на телефоні,
+   а на десктопі при цьому працює. Passive — щоб не гальмувати скрол. */
+document.addEventListener('touchstart',()=>{},{passive:true});
 
 boot();
 </script>
