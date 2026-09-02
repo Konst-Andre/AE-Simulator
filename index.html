@@ -553,6 +553,11 @@ const engineLive = {
     const prompt = fill(S.P.judge, {
       who: sc.who, mode: sc.mode, goal: sc.goal||'—',
       transcript,
+      /* Суддя досі не бачив асортименту: він міг радити тільки те, що ми
+         самі назвали ідеалом. Той самий пул, що й у клієнта (категорії
+         сценарію), плюс мітка й бонус — суддя оцінює гроші, клієнт про
+         них не знає і в його промпті їх немає. */
+      catalog: poolOf(sc).map(i=>i.c+' | '+i.n+' | '+(i.k||'—')+' | '+i.b+' ₴').join('\n'),
       orderList: nameOf(sc.order), cartList: nameOf(cart),
       baseSum: uah(base), nowSum: uah(now),
       delta: uah(now-base), pot: potential(sc),
