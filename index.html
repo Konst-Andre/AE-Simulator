@@ -23,6 +23,7 @@
   --r-lg:16px;   /* картки, brief, чек, помилка, жовта панель */
   --r-md:12px;   /* кнопки, поля, textarea, «назад» */
   --r-bub:14px;  /* репліки в розмові */
+  --chat:#E7ECE8;   /* фон панелі розмови: темніший за сторінку й за бульбашку */
 
   /* Прес. Натиск різкий і короткий, повернення довше і з пружиною —
      тому дві різні тривалості, а не одна. */
@@ -67,11 +68,16 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
    помилка верстки. Маска гасить чипи саме на краях. */
 .tabs{display:flex;flex-wrap:nowrap;gap:6px;margin:0 -18px 16px;padding:2px 18px 4px;
   overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-  scroll-snap-type:x proximity;scrollbar-width:none;
+  /* Снапу тут свідомо НЕМАЄ. На iOS scroll-snap вимикає інерцію скролу
+     (WebKit 243582): кожен свайп зупиняється на найближчому чипі, і ряд
+     з 7 фільтрів доводиться гортати трьома рухами замість одного кидка.
+     Снап доречний каруселі, де кадр мусить стати рівно; список фільтрів
+     гортають, а не гортають по кадру. */
+  scrollbar-width:none;
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%);
           mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent 100%)}
 .tabs::-webkit-scrollbar{display:none}
-.tabs button{flex:0 0 auto;white-space:nowrap;scroll-snap-align:center;
+.tabs button{flex:0 0 auto;white-space:nowrap;
   font-size:13.5px;padding:6px 13px;border:1px solid var(--line);
   background:#fff;border-radius:20px;cursor:pointer;color:var(--soft);
   transition:transform var(--press-out) var(--press-ease)}
@@ -95,7 +101,15 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
   font-size:13px;display:flex;justify-content:space-between;gap:10px}
 .trap{color:var(--loss)}
 
-.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+/* Шапка екрана — завжди дві сходинки: ряд керування, під ним заголовок.
+   Раніше кнопка й заголовок стояли в одному рядку з переносом, тому
+   довга назва сценарію штовхала верстку і шапка стрибала між одним
+   і двома рядками залежно від довжини тексту. Довжина назви не має
+   керувати розкладкою. */
+.top{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.toprow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.toptitle{margin:0;font-size:20px;font-weight:620;letter-spacing:-.01em;
+  max-width:34ch;line-height:1.25}
 /* «Назад» — орган керування, а не посилання в тексті: у застосунку
    підкреслений текст читається як веб-сторінка. Шеврон — інлайновий
    SVG, не символ і не емодзі: гліф ← у різних шрифтах різного розміру. */
@@ -113,7 +127,31 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .brief dt{color:var(--soft)}
 .brief dd{margin:0}
 
-.log{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;min-height:120px}
+/* ── ПАНЕЛЬ РОЗМОВИ ───────────────────────────────────────────────
+   Репліки й поле вводу жили просто на сторінці, тому екран читався як
+   «текст, поле і кнопка», а не як переписка. Тепер вони в одній
+   заглибленій панелі: фон трохи темніший за сторінку, поле вводу —
+   білою смугою, притиснутою до низу панелі. Це та сама форма, яку
+   людина щодня бачить у месенджері, і впізнає без пояснень.
+   Фон панелі мусить бути ТЕМНІШИЙ за білу бульбашку клієнта — інакше
+   репліки зникають у ньому. */
+.chat{background:var(--chat);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:12px 12px 0;margin-bottom:14px}
+.chat-h{display:flex;align-items:center;gap:8px;padding:2px 3px 10px;
+  font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--soft)}
+.chat-h::after{content:'';flex:1;height:1px;background:var(--line)}
+.chat-hint{font-size:12.5px;color:var(--soft);text-align:center;padding:2px 12px 4px}
+.log{display:flex;flex-direction:column;gap:12px;margin-bottom:12px;min-height:120px}
+
+/* Крапки «клієнт друкує». Раніше очікування показувала тільки кнопка,
+   яка ставала «…» — тобто відповідь готувалась не там, де вона зʼявиться. */
+.dots{display:inline-flex;gap:4px;align-items:center;height:14px}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--soft);
+  animation:dot 1s infinite ease-in-out}
+.dots i:nth-child(2){animation-delay:.15s}
+.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.5}}
 .turn{max-width:82%;padding:10px 14px;border-radius:var(--r-bub);white-space:pre-wrap}
 .client{background:#fff;border:1px solid var(--line);align-self:flex-start}
 .me{background:var(--ink);color:#EEF2EF;align-self:flex-end}
@@ -121,7 +159,10 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .who{display:block;font-size:11.5px;letter-spacing:.04em;color:var(--soft);margin-bottom:3px}
 .me .who{color:#93A79B}
 
-.say{display:flex;gap:8px;align-items:flex-end}
+.say{display:flex;gap:8px;align-items:flex-end;
+  margin:0 -12px;padding:10px 12px;background:#fff;
+  border-top:1px solid var(--line);
+  border-radius:0 0 calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px)}
 .say textarea{flex:1;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-md);
   resize:vertical;min-height:62px;background:#fff;color:inherit}
 .btn{padding:10px 18px;border:1px solid var(--ink);background:var(--ink);color:#EEF2EF;
@@ -230,6 +271,7 @@ const S = {
   history:[],         // [{role:'user'|'assistant', content}]
   cart:[],
   ended:false, feedback:'',
+  waiting:false,      // чи чекаємо відповідь моделі — малює крапки в стрічці
   shift:null,         // {queue:[…], i:0, rows:[…]}
 };
 
@@ -496,8 +538,8 @@ function Settings(root){
 
   put(root,
     el('div',{class:'top'},[
-      backBtn('назад',()=>{S.screen=S.me?'picker':'gate';render()}),
-      el('h2',{style:'margin:0;font-size:20px',text:'Налаштування'})
+      el('div',{class:'toprow'},[backBtn('назад',()=>{S.screen=S.me?'picker':'gate';render()})]),
+      el('h2',{class:'toptitle',text:'Налаштування'})
     ]),
     el('h1',{class:'lede',text:'Технічне'}),
     el('p',{class:'sub',style:'margin:0 0 18px',html:
@@ -599,7 +641,7 @@ function Picker(root){
 }
 
 function openScenario(sc){
-  S.sc=sc; S.cart=sc.order.slice(); S.history=[]; S.ended=false; S.feedback='';
+  S.sc=sc; S.cart=sc.order.slice(); S.history=[]; S.ended=false; S.feedback=''; S.waiting=false;
   S.screen='game'; render();
 }
 
@@ -615,20 +657,27 @@ function Game(root){
       log.append(el('div',{class:'turn '+(m.role==='user'?'me':'client')},[
         el('span',{class:'who',text:m.role==='user'?'ВИ':'КЛІЄНТ'}),
         el('span',{text:m.content})]));
+    if(S.waiting) log.append(el('div',{class:'turn client'},[
+      el('span',{class:'who',text:'КЛІЄНТ'}),
+      el('span',{class:'dots',html:'<i></i><i></i><i></i>'})]));
     if(S.ended){
       log.append(el('div',{class:'turn sys',text:'— розмову завершено —'}));
       if(S.feedback) log.append(el('div',{class:'turn client'},[
         el('span',{class:'who',text:'РОЗБІР'}),el('span',{text:S.feedback})]));
     }
+    hint.classList.toggle('hide', S.history.length>0 || S.ended);
     log.scrollIntoView({block:'end'});
   };
+  const hint = el('p',{class:'chat-hint',
+    text:'Відповідайте своїми словами — так, як сказали б за касою.'});
 
   const send = async ()=>{
     const line=draft.trim(); if(!line||S.ended)return;
     S.history.push({role:'user',content:line});
-    draft=''; ta.value=''; btn.disabled=true; btn.textContent='…'; paint();
+    draft=''; ta.value=''; btn.disabled=true; S.waiting=true; paint();
     try{
       const r = await engine.turn(sc, S.history);
+      S.waiting=false;
       S.history.push({role:'assistant',content:r.reply});
       S.cart = r.cart;
       S.ended = r.ended; S.feedback = r.feedback||'';
@@ -636,7 +685,7 @@ function Game(root){
       if(S.ended) finishBtn.classList.remove('hide');
     }catch(e){
       root.prepend(el('div',{class:'err',text:'Двигун відповів помилкою: '+e.message}));
-    }finally{ btn.disabled=false; btn.textContent='Сказати'; }
+    }finally{ btn.disabled=false; S.waiting=false; paint(); }
   };
 
   const ta = el('textarea',{placeholder:'Що ви кажете клієнтові…',oninput:e=>draft=e.target.value,
@@ -699,9 +748,11 @@ function Game(root){
 
   put(root,
     el('div',{class:'top'},[
-      backBtn('до списку',()=>{S.shift=null;S.screen='picker';render()}),
-      el('h2',{style:'margin:0;font-size:20px',text:sc.title}),
-      S.shift?el('span',{class:'ord',text:'замовлення '+(S.shift.i+1)+' з '+S.shift.queue.length}):null
+      el('div',{class:'toprow'},[
+        backBtn('до списку',()=>{S.shift=null;S.screen='picker';render()}),
+        S.shift?el('span',{class:'ord',text:'замовлення '+(S.shift.i+1)+' з '+S.shift.queue.length}):null
+      ]),
+      el('h2',{class:'toptitle',text:sc.title})
     ]),
     el('div',{class:'stage'},[
       el('div',{},[
@@ -712,8 +763,12 @@ function Game(root){
           el('dt',{text:'Категорії'}), el('dd',{text:sc.cats.map(k=>S.LABEL[k]||k).join(' · ')}),
           el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
         ])]),
-        log,
-        el('div',{class:'say'},[ta,btn]),
+        el('div',{class:'chat'},[
+          el('div',{class:'chat-h'},[el('span',{text:'Розмова'})]),
+          log,
+          hint,
+          el('div',{class:'say'},[ta,btn])
+        ]),
         finishBtn,
         mock
       ]),
