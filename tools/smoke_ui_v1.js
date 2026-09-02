@@ -15,14 +15,20 @@ const T=(n,c)=>{ c?(ok++,console.log('  ✓ '+n)):(bad++,console.log('  ✗ '+n)
 
 const files={'config.json':'config.json','data/catalog.json':'data/catalog.json',
   'data/scenarios.json':'data/scenarios.json','prompts/client.md':'prompts/client.md',
-  'prompts/client.parts.md':'prompts/client.parts.md','prompts/debrief.md':'prompts/debrief.md'};
+  'prompts/client.parts.md':'prompts/client.parts.md','prompts/debrief.md':'prompts/debrief.md',
+  'prompts/judge.md':'prompts/judge.md'};
 
 let html=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
 /* Інʼєкція повертає ту саму ваду, яку крок лікував: збірка екрана
    нативним append, що друкує «null» текстовим вузлом. */
-if(INJECT) html=html.replace(
-  'const put = (root,...kids)=>{ for(const c of kids) if(c) root.append(c); };',
-  'const put = (root,...kids)=>{ for(const c of kids) root.append(c); };');
+if(INJECT){
+  html=html.replace(
+    'const put = (root,...kids)=>{ for(const c of kids) if(c) root.append(c); };',
+    'const put = (root,...kids)=>{ for(const c of kids) root.append(c); };');
+  /* Друга вада: розбір знову пише клієнт, а не суддя. Одна ін'єкція на
+     дві різні вади — щоб гейт не тримався на одному твердженні. */
+  html=html.replace('if(engine.judge){','if(false){');
+}
 
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/?mock=1',
   beforeParse(w){
@@ -88,6 +94,62 @@ const w=dom.window;
     !!chat && !chat.querySelector('.chat-hint').classList.contains('hide'));
   T('[джерело] фон панелі темніший за сторінку', /--chat:#E7ECE8/.test(src));
   T('[джерело] крапки «клієнт друкує» є', /\.dots i\{/.test(src) && /S\.waiting/.test(src));
+
+  /* Переповнення по горизонталі. jsdom розкладки не має, тому б'ємо
+     в дві причини, які її створювали: колонку з min-width:auto і
+     дитину, ширшу за батька. */
+  T('[джерело] мобільна колонка має min-width 0',
+    /@media\(max-width:880px\)\{\.stage\{grid-template-columns:minmax\(0,1fr\)\}\}/.test(src));
+  T('[джерело] відʼємних полів усередині панелі немає',
+    !/\.say\{[^}]*margin:0 -12px/.test(src) && !!d.querySelector('.chat > .chat-body'));
+  T('[джерело] довгий токен переноситься в бульбашці', /overflow-wrap:anywhere/.test(src));
+
+  console.log('\n— розмова до кінця (заглушка) —');
+  const ta=d.querySelector('.say textarea');
+  const say=[...d.querySelectorAll('.say button')][0];
+  for(let i=0;i<5;i++){
+    ta.value='репліка '+i; ta.dispatchEvent(new w.Event('input'));
+    say.click(); await new Promise(r=>setTimeout(r,400));
+  }
+  T('розмову завершено', S.ended===true);
+  T('розбір має власний вигляд, не бульбашку клієнта',
+    !!d.querySelector('.turn.review') && !d.querySelector('.turn.review').classList.contains('client'));
+  T('поле вводу заглушене після завершення', ta.disabled===true);
+  T('кнопка «Сказати» заглушена після завершення', say.disabled===true);
+  T('поле каже, чому воно не працює', ta.placeholder==='Розмову завершено');
+  T('підказку прибрано після завершення',
+    d.querySelector('.chat-hint').classList.contains('hide'));
+
+  console.log('\n— суддя окремо від клієнта —');
+  const wk=fs.readFileSync(path.join(BASE,'worker/ae-proxy.js'),'utf8');
+  const cfg=JSON.parse(fs.readFileSync(path.join(BASE,'config.json'),'utf8'));
+  T('розбір прийшов від судді, не від клієнта', /Заглушка судді/.test(d.body.textContent));
+  T('шапка розбору несе числа', /РОЗБІР · приріст/.test(d.querySelector('.review .who').textContent));
+  T('фраза «варто було сказати» рендериться', !!d.querySelector('.review .phrase'));
+  T('схема судді оголошена', !!cfg.schemas.judge && cfg.schemas.judge.strict===true);
+  T('[джерело] роль їде заголовком x-ae-role', /headers\['x-ae-role'\] = role/.test(src));
+  T('[джерело] суддя кличеться з роллю judge',
+    /S\.cfg\.schemas\.judge, 'judge'\)/.test(src));
+  T('[джерело] обрив по стелі має свій текст', /finish_reason/.test(src) && /не влізла/.test(src));
+  T('воркер має профілі ролей', /effort: \{ client:/.test(wk) && /ROLES = \['client', 'judge'\]/.test(wk));
+  T('воркер бере стелю з профілю ролі', /r\.tokens\[role\]/.test(wk));
+  T('CORS пропускає x-ae-role', /Allow-Headers[^\n]*x-ae-role/.test(wk));
+  T('невідома роль падає в client, а не в помилку',
+    /ROLES\.includes\(roleHdr\) \? roleHdr : 'client'/.test(wk));
+
+  console.log('\n— пройти ще раз —');
+  const retry=[...d.querySelectorAll('button')].find(b=>b.textContent.trim()==='Пройти ще раз');
+  T('кнопка «Пройти ще раз» зʼявилась', !!retry && !retry.classList.contains('hide'));
+  retry.click();
+  T('стрічка очистилась до першої репліки', d.querySelectorAll('.log .turn').length===1);
+  T('розмова знову жива', S.ended===false);
+  T('поле вводу знову працює', ta.disabled===false);
+  T('чек повернувся до початкового замовлення',
+    JSON.stringify(S.cart)===JSON.stringify(S.sc.order));
+  T('спроба порахована', S.attempt===2);
+  T('розбір і фраза скинуті', S.feedback==='' && S.phrase==='');
+  T('кнопки кінця сховані', retry.classList.contains('hide'));
+
   S.screen='picker'; w.render();
 
   console.log('\n— кнопка «назад» —');
