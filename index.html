@@ -256,11 +256,23 @@ const KEY = {
   set: v=>v?localStorage.setItem('ae_groq_key',v.trim()):localStorage.removeItem('ae_groq_key')
 };
 
+/* Кодове слово мережі. Одне на всіх, вводиться раз. Це не пароль людини —
+   це «свій-чужий» для воркера, щоб адресу не використав хтось сторонній. */
+const NET = {
+  get: ()=>localStorage.getItem('ae_net_code')||'',
+  set: v=>v?localStorage.setItem('ae_net_code',v.trim()):localStorage.removeItem('ae_net_code')
+};
+
+/* Яка модель відповіла НАСПРАВДІ. Пишеться з заголовка воркера, не з config:
+   config каже, що ми просили, заголовок каже, що ми отримали (wsd 1.10). */
+const LIVE = { model:'', rung:0 };
+
 async function callModel(messages, schema){
   const m = S.cfg.model, key = KEY.get();
   const url = key ? m.directEndpoint : m.endpoint;
   const headers = {'Content-Type':'application/json'};
   if(key) headers['Authorization'] = 'Bearer '+key;
+  else if(NET.get()) headers['x-ae-code'] = NET.get();
 
   const body = {
     model: m.name,
@@ -278,14 +290,23 @@ async function callModel(messages, schema){
   try{ r = await fetch(url,{method:'POST',headers,body:JSON.stringify(body)}); }
   catch(e){ throw new Error('Немає зв’язку з моделлю. Перевірте інтернет. ('+e.message+')'); }
 
+  if(!key){
+    LIVE.model = r.headers.get('x-ae-model') || '';
+    LIVE.rung  = Number(r.headers.get('x-ae-rung') || 0);
+  } else { LIVE.model = m.name; LIVE.rung = 0; }
+
   let d;
   try{ d = await r.json(); }
   catch(e){ throw new Error('Відповідь не читається, код '+r.status); }
 
   if(!r.ok || d.error){
     const msg = (d.error && (d.error.message||d.error.type)) || ('код '+r.status);
-    if(r.status===401) throw new Error('Ключ Groq не прийнято. Перевірте його в налаштуваннях.');
+    if(r.status===401) throw new Error(key
+      ? 'Ключ Groq не прийнято. Перевірте його в налаштуваннях.'
+      : 'Кодове слово мережі не підходить. Виправте його в налаштуваннях.');
     if(r.status===429) throw new Error('Забагато запитів поспіль. Зачекайте хвилину.');
+    if(r.status===403) throw new Error('Застосунок відкрито з адреси, якої сервер не знає.');
+    if(r.status===503) throw new Error(msg);
     if(r.status===404) throw new Error('Модель «'+m.name+'» недоступна на цьому акаунті. '+msg);
     throw new Error('Модель повернула помилку: '+msg);
   }
@@ -372,7 +393,8 @@ function render(){
 }
 
 function Settings(root){
-  let val = KEY.get();
+  let val = KEY.get(), code = NET.get();
+  const codeSt = el('p',{class:'sub',style:'margin:8px 0 0'});
   const status = el('p',{class:'sub',style:'margin:12px 0 0'});
 
   const test = async ()=>{
@@ -395,9 +417,30 @@ function Settings(root){
       el('button',{class:'back',text:'← назад',onclick:()=>{S.screen=S.me?'picker':'gate';render()}}),
       el('h2',{style:'margin:0;font-size:20px',text:'Налаштування'})
     ]),
-    el('h1',{class:'lede',text:'Ключ Groq'}),
+    el('h1',{class:'lede',text:'Кодове слово'}),
+    el('p',{class:'sub',text:
+      'Одне на всіх, видає куратор. Сервер за ним впізнає своїх — без нього '+
+      'клієнт не відповідатиме. Вводиться один раз на цьому телефоні.'}),
+    el('label',{class:'field'},[
+      el('span',{text:'Кодове слово мережі'}),
+      el('input',{value:code, placeholder:'напр. anc-2026', oninput:e=>code=e.target.value})
+    ]),
+    el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[
+      el('button',{class:'btn',text:'Зберегти',onclick:()=>{
+        NET.set(code); codeSt.style.color='var(--vtm)';
+        codeSt.textContent = code.trim() ? '✓ Збережено.' : 'Стерто.';
+      }})
+    ]),
+    codeSt,
+    el('div',{style:'height:28px'}),
+    el('h2',{style:'margin:0 0 4px;font-size:17px',text:'Технічне'}),
+    el('p',{class:'sub',style:'margin:0 0 14px',html:
+      'Модель зараз: <b>'+(LIVE.model || S.cfg.model.name)+'</b>'+
+      (LIVE.rung ? ' — <b>резервна</b>' : '')+'.'}),
+    el('h1',{class:'lede',style:'font-size:22px',text:'Ключ Groq'}),
     el('p',{class:'sub',html:
-      'Клієнта грає модель, і за неї треба платити. Ключ береться на '+
+      'Запасний вхід для перевірки: ключ у браузері обходить сервер. '+
+      'Для роботи з людьми поле лишається порожнім. Ключ береться на '+
       '<b>console.groq.com</b> → API Keys → Create Key. Він зберігається лише '+
       'у цьому браузері, на сервер не потрапляє.<br><br>'+
       '<b>Це тимчасовий спосіб — для перевірки.</b> Ключ у браузері може побачити '+
@@ -428,9 +471,12 @@ function Settings(root){
 }
 
 function Gate(root){
-  let n='', a='';
+  let n='', a='', c=NET.get();
+  const needCode = !MOCK && S.cfg.model.workerReady && !KEY.get();
   const go=()=>{
     if(!n.trim()||!a.trim())return;
+    if(needCode && !c.trim())return;
+    NET.set(c);
     S.me={name:n.trim(),pharmacy:a.trim()};
     localStorage.setItem('ae_me',JSON.stringify(S.me));
     S.screen='picker'; render();
@@ -442,6 +488,9 @@ function Gate(root){
       el('input',{oninput:e=>n=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
     el('label',{class:'field'},[el('span',{text:'Аптека'}),
       el('input',{placeholder:'напр. 67, Калинова 1', oninput:e=>a=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
+    needCode ? el('label',{class:'field'},[el('span',{text:'Кодове слово'}),
+      el('input',{value:c, placeholder:'видає куратор, одне на всіх',
+        oninput:e=>c=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]) : null,
     el('button',{class:'btn',onclick:go,text:'Далі'})
   );
 }
@@ -452,9 +501,12 @@ function Picker(root){
   root.append(
     el('h1',{class:'lede',text:'Вітаю, '+S.me.name.split(' ')[0]}),
     el('p',{class:'sub',text:'Оберіть замовлення для тренування — або відпрацюйте цілу зміну з '+S.cfg.shiftSize+' замовлень поспіль.'}),
-    (!MOCK && !KEY.get() && S.cfg.model.endpoint.startsWith('/'))
-      ? el('div',{class:'err',html:'<b>Ключ Groq не введено.</b> Без нього клієнт не відповідатиме. '
-          +'Відкрийте «Налаштування» і вставте ключ.'}) : null,
+    (!MOCK && !KEY.get() && !S.cfg.model.workerReady)
+      ? el('div',{class:'err',html:'<b>Модель не підключена.</b> Сервер ще не налаштований, '
+          +'а ключа в браузері немає. Відкрийте «Налаштування».'}) : null,
+    (!MOCK && !KEY.get() && S.cfg.model.workerReady && !NET.get())
+      ? el('div',{class:'err',html:'<b>Кодове слово не введено.</b> Без нього сервер не '
+          +'пропустить запит. Відкрийте «Налаштування».'}) : null,
     el('div',{style:'margin-bottom:20px;display:flex;gap:8px;flex-wrap:wrap'},[
       el('button',{class:'btn',text:'Почати зміну ('+S.cfg.shiftSize+' замовлень)',onclick:()=>{
         S.shift={queue:pickShift(S.cfg.shiftSize),i:0,rows:[]};
