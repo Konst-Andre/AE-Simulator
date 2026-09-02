@@ -34,12 +34,34 @@
    продукт іншим (клієнт може заговорити російською, і це виглядатиме
    як робота, а не як поломка).
    ─────────────────────────────────────────────────────────────────── */
+/* ДВІ РОЛІ, ДВА ПРОФІЛІ.
+   Клієнт біля каси не думає — жива людина відповідає рефлекторно, і саме
+   швидкість робить її схожою на людину. Суддя робить протилежну роботу:
+   звіряє, що сталось, із числами. Тому effort і стеля токенів залежать
+   від ролі, яку браузер називає заголовком x-ae-role.
+
+   `reasoning_format:'hidden'` мислення НЕ вимикає — він лише не повертає
+   ланцюжок у відповіді. Вимикає його саме effort 'none'.
+   qwen3.8-27b приймає none | default | low | medium | high.
+   gpt-oss приймає лише low | medium | high — 'none' там неможливий,
+   тому в цих сходинок клієнтський профіль стоїть на 'low'.
+
+   Роль приходить ІЗ БРАУЗЕРА, але значення бере воркер зі свого списку:
+   чужий запит не може попросити 'high' і вигребти квоту роздумами. */
 const LADDER = [
-  { model: 'qwen/qwen3.8-27b',    tested: true,  reasoning_effort: 'none', reasoning_format: 'hidden' },
-  { model: 'qwen/qwen3.6-27b',    tested: false, reasoning_effort: 'none', reasoning_format: 'hidden' },
-  { model: 'openai/gpt-oss-120b', tested: false, reasoning_effort: 'low',  reasoning_format: 'hidden' },
-  { model: 'openai/gpt-oss-20b',  tested: false, reasoning_effort: 'low',  reasoning_format: 'hidden' }
+  { model: 'qwen/qwen3.8-27b',    tested: true,  reasoning_format: 'hidden',
+    effort: { client: 'none', judge: 'low' },    tokens: { client: 700, judge: 1100 } },
+  { model: 'qwen/qwen3.6-27b',    tested: false, reasoning_format: 'hidden',
+    effort: { client: 'none', judge: 'default' },tokens: { client: 700, judge: 1100 } },
+  { model: 'openai/gpt-oss-120b', tested: false, reasoning_format: 'hidden',
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } },
+  { model: 'openai/gpt-oss-20b',  tested: false, reasoning_format: 'hidden',
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } }
 ];
+
+/* Список ролей закритий. Невідома роль — це клієнт, а не помилка:
+   старий браузер заголовка не шле взагалі, і має працювати далі. */
+const ROLES = ['client', 'judge'];
 
 const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -66,8 +88,8 @@ function corsHeaders(origin, env) {
     headers: {
       'Access-Control-Allow-Origin': ok ? origin : 'null',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, x-ae-code',
-      'Access-Control-Expose-Headers': 'x-ae-model, x-ae-rung, retry-after',
+      'Access-Control-Allow-Headers': 'Content-Type, x-ae-code, x-ae-role',
+      'Access-Control-Expose-Headers': 'x-ae-model, x-ae-rung, x-ae-role, retry-after',
       'Access-Control-Max-Age': '86400',
       'Vary': 'Origin'
     }
@@ -114,13 +136,15 @@ async function handle(request, env) {
   if (!rf || rf.type !== 'json_schema')
     return say(400, 'Запит без схеми відповіді не приймається.', null, cors);
 
+  const roleHdr = request.headers.get('x-ae-role') || '';
+  const role = ROLES.includes(roleHdr) ? roleHdr : 'client';
+
   const base = {
     messages: msgs,
     response_format: rf,
     temperature:       clamp(inBody.temperature,       LIM.temperature,       0.7),
     top_p:             clamp(inBody.top_p,             LIM.top_p,             0.8),
-    presence_penalty:  clamp(inBody.presence_penalty,  LIM.presence_penalty,  0.3),
-    max_completion_tokens: Math.min(LIM.maxTokens, inBody.max_completion_tokens || 700)
+    presence_penalty:  clamp(inBody.presence_penalty,  LIM.presence_penalty,  0.3)
   };
 
   const rungs = LADDER.filter(r => r.tested);
@@ -130,11 +154,19 @@ async function handle(request, env) {
 
   for (let i = 0; i < rungs.length; i++) {
     const r = rungs[i];
+    /* Стелю токенів беремо з профілю ролі, але браузер може попросити
+       МЕНШЕ — більше ні. Роздуми рахуються в цю саму стелю, тому в судді
+       вона вища: інакше JSON обірветься на півслові й людина побачить
+       «відповідь не читається» замість розбору. */
+    const roleCap = r.tokens[role];
+    const asked   = inBody.max_completion_tokens;
     const body = {
       ...base,
       model: r.model,
-      reasoning_effort: r.reasoning_effort,
-      reasoning_format: r.reasoning_format
+      reasoning_effort: r.effort[role],
+      reasoning_format: r.reasoning_format,
+      max_completion_tokens: Math.min(LIM.maxTokens, roleCap,
+        (typeof asked === 'number' && asked > 0) ? asked : roleCap)
     };
 
     let res;
@@ -158,7 +190,8 @@ async function handle(request, env) {
           'Content-Type': 'application/json',
           ...cors,
           'x-ae-model': r.model,
-          'x-ae-rung': String(i)      // 0 = основна; >0 = резерв
+          'x-ae-rung': String(i),     // 0 = основна; >0 = резерв
+          'x-ae-role': role           // яку роль воркер розпізнав
         }
       });
     }
