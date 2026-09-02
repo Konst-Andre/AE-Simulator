@@ -28,6 +28,10 @@ if(INJECT){
   /* Друга вада: розбір знову пише клієнт, а не суддя. Одна ін'єкція на
      дві різні вади — щоб гейт не тримався на одному твердженні. */
   html=html.replace('if(engine.judge){','if(false){');
+  /* Третя вада: втрата порту — рядок «Настрій» зникає з брифінгу.
+     Саме так mood і загубився при переносі (S5 §2.8): нічого не падає,
+     людина просто грає проти опору, не знаючи про нього. */
+  html=html.replace("el('dt',{text:'Настрій'}), el('dd',{text:sc.mood}),", '');
 }
 
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/?mock=1',
@@ -89,6 +93,16 @@ const w=dom.window;
   T('шапка — дві сходинки', !!d.querySelector('.top .toprow') && !!d.querySelector('.top .toptitle'));
   T('заголовок сценарію в своєму рядку',
     d.querySelector('.toptitle').textContent===S.sc.title);
+  /* Брифінг. Читаємо живу DOM: пара dt/dd, значення — з того самого
+     сценарію, який зараз грається. Без цього твердження втрата рядка
+     проходить тихо — так і сталось із mood у S5. */
+  const dts=[...d.querySelectorAll('.brief dt')].map(x=>x.textContent);
+  const dds=[...d.querySelectorAll('.brief dd')].map(x=>x.textContent);
+  T('брифінг показує настрій клієнта', dds[dts.indexOf('Настрій')]===S.sc.mood);
+  T('настрій стоїть між «Клієнт» і «Умови»',
+    dts.indexOf('Клієнт')+1===dts.indexOf('Настрій') &&
+    dts.indexOf('Настрій')+1===dts.indexOf('Умови'));
+
   const chat=d.querySelector('.chat');
   T('панель розмови існує', !!chat);
   T('репліки лежать усередині панелі', !!chat && !!chat.querySelector('.log .turn'));
