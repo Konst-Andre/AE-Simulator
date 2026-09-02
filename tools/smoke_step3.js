@@ -22,5 +22,22 @@ A(/decodeURIComponent/.test(require('fs').readFileSync('worker/ae-proxy.js','utf
 A(/if \(env\.AE_CODE\) \{/.test(require('fs').readFileSync('worker/ae-proxy.js','utf8')),
   'без AE_CODE перевірки немає — кодове слово необовʼязкове');
 
+/* ── драбина воркера: пара effort/стеля ────────────────────────────────
+   Інваріант той самий, що в smoke_step2, але той стереже БРАУЗЕРНИЙ бік
+   (config.json). Драбину воркера не стеріг ніхто, і після Ж-3 з'ясувалось,
+   що вона мовчки лишалась на старих значеннях. Роздуми рахуються в ту саму
+   стелю: effort != 'none' зі стелею < 800 обриває JSON на півслові.
+   Перевіряємо ВСІ сходинки, включно з вимкненими: вимкнена сходинка
+   вмикається одним словом, і в цей момент перевіряти вже пізно. */
+const W = require('fs').readFileSync('worker/ae-proxy.js','utf8');
+const rungRe = /effort:\s*\{\s*client:\s*'(\w+)',\s*judge:\s*'(\w+)'\s*\},\s*tokens:\s*\{\s*client:\s*(\d+),\s*judge:\s*(\d+)\s*\}/g;
+const rungs = [...W.matchAll(rungRe)].map(m => ({
+  ce:m[1], je:m[2], ct:+m[3], jt:+m[4] }));
+A(rungs.length >= 4, `драбина розібрана: сходинок ${rungs.length}`);
+A(rungs.every(r => (r.ce==='none' || r.ct>=800) && (r.je==='none' || r.jt>=800)),
+  'парність effort/стеля на ВСІХ сходинках драбини: не-none вимагає >=800');
+A(rungs.length>0 && rungs[0].ce==='low',
+  'сходинка 0: клієнт мислить (Ж-3). Повертаєш none — повертай і стелю 700');
+
 console.log(`\n✓${ok} · ✗${bad}`+(inj?' (inject)':''));
 process.exit(bad?1:0);
