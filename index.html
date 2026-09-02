@@ -173,6 +173,9 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
   border:1px solid var(--line);border-left:3px solid var(--vtm);
   border-radius:var(--r-bub)}
 .review .who{color:var(--vtm)}
+.phrase{display:block;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);
+  font-size:13.5px}
+.phrase b{color:var(--soft);font-weight:600}
 .sys{align-self:center;color:var(--soft);font-size:13px;font-style:italic;text-align:center;max-width:90%}
 .who{display:block;font-size:11.5px;letter-spacing:.04em;color:var(--soft);margin-bottom:3px}
 .me .who{color:#93A79B}
@@ -288,28 +291,33 @@ const S = {
   cart:[],
   ended:false, feedback:'',
   waiting:false,      // чи чекаємо відповідь моделі — малює крапки в стрічці
+  attempt:1,          // яка це спроба цієї розмови; >1 їде в підсумок зміни
+  phrase:'',          // репліка, яку варто було сказати — від судді
+  judging:false,      // суддя ще думає
   shift:null,         // {queue:[…], i:0, rows:[…]}
 };
 
 /* ── ЗАВАНТАЖЕННЯ ────────────────────────────────────────────────── */
 async function boot(){
   try{
-    const [cfg,cat,scn,pClient,pParts,pDebrief] = await Promise.all([
+    const [cfg,cat,scn,pClient,pParts,pDebrief,pJudge] = await Promise.all([
       fetch('config.json').then(r=>r.json()),
       fetch('data/catalog.json').then(r=>r.json()),
       fetch('data/scenarios.json').then(r=>r.json()),
       fetch('prompts/client.md').then(r=>r.text()),
       fetch('prompts/client.parts.md').then(r=>r.text()),
       fetch('prompts/debrief.md').then(r=>r.text()),
+      fetch('prompts/judge.md').then(r=>r.text()),
     ]);
     S.cfg=cfg;
     S.P = {
       client: stripComments(pClient),
       debrief: stripComments(pDebrief),
+      judge: stripComments(pJudge),
       withNumber: (pParts.match(/## with_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
       withoutNumber: (pParts.match(/## without_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
     };
-    if(!S.P.client || !S.P.withNumber) throw new Error('Файли промптів прочитались порожніми');
+    if(!S.P.client || !S.P.withNumber || !S.P.judge) throw new Error('Файли промптів прочитались порожніми');
     S.CAT={}; S.LABEL={};
     for(const [k,v] of Object.entries(cat.categories)){
       S.CAT[k]=v.items; S.LABEL[k]=v.label;
@@ -397,10 +405,16 @@ const NET = {
    config каже, що ми просили, заголовок каже, що ми отримали (wsd 1.10). */
 const LIVE = { model:'', rung:0 };
 
-async function callModel(messages, schema){
+/* Роль ('client' | 'judge') не міняє того, ЩО ми просимо — вона міняє,
+   скільки моделі дозволено думати. Через проксі значення призначає воркер
+   зі свого списку; браузер лише називає роль заголовком. У прямому режимі
+   (ключ у браузері) значення беруться з config — там сервера немає. */
+async function callModel(messages, schema, role){
   const m = S.cfg.model, key = KEY.get();
+  const judge = role==='judge';
   const url = key ? m.directEndpoint : m.endpoint;
   const headers = {'Content-Type':'application/json'};
+  if(role) headers['x-ae-role'] = role;
   if(key) headers['Authorization'] = 'Bearer '+key;
   /* Заголовки HTTP несуть тільки латиницю (ISO-8859-1). Кодове слово може бути
      кирилицею — тому кодуємо у %-послідовність. Воркер декодує назад.
@@ -413,8 +427,8 @@ async function callModel(messages, schema){
     temperature: m.temperature,
     top_p: m.top_p,
     presence_penalty: m.presence_penalty,
-    max_completion_tokens: m.max_completion_tokens,
-    reasoning_effort: m.reasoning_effort,
+    max_completion_tokens: judge ? (m.judgeMaxTokens||1100) : m.max_completion_tokens,
+    reasoning_effort: judge ? (m.judgeReasoning||'low') : m.reasoning_effort,
     reasoning_format: m.reasoning_format,
     response_format: { type:'json_schema', json_schema: schema }
   };
@@ -443,6 +457,14 @@ async function callModel(messages, schema){
     if(r.status===404) throw new Error('Модель «'+m.name+'» недоступна на цьому акаунті. '+msg);
     throw new Error('Модель повернула помилку: '+msg);
   }
+
+  /* finish_reason:'length' — це НЕ поламана відповідь, це обрізана стеля.
+     Раніше обидва випадки читались як «відповідь не читається», і причина
+     ховалась. Роздуми судді рахуються в ту саму стелю, тому тепер це
+     реальний сценарій, а не теорія. */
+  const fin = d.choices && d.choices[0] && d.choices[0].finish_reason;
+  if(fin==='length') throw new Error('Відповідь не влізла у відведений розмір. '
+    + (judge ? 'Розбір вийшов задовгим — скажіть про це розробнику.' : 'Спробуйте коротшу репліку.'));
 
   const txt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
   if(!txt) throw new Error('Модель відповіла порожньо');
@@ -479,6 +501,14 @@ const engineMock = {
       ended, endReason: ended?'paid':'',
       feedback: ended ? 'Це заглушка розбору. Орієнтир — приріст близько '+potential(sc)+' ₴.' : ''
     };
+  },
+  async judge(sc, history, cart){
+    await new Promise(r=>setTimeout(r,120));
+    const d = bonusOf(cart)-bonusOf(sc.order);
+    return {
+      feedback:'Заглушка судді. Приріст '+uah(d)+' ₴ з орієнтира '+potential(sc)+' ₴.',
+      phrase: d>0 ? '' : 'А до цього зазвичай беруть ще одну позицію — показати?'
+    };
   }
 };
 
@@ -489,7 +519,7 @@ const engineLive = {
       {role:'system', content: buildSystem(sc)},
       ...history.map(m=>({role:m.role, content:m.content}))
     ];
-    const r = await callModel(messages, S.cfg.schemas.turn);
+    const r = await callModel(messages, S.cfg.schemas.turn, 'client');
     /* Модель бачить лише коди зі свого асортименту, але підстрахуємось:
        чужий код у чеку зламав би підрахунок. */
     const pool = new Set(poolOf(sc).map(i=>i.c));
@@ -505,12 +535,38 @@ const engineLive = {
       return head+res+'Розбір розмови: '+(r.fb||'—');
     }).join('\n\n');
     const prompt = fill(S.P.debrief, {shiftSize:rows.length, body});
-    return callModel([{role:'user',content:prompt}], S.cfg.schemas.debrief);
+    return callModel([{role:'user',content:prompt}], S.cfg.schemas.debrief, 'judge');
+  },
+
+  /* СУДДЯ. Окремий виклик після завершення розмови. Бачить стенограму
+     І числа: що було, що стало, приріст, орієнтир, ідеальний чек.
+     Доти оцінку писала та сама модель, у тому самому проході, що й грала
+     клієнта, і результату не бачила — приріст рахує застосунок ПІСЛЯ неї.
+     Тому вона хвалила будь-що: розмова скінчилась швидко, отже добре. */
+  async judge(sc, history, cart){
+    const nameOf = cs => cs.map(c=>S.ALL[c]&&S.ALL[c].n).filter(Boolean).join('; ') || 'нічого';
+    const base = bonusOf(sc.order), now = bonusOf(cart);
+    const ideal = (S.cfg.rule==='stm' ? sc.bm : sc.bv) || [];
+    const transcript = ['КЛІЄНТ: '+sc.open]
+      .concat(history.map(m=>(m.role==='user'?'ФАРМАЦЕВТ: ':'КЛІЄНТ: ')+m.content))
+      .join('\n');
+    const prompt = fill(S.P.judge, {
+      who: sc.who, mode: sc.mode, goal: sc.goal||'—',
+      transcript,
+      orderList: nameOf(sc.order), cartList: nameOf(cart),
+      baseSum: uah(base), nowSum: uah(now),
+      delta: uah(now-base), pot: potential(sc),
+      idealList: nameOf(ideal),
+      noSaleLine: sc.noSale
+        ? 'УВАГА: у цьому сценарії правильна дія — нічого не міняти. Приріст тут НЕ мета.'
+        : ''
+    });
+    return callModel([{role:'user',content:prompt}], S.cfg.schemas.judge, 'judge');
   },
   async ping(){
     const r = await callModel(
       [{role:'user',content:'Поверни reply="працює", cart=[], ended=true, endReason="paid", feedback="".'}],
-      S.cfg.schemas.turn);
+      S.cfg.schemas.turn, 'client');
     return r.reply;
   }
 };
@@ -658,6 +714,7 @@ function Picker(root){
 
 function openScenario(sc){
   S.sc=sc; S.cart=sc.order.slice(); S.history=[]; S.ended=false; S.feedback=''; S.waiting=false;
+  S.attempt=1; S.phrase=''; S.judging=false;
   S.screen='game'; render();
 }
 
@@ -678,8 +735,21 @@ function Game(root){
       el('span',{class:'dots',html:'<i></i><i></i><i></i>'})]));
     if(S.ended){
       log.append(el('div',{class:'turn sys',text:'— розмову завершено —'}));
-      if(S.feedback) log.append(el('div',{class:'turn review'},[
-        el('span',{class:'who',text:'РОЗБІР'}),el('span',{text:S.feedback})]));
+      /* Числа стоять у самій шапці розбору. Похвала поруч із «приріст 0
+         з 21 ₴» видна одразу — і людині, і тому, хто читає скріншот. */
+      const d0=bonusOf(S.cart)-bonusOf(sc.order);
+      const head = sc.noSale
+        ? 'РОЗБІР · правильна дія — не міняти'
+        : 'РОЗБІР · приріст '+uah(d0)+' з '+pot+' ₴';
+      if(S.judging) log.append(el('div',{class:'turn review'},[
+        el('span',{class:'who',text:'РОЗБІР'}),
+        el('span',{class:'dots',html:'<i></i><i></i><i></i>'})]));
+      else if(S.feedback) log.append(el('div',{class:'turn review'},[
+        el('span',{class:'who',text:head}),
+        el('span',{text:S.feedback}),
+        S.phrase ? el('span',{class:'phrase'},[
+          el('b',{text:'Варто було сказати: '}), el('span',{text:'«'+S.phrase+'»'})]) : null
+      ]));
     }
     hint.classList.toggle('hide', S.history.length>0 || S.ended);
     /* Після «розмову завершено» send() усе одно нічого не робив, але поле
@@ -701,9 +771,24 @@ function Game(root){
       S.waiting=false;
       S.history.push({role:'assistant',content:r.reply});
       S.cart = r.cart;
-      S.ended = r.ended; S.feedback = r.feedback||'';
+      S.ended = r.ended; S.feedback = r.feedback||''; S.phrase='';
       paint(); tape();
-      if(S.ended) finishBtn.classList.remove('hide');
+      if(S.ended){
+        showEnd(true);
+        /* Розбір — окремий виклик. Кнопки кінця показуємо ОДРАЗУ, не чекаючи
+           на суддю: людина не мусить сидіти замкненою, доки той думає. */
+        if(engine.judge){
+          S.judging=true; paint();
+          try{
+            const j = await engine.judge(sc, S.history, S.cart);
+            S.feedback = j.feedback || S.feedback; S.phrase = j.phrase || '';
+          }catch(e){
+            /* Суддя мовчить — лишаємо те, що сказав клієнт, і кажемо чесно,
+               що розбір не дійшов. Розмова й рахунок від цього не залежать. */
+            if(!S.feedback) S.feedback = 'Розбір не вдався: '+e.message;
+          }finally{ S.judging=false; paint(); }
+        }
+      }
     }catch(e){
       root.prepend(el('div',{class:'err',text:'Двигун відповів помилкою: '+e.message}));
     }finally{ btn.disabled=false; S.waiting=false; paint(); }
@@ -739,11 +824,25 @@ function Game(root){
     );
   };
 
+  /* Розмову можна пройти ще раз, не виходячи в список. Без цього єдиний
+     шлях повторити сценарій — вийти й зайти, і рахунок спроб губиться.
+     Спроби рахуються: куратор має бачити «з другої», а не рівний результат. */
+  const retryBtn = el('button',{class:'btn ghost hide',style:'margin-top:14px',
+    text:'Пройти ще раз', onclick:()=>{
+      S.history=[]; S.cart=sc.order.slice(); S.ended=false; S.feedback='';
+      S.waiting=false; S.attempt++; S.phrase=''; S.judging=false;
+      showEnd(false); paint(); tape();
+    }});
+  const showEnd = (on)=>{
+    finishBtn.classList.toggle('hide', !on);
+    retryBtn.classList.toggle('hide', !on);
+  };
+
   const finishBtn = el('button',{class:'btn hide',style:'margin-top:14px',
     text: S.shift ? 'Наступне замовлення' : 'До списку', onclick:()=>{
       if(S.shift){
         const delta=bonusOf(S.cart)-bonusOf(sc.order);
-        S.shift.rows.push({sc,delta,pot,fb:S.feedback});
+        S.shift.rows.push({sc,delta,pot,fb:S.feedback,tries:S.attempt});
         S.shift.i++;
         if(S.shift.i<S.shift.queue.length) openScenario(S.shift.queue[S.shift.i]);
         else { S.screen='result'; render(); }
@@ -792,7 +891,7 @@ function Game(root){
           ]),
           el('div',{class:'say'},[ta,btn])
         ]),
-        finishBtn,
+        el('div',{style:'display:flex;gap:8px;flex-wrap:wrap'},[finishBtn,retryBtn]),
         mock
       ]),
       tapeBox
@@ -827,6 +926,7 @@ function Result(root){
   const pot=scored.reduce((a,r)=>a+r.pot,0)||1;
   const pct=Math.max(0,Math.min(100,Math.round(got/pot*100)));
   const slips=rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
+  const retries=rows.reduce((a,r)=>a+((r.tries||1)-1),0);
   put(root,
     el('h1',{class:'lede',text:'Зміну завершено'}),
     el('p',{class:'sub',text:S.me.name+' · аптека '+S.me.pharmacy}),
@@ -837,7 +937,9 @@ function Result(root){
       el('div',{class:'tapeline total'},[el('span',{text:'Виконано'}),el('span',{class:'num',text:pct+'%'})]),
       el('div',{class:'tapeline'},[el('span',{text:'Замовлень'}),el('span',{class:'num',text:rows.length})]),
       slips.length?el('div',{class:'tapeline'},[el('span',{class:'trap',text:'Промахів'}),
-        el('span',{class:'num trap',text:slips.length})]):null
+        el('span',{class:'num trap',text:slips.length})]):null,
+      retries?el('div',{class:'tapeline',style:'color:var(--soft)'},[
+        el('span',{text:'Повторних спроб'}),el('span',{class:'num',text:retries})]):null
     ]),
     debriefBox,
     el('button',{class:'btn',style:'margin-top:16px',text:'До списку',
