@@ -58,9 +58,9 @@
    чужий запит не може попросити 'high' і вигребти квоту роздумами. */
 const LADDER = [
   { model: 'qwen/qwen3.8-27b',    tested: true,  reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' },    tokens: { client: 800, judge: 1100 } },
+    effort: { client: 'low',  judge: 'medium' },    tokens: { client: 800, judge: 1200 } },
   { model: 'qwen/qwen3.6-27b',    tested: false, reasoning_format: 'hidden',
-    effort: { client: 'low', judge: 'low' },tokens: { client: 700, judge: 1100 } },
+    effort: { client: 'low', judge: 'low' },tokens: { client: 800, judge: 1200 } },
   { model: 'openai/gpt-oss-120b', tested: false, reasoning_format: 'hidden',
     effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } },
   { model: 'openai/gpt-oss-20b',  tested: false, reasoning_format: 'hidden',
