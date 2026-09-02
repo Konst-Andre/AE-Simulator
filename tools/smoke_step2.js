@@ -77,7 +77,19 @@ const w=dom.window;
   T('пішов запит на Groq', /api\.groq\.com/.test(req.url));
   T('ключ у заголовку Authorization', req.headers.Authorization==='Bearer gsk_test123');
   T('модель із config', req.body.model===S.cfg.model.name);
-  T('reasoning_effort = none', req.body.reasoning_effort==='none');
+  /* Крок Ж-3: клієнту дали роздуми (none -> low), щоб перевірити, чи він узагалі
+     реагує на аргумент. Три перевірки замість однієї шпильки:
+       1) значення взагалі існує в API Qwen;
+       2) ПАРНІСТЬ — роздуми рахуються в ту саму стелю токенів, тому будь-який
+          effort, крім none, вимагає стелі >= 800. Це правило переживе будь-який
+          підсумок експерименту;
+       3) поточний канон. Повертаючи клієнта на none — повернути й цей рядок,
+          інакше гейт мовчки перестане ловити випадкову зміну. */
+  const eff = req.body.reasoning_effort;
+  T('reasoning_effort зі списку API', ['none','default','low','medium','high'].includes(eff));
+  T('парність effort/стеля: не-none вимагає >=800',
+    eff==='none' || req.body.max_completion_tokens>=800);
+  T('поточний канон клієнта = low (Ж-3)', eff==='low');
   T('reasoning_format = hidden', req.body.reasoning_format==='hidden');
   T('response_format — json_schema', req.body.response_format.type==='json_schema');
   T('схема strict', req.body.response_format.json_schema.strict===true);

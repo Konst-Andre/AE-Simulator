@@ -28,6 +28,7 @@ const w=dom.window;
   const d=w.document, S=w.S;
   console.log('\n— завантаження —');
   T('config прочитано', !!S.cfg && S.cfg.shiftSize===5);
+  T('config має марку збірки', typeof S.cfg.build==='string' && S.cfg.build.length>2);
   T('181 товар в індексі', Object.keys(S.ALL).length===181);
   T('43 сценарії', S.SCEN.length===43);
   T('23 категорії мають label', Object.keys(S.LABEL).length===23 && S.LABEL.throat==='Горло');

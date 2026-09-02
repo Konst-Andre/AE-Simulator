@@ -47,6 +47,11 @@ const w=dom.window;
   const click=t=>[...d.querySelectorAll('button')].find(b=>b.textContent.trim()===t);
 
   console.log('\n— вхід у список —');
+  /* Марка збірки. Друга перевірка важливіша за першу: вона ловить регрес
+     «номер зашили в index.html і забули оновлювати». Порівнюємо з config,
+     а не з літералом. */
+  T('марка збірки видима на екрані входу', d.body.textContent.includes(S.cfg.build));
+  T('марка взята з config, не зашита в код', !src.includes('Збірка '+S.cfg.build));
   const inp=d.querySelectorAll('.field input');
   inp[0].value='Оля Тест'; inp[0].dispatchEvent(new w.Event('input'));
   inp[1].value='67'; inp[1].dispatchEvent(new w.Event('input'));
