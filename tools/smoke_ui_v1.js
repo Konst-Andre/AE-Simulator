@@ -43,6 +43,15 @@ if(INJECT){
      на екрані є, читаються нормально, шеврони просто зникли — рівно той
      тип втрати, що ховається сесіями (S7 §2.2). */
   html=html.replace("foldRows(briefDl,['Настрій','Ціль']);", '');
+  /* Пʼята вада (6а-3): розбір форми файлу завжди каже «каталог». На екрані
+     не видно нічого — панель відкривається, кнопка на місці, вердикт є.
+     Ловиться тільки викликом самої функції. */
+  html=html.replace("  if(Array.isArray(v.scenarios)) return 'scen';", '');
+  /* Шоста: рядок джерела зник. Вердикт лишається правильним і починає
+     мовчати про те, ЩО він судив, — тобто стає вердиктом ні про що. */
+  html=html.replace(
+    "      gateRow, fileRow, fileNote, srcLine, head, box",
+    "      gateRow, fileRow, fileNote, head, box");
 }
 
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/?mock=1',
@@ -283,6 +292,81 @@ const w=dom.window;
       panel.textContent.includes('підсумок: ✓'+vDisk.ok+' · ⚠'+vDisk.warn+' · ✗'+vDisk.err));
     T('рядки вердикту видно, а не лише підсумок',
       panel.textContent.includes(vDisk.out[0].msg));
+
+    /* ── 6а-3 ── Розбір судиться ВИКЛИКОМ продуктових функцій. Твердження,
+       що дивиться лише на екран, про зламаний розбір мовчить: панель
+       відкриється й покаже вердикт навіть тоді, коли форма файлу
+       визначається навмання (1.15, пастка 5). */
+    T('розпізнає каталог за формою',  w.classifyJson(rawCat)==='cat');
+    T('розпізнає сценарії за формою', w.classifyJson(rawScn)==='scen');
+    T('голий масив сценаріїв теж розпізнається',
+      w.classifyJson(rawScn.scenarios||rawScn)==='scen');
+    T('чужий обʼєкт не видається за дані', w.classifyJson({a:1,b:2})===null);
+    T('порожній вхід не видається за дані', w.classifyJson(null)===null);
+
+    const brokenSrc='{\n  "a": 1,\n  ,\n}';
+    let jerr=null; try{ JSON.parse(brokenSrc); }catch(e){ jerr=e; }
+    const jtxt=w.jsonErrorText(jerr, brokenSrc);
+    T('текст помилки JSON називає рядок', /рядок 3/.test(jtxt));
+    T('текст помилки JSON без англійського виводу рушія',
+      !/position|Unexpected|token/i.test(jtxt));
+    T('без позиції текст усе одно людський',
+      /Файл не читається як JSON/.test(w.jsonErrorText(new Error('дурня'), '')));
+
+    T('кнопка вибору файлу є в панелі',
+      [...panel.querySelectorAll('button')].some(b=>b.textContent==='Вибрати файл…'));
+    T('є повернення до даних застосунку',
+      [...panel.querySelectorAll('button')].some(b=>b.textContent==='Дані застосунку'));
+    T('поле файлу без accept — фільтр Files не глушить iCloud',
+      !!panel.querySelector('input[type=file]') &&
+      !panel.querySelector('input[type=file]').hasAttribute('accept'));
+    T('вердикт називає джерело, яке судив',
+      /Судиться: каталог — дані застосунку/.test(panel.textContent));
+    /* Живий прогін самого вибору: файл кладеться в поле і подія
+       відпускається так само, як її відпустив би телефон. Без цього все
+       вище судить лише наявність кнопки, а не те, що вона робить. */
+    const fileInput=panel.querySelector('input[type=file]');
+    const catBefore=S.CAT, scenBefore=S.SCEN;
+    const feed=async(name,body)=>{
+      const f=new w.File([body],name,{type:'application/json'});
+      Object.defineProperty(fileInput,'files',{value:[f],configurable:true});
+      fileInput.dispatchEvent(new w.Event('change'));
+      await new Promise(r=>setTimeout(r,120));
+    };
+
+    await feed('мій_сценарій.json', JSON.stringify({scenarios:[
+      {id:'t1',grp:'g',title:'т',cats:[],main:'',order:[],open:'',who:'',mood:'',mode:''}]}));
+    T('вибраний файл названий у рядку джерела',
+      /сценарії — мій_сценарій\.json/.test(panel.textContent));
+    T('каталог при цьому лишився застосунковим',
+      /каталог — дані застосунку/.test(panel.textContent));
+    T('вибраний файл НЕ потрапляє в дані застосунку',
+      S.CAT===catBefore && S.SCEN===scenBefore);
+
+    await feed('зламаний.json', '{\n  "a": 1,\n  ,\n}');
+    T('зламаний JSON дає людський текст із рядком',
+      /зламаний\.json/.test(panel.textContent) && /рядок 3/.test(panel.textContent));
+    T('зламаний файл не витісняє попередній вибір',
+      /сценарії — мій_сценарій\.json/.test(panel.textContent));
+
+    await feed('чуже.json', JSON.stringify({a:1,b:2}));
+    T('чужий файл названий по-людськи',
+      /не схоже ні на каталог, ні на сценарії/.test(panel.textContent));
+
+    [...panel.querySelectorAll('button')]
+      .find(b=>b.textContent==='Дані застосунку').click();
+    T('повернення до даних застосунку скидає вибір',
+      /сценарії — дані застосунку/.test(panel.textContent));
+  }
+
+  /* Ряд вибору файлу закритий кодом куратора так само, як і вивід:
+     перевіряється на СВІЖІЙ панелі, бо та, що вище, вже відімкнена.
+     Носій береться від САМОГО поля файлу — пошук «перший div, у якому є
+     кнопка» дає зовнішній accbody, а він видимий завжди. */
+  {
+    const fresh=w.dataCheck();
+    const row=fresh.querySelector('input[type=file]').parentElement;
+    T('до коду куратора рядок файлу не показаний', row.style.display==='none');
   }
 
   console.log(`\n✓${ok} · ✗${bad}`+(INJECT?' (inject)':''));
