@@ -260,6 +260,16 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
   <p class="sub">Завантаження…</p>
 </div>
 
+<!-- Правила цілісності даних. Єдине тіло на командний рядок, цю сторінку і
+     (крок «в») воркер: розходження копій — те, від чого проєкт тікає з S7 §3.
+     ⚠ jsdom зовнішні скрипти за атрибутом src НЕ вантажить. tools/smoke_ui_v1.js
+     підставляє вміст цього файлу замість тега перед парсингом — знімеш тег,
+     підстановка не спрацює і AE_RULES стане undefined, смоук почервоніє.
+     ⚠ У коментарях тут НЕ писати відкривальний тег скрипта літерами: текстові
+     інструменти (Lens_validate --html) ловлять його як справжній і витягують
+     сміття замість коду. -->
+<script src="tools/ae_rules.js"></script>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════════
    AE-Simulator · крок 1: скелет без AI
@@ -717,6 +727,7 @@ function Settings(root){
       }})
     ]),
     status,
+    dataCheck(),
     el('details',{class:'acc',style:'margin-top:24px'},[
       el('summary',{text:'Технічні дані'}),
       el('div',{class:'accbody'},[
@@ -730,6 +741,69 @@ function Settings(root){
       ])
     ])
   );
+}
+
+/* ── ПАНЕЛЬ ПЕРЕВІРКИ ДАНИХ (6а) ──────────────────────────────────
+   Судить те, що застосунок реально завантажив: S.CAT і S.SCEN лягають
+   у другу гілку нормалізації AE_RULES.validate, тож перевірка не коштує
+   жодного запиту.
+
+   ⚠ S.CAT втрачає label — boot() лишає самі items. Правила label не
+   читають, тому вердикт мусить збігтися з командним рядком. Але «мусить»
+   і «збігається» розходяться тихо, тому в tools/smoke_ui_v1.js стоїть
+   звірка вердиктів браузера і диска. Вона, а не вигляд панелі, — гейт кроку.
+
+   ⚠ Код куратора — НЕ безпека: він лежить у відкритому config.json і
+   видимий кожному. Це захист від випадковості — щоб Оля не натрапила на
+   технічний вивід, шукаючи поле ключа.
+
+   ⚠ Рядки вердикту показуються ЯК Є, мовою правил. Людський переказ тут
+   був би другою копією правил у мʼякій формі і розійшовся б так само. */
+function dataCheck(){
+  const box = el('div',{class:'accbody',style:'display:none'});
+  const head = el('p',{class:'sub',style:'margin:0'});
+  let opened=false;
+
+  const run = ()=>{
+    box.innerHTML='';
+    if(typeof AE_RULES==='undefined' || !AE_RULES.validate){
+      head.style.color='var(--loss)';
+      head.textContent='✗ Правила не завантажились: tools/ae_rules.js не прочитано.';
+      return;
+    }
+    const r = AE_RULES.validate(S.CAT, S.SCEN);
+    head.style.color = r.err ? 'var(--loss)' : 'var(--soft)';
+    head.textContent = (r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err;
+    const SIGN={ok:'✓',warn:'⚠',err:'✗'};
+    const TONE={ok:'var(--vtm)',warn:'var(--soft)',err:'var(--loss)'};
+    for(const m of r.out) box.append(el('div',{class:'tapeline'},[
+      el('span',{style:'color:'+TONE[m.lvl],text:SIGN[m.lvl]+' '+m.msg})]));
+    box.style.display='';
+  };
+
+  let code='';
+  const codeInput = el('input',{type:'text',placeholder:'код куратора',
+    oninput:e=>code=e.target.value, onkeydown:e=>e.key==='Enter'&&unlock()});
+  const gateRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end'});
+  const unlock = ()=>{
+    if(code.trim()!==String(S.cfg.curatorCode||'')){
+      head.style.color='var(--loss)'; head.textContent='Код не підходить.'; return; }
+    opened=true; gateRow.style.display='none'; run();
+  };
+  put(gateRow,
+    el('label',{class:'field',style:'margin:0;flex:1 1 160px'},[
+      el('span',{text:'Код куратора'}), codeInput]),
+    el('button',{class:'btn ghost',text:'Перевірити дані',onclick:unlock}));
+
+  return el('details',{class:'acc',style:'margin-top:24px'},[
+    el('summary',{text:'Перевірка даних'}),
+    el('div',{class:'accbody'},[
+      el('p',{class:'sub',style:'margin:0 0 10px',text:
+        'Прогін тих самих правил, що ганяються на кожен push у репозиторій. '+
+        'Судяться дані, які цей застосунок зараз завантажив. Нічого не змінює.'}),
+      gateRow, head, box
+    ])
+  ]);
 }
 
 function Gate(root){
