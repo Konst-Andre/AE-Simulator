@@ -132,6 +132,23 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .brief dt{color:var(--soft)}
 .brief dd{margin:0}
 
+/* Згортання довгих рядків брифінгу («Настрій», «Ціль»).
+   ⚠ Згорнуте — це max-height:0, а НЕ display:none. dl тут grid у дві
+   колонки, елементи лягають потоком: зникла dd звільняє другу колонку,
+   і наступний dt заїжджає в неї — розкладка розсипається. Нульова
+   висота лишає dd у сітці, колонка зайнята. */
+.brief dt.fold{display:flex;align-items:center;gap:5px;cursor:pointer;
+  padding:6px 0;margin:-6px 0;user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent}
+.brief dt.fold .chev{flex:0 0 auto;transition:transform 240ms cubic-bezier(.32,.72,0,1)}
+.brief dt.fold[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.brief dd.fold-b{max-height:340px;overflow:hidden;
+  transition:max-height 240ms cubic-bezier(.32,.72,0,1),opacity 150ms linear}
+.brief dd.fold-b[data-open="0"]{max-height:0;opacity:0}
+@media(prefers-reduced-motion:reduce){
+  .brief dt.fold .chev,.brief dd.fold-b{transition:none}
+}
+
 /* ── ПАНЕЛЬ РОЗМОВИ ───────────────────────────────────────────────
    Репліки й поле вводу жили просто на сторінці, тому екран читався як
    «текст, поле і кнопка», а не як переписка. Тепер вони в одній
@@ -280,6 +297,53 @@ const CHEVRON = '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">'
 const backBtn = (label,onclick)=>el('button',{class:'back',onclick,
   'aria-label':label, html:CHEVRON+'<span>'+label+'</span>'});
 
+/* Шеврон згортання — окремий, дивиться вниз, повертається вбік.
+   Малюється в SVG-просторі імен: createElement('svg') віддає HTML-елемент
+   із таким іменем, а не графіку, і нічого не намалює. */
+const foldChev = ()=>{
+  const NS='http://www.w3.org/2000/svg';
+  const s=document.createElementNS(NS,'svg');
+  s.setAttribute('class','chev'); s.setAttribute('width','11');
+  s.setAttribute('height','11'); s.setAttribute('viewBox','0 0 12 12');
+  s.setAttribute('fill','none'); s.setAttribute('aria-hidden','true');
+  const p=document.createElementNS(NS,'path');
+  p.setAttribute('d','M2.5 4.5 6 8l3.5-3.5');
+  p.setAttribute('stroke','currentColor'); p.setAttribute('stroke-width','1.6');
+  p.setAttribute('stroke-linecap','round'); p.setAttribute('stroke-linejoin','round');
+  s.append(p); return s;
+};
+
+/* Робить названі рядки брифінгу згортаними.
+   ⚠ Це ПОСТ-ПРОХІД по вже зібраному dl, а не переписані рядки складання.
+   Рядок складання пари dt/dd для «Настрою» дослівно збігається з третьою
+   ін'єкцією smoke_ui_v1 (цитувати його тут НЕ можна: String.replace бере
+   перше входження, і ін'єкція вирізала б коментар): переписати його — зняти
+   сторожа, поставленого проти повторної втрати mood (S7 §2.2). Тому текст
+   рядків недоторканий, поведінка домальовується зверху.
+   dt лишається носієм тексту мітки: шеврон — SVG без текстового вмісту,
+   тож dt.textContent і далі рівний «Настрій», а dd не отримує ані символу
+   зайвого тексту — обидва твердження смоуку читають те саме, що читали. */
+function foldRows(dl, labels){
+  const kids=[...dl.children];
+  for(let i=0;i<kids.length-1;i++){
+    const dt=kids[i], dd=kids[i+1];
+    if(dt.tagName!=='DT' || dd.tagName!=='DD') continue;
+    const key=dt.textContent.trim();
+    if(!labels.includes(key)) continue;
+    dt.classList.add('fold'); dd.classList.add('fold-b');
+    dt.append(foldChev());
+    dt.setAttribute('role','button'); dt.setAttribute('tabindex','0');
+    if(S.fold[key]===undefined) S.fold[key]=true;   // за замовчуванням відкрито
+    const set=open=>{ S.fold[key]=open;
+      dt.setAttribute('aria-expanded',String(open));
+      dd.setAttribute('data-open',open?'1':'0'); };
+    set(S.fold[key]);
+    dt.addEventListener('click',()=>set(!S.fold[key]));
+    dt.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); set(!S.fold[key]); }});
+  }
+}
+
 /* ── СТАН ────────────────────────────────────────────────────────── */
 const S = {
   cfg:null, CAT:null, ALL:{}, SCEN:[], LABEL:{},
@@ -289,6 +353,10 @@ const S = {
   sc:null,            // поточний сценарій
   history:[],         // [{role:'user'|'assistant', content}]
   cart:[],
+  fold:{},            // {'Настрій':true,…} — згорнуті рядки брифінгу.
+                      // Живе в S, а не в локальній змінній: між замовленнями
+                      // зміни викликається render(), і без пам'яті рядок
+                      // розгортався б назад на кожному новому замовленні.
   ended:false, feedback:'',
   waiting:false,      // чи чекаємо відповідь моделі — малює крапки в стрічці
   attempt:1,          // яка це спроба цієї розмови; >1 їде в підсумок зміни
@@ -876,6 +944,20 @@ function Game(root){
     }))
   ]);
 
+  /* Брифінг. Порядок рядків: спершу чотири однорядкові факти, у хвості —
+     два довгі, «Настрій» і «Ціль». Вони сусіди навмисно: обидва згортані,
+     і два керовані рядки поруч читаються як один блок, а не як два
+     випадкові шеврони посеред таблиці. */
+  const briefDl = el('dl',{},[
+    el('dt',{text:'Номер'}), el('dd',{text: sc.no ? '№ '+sc.no : 'без номера, оформлення на місці'}),
+    el('dt',{text:'Клієнт'}), el('dd',{text:sc.who}),
+    el('dt',{text:'Умови'}), el('dd',{text:sc.mode}),
+    el('dt',{text:'Категорії'}), el('dd',{text:sc.cats.map(k=>S.LABEL[k]||k).join(' · ')}),
+    el('dt',{text:'Настрій'}), el('dd',{text:sc.mood}),
+    el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
+  ]);
+  foldRows(briefDl,['Настрій','Ціль']);
+
   put(root,
     el('div',{class:'top'},[
       el('div',{class:'toprow'},[
@@ -886,14 +968,7 @@ function Game(root){
     ]),
     el('div',{class:'stage'},[
       el('div',{},[
-        el('div',{class:'brief'},[el('dl',{},[
-          el('dt',{text:'Номер'}), el('dd',{text: sc.no ? '№ '+sc.no : 'без номера, оформлення на місці'}),
-          el('dt',{text:'Клієнт'}), el('dd',{text:sc.who}),
-          el('dt',{text:'Настрій'}), el('dd',{text:sc.mood}),
-          el('dt',{text:'Умови'}), el('dd',{text:sc.mode}),
-          el('dt',{text:'Категорії'}), el('dd',{text:sc.cats.map(k=>S.LABEL[k]||k).join(' · ')}),
-          el('dt',{text:'Ціль'}), el('dd',{text:sc.goal||'—'})
-        ])]),
+        el('div',{class:'brief'},[briefDl]),
         el('div',{class:'chat'},[
           el('div',{class:'chat-body'},[
             el('div',{class:'chat-h'},[el('span',{text:'Розмова'})]),
