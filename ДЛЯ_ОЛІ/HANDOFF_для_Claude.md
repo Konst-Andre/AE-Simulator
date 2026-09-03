@@ -50,12 +50,15 @@ prompts/client.md         системний промпт клієнта · {{п
 prompts/client.parts.md   два варіанти рядка {{numLine}}
 prompts/debrief.md        промпт розбору цілої зміни
 prompts/judge.md          промпт судді одної розмови
-ПОЧНИ_ЗВІДСИ.md           вхідний текст для Олі
-ЖУРНАЛ_ЗМІН.md            хроніка збірок для Олі
+ДЛЯ_ОЛІ/ПОЧНИ_ЗВІДСИ.md   вхідний текст для Олі
+ДЛЯ_ОЛІ/ЖУРНАЛ_ЗМІН.md    хроніка збірок для Олі
+ДЛЯ_ОЛІ/HANDOFF_для_Claude.md  цей файл
+README.md                 вказівник у корені, GitHub малює його сам
 tools/ae_validate.js      гейт цілісності даних
 tools/smoke_step*.js      смоук-тести застосунку (jsdom)
 worker/ae-proxy.js        проксі до Groq (ключ живе тут)
-.github/workflows/validate.yml   той самий гейт на кожен push
+.github/workflows/perevirka.yml  той самий гейт на кожен push
+   ⚠ ім'я yml-файлу довільне; ім'я скрипта в рядку run: — ні
 ```
 
 ## Як влаштовані дані
