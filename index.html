@@ -759,10 +759,61 @@ function Settings(root){
 
    ⚠ Рядки вердикту показуються ЯК Є, мовою правил. Людський переказ тут
    був би другою копією правил у мʼякій формі і розійшовся б так само. */
+/* ── 6а-3 · РОЗБІР ФАЙЛУ, ВИБРАНОГО З ТЕЛЕФОНА ────────────────────
+   Дві чисті функції лежать ЗЗОВНІ замикання панелі навмисно: гейт мусить
+   викликати сам розбір, а не лише дивитись на DOM. Твердження, яке бачить
+   тільки екран, про розбір мовчить, і зламаний розбір лишиться зеленим.
+
+   ⚠ Вибраний файл НІКОЛИ не лягає в S.CAT / S.SCEN. Панель тільки читає:
+   застосунок після перевірки працює на тих самих даних, що й до неї. */
+
+/* Тип визначається ФОРМОЮ, не імʼям файлу: у Files на iPhone файл
+   перейменовується одним дотиком, тож «catalog.json» нічого не гарантує. */
+function classifyJson(v){
+  if(Array.isArray(v)) return 'scen';
+  if(!v || typeof v!=='object') return null;
+  if(Array.isArray(v.scenarios)) return 'scen';
+  if(v.categories && typeof v.categories==='object') return 'cat';
+  const vals=Object.values(v);
+  if(vals.length && vals.every(a=>Array.isArray(a))) return 'cat';
+  return null;
+}
+
+/* Людський текст замість вбудованого повідомлення рушія, яке англійською
+   називає зсув у символах. Зсув перекладається в рядок і позицію: той,
+   хто піде правити файл у редакторі телефона, шукає рядок. */
+function jsonErrorText(err, src){
+  const m = /position (\d+)/.exec((err && err.message) || '');
+  let where = '';
+  if(m){
+    const pos  = Math.min(+m[1], src.length);
+    const head = src.slice(0, pos);
+    where = ' Місце: рядок ' + head.split('\n').length +
+            ', позиція ' + (pos - head.lastIndexOf('\n')) + '.';
+  }
+  return 'Файл не читається як JSON.' + where +
+         ' Найчастіша причина — зайва або пропущена кома чи дужка.';
+}
+
+/* FileReader, а не Blob.text(): читається однаково на старіших iOS і в
+   середовищі гейта, тобто обидва споживачі бачать той самий шлях. */
+function readFileText(f){
+  return new Promise((res, rej)=>{
+    const r = new FileReader();
+    r.onload  = ()=>res(String(r.result));
+    r.onerror = ()=>rej(r.error || new Error('read'));
+    r.readAsText(f);
+  });
+}
+
 function dataCheck(){
   const box = el('div',{class:'accbody',style:'display:none'});
   const head = el('p',{class:'sub',style:'margin:0'});
+  const srcLine = el('p',{class:'sub',style:'margin:0 0 6px;font-size:12px'});
+  const fileNote = el('p',{class:'sub',style:'margin:0 0 6px;font-size:12px;display:none'});
   let opened=false;
+  /* Вибране людиною. Порожнє поле = бік береться з застосунку. */
+  const picked = {cat:null, scen:null, catName:'', scenName:''};
 
   const run = ()=>{
     box.innerHTML='';
@@ -771,7 +822,12 @@ function dataCheck(){
       head.textContent='✗ Правила не завантажились: tools/ae_rules.js не прочитано.';
       return;
     }
-    const r = AE_RULES.validate(S.CAT, S.SCEN);
+    /* Джерело називається ЗАВЖДИ, навіть коли файл не вибирали. Вердикт
+       без імені того, що судилось, читається як вердикт про застосунок —
+       і саме так зелений прогін чужого файлу став би доказом ні про що. */
+    srcLine.textContent = 'Судиться: каталог — ' + (picked.catName || 'дані застосунку') +
+                          ' · сценарії — ' + (picked.scenName || 'дані застосунку');
+    const r = AE_RULES.validate(picked.cat || S.CAT, picked.scen || S.SCEN);
     head.style.color = r.err ? 'var(--loss)' : 'var(--soft)';
     head.textContent = (r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err;
     const SIGN={ok:'✓',warn:'⚠',err:'✗'};
@@ -788,12 +844,53 @@ function dataCheck(){
   const unlock = ()=>{
     if(code.trim()!==String(S.cfg.curatorCode||'')){
       head.style.color='var(--loss)'; head.textContent='Код не підходить.'; return; }
-    opened=true; gateRow.style.display='none'; run();
+    opened=true; gateRow.style.display='none';
+    fileRow.style.display='flex'; run();
   };
   put(gateRow,
     el('label',{class:'field',style:'margin:0;flex:1 1 160px'},[
       el('span',{text:'Код куратора'}), codeInput]),
     el('button',{class:'btn ghost',text:'Перевірити дані',onclick:unlock}));
+
+  /* ⚠ accept НЕ ставимо. У Files на iPhone фільтр за типом глушить файли,
+     що лежать в iCloud, і людина бачить порожній список замість свого
+     файлу. Тип усе одно перевіряється розбором, тобто надійніше. */
+  const fileIn = el('input',{type:'file',multiple:true,style:'display:none',
+    onchange:e=>takeFiles(e.target.files)});
+
+  const takeFiles = async (list)=>{
+    const files=[...list];
+    /* Скидання значення: без нього повторний вибір ТОГО САМОГО файлу
+       події не дає, і виправлений файл виглядає як невиправлений. */
+    fileIn.value='';
+    if(!files.length) return;
+    const bad=[];
+    for(const f of files){
+      let src='';
+      try{ src = await readFileText(f); }
+      catch(_){ bad.push(f.name+' — файл не прочитався з пристрою.'); continue; }
+      let v;
+      try{ v = JSON.parse(src); }
+      catch(err){ bad.push(f.name+' — '+jsonErrorText(err, src)); continue; }
+      const kind = classifyJson(v);
+      if(!kind){ bad.push(f.name+' — не схоже ні на каталог, ні на сценарії.'); continue; }
+      if(kind==='cat'){ picked.cat=v; picked.catName=f.name; }
+      else            { picked.scen=v; picked.scenName=f.name; }
+    }
+    fileNote.style.display = bad.length ? '' : 'none';
+    fileNote.style.color='var(--loss)';
+    fileNote.textContent = bad.join('  ·  ');
+    run();
+  };
+
+  const fileRow = el('div',{style:'display:none;gap:8px;flex-wrap:wrap;margin:0 0 10px'},[
+    fileIn,
+    el('button',{class:'btn ghost',text:'Вибрати файл…',onclick:()=>fileIn.click()}),
+    el('button',{class:'btn ghost',text:'Дані застосунку',onclick:()=>{
+      picked.cat=null; picked.scen=null; picked.catName=''; picked.scenName='';
+      fileNote.style.display='none'; fileNote.textContent=''; run();
+    }})
+  ]);
 
   return el('details',{class:'acc',style:'margin-top:24px'},[
     el('summary',{text:'Перевірка даних'}),
@@ -801,7 +898,7 @@ function dataCheck(){
       el('p',{class:'sub',style:'margin:0 0 10px',text:
         'Прогін тих самих правил, що ганяються на кожен push у репозиторій. '+
         'Судяться дані, які цей застосунок зараз завантажив. Нічого не змінює.'}),
-      gateRow, head, box
+      gateRow, fileRow, fileNote, srcLine, head, box
     ])
   ]);
 }
