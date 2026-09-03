@@ -19,6 +19,13 @@ const files={'config.json':'config.json','data/catalog.json':'data/catalog.json'
   'prompts/judge.md':'prompts/judge.md'};
 
 let html=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
+/* jsdom не вантажить <script src>: він не має мережі, а стуб fetch тут не
+   допомагає — тег іде повз fetch. Підставляємо вміст файлу самі. Це не
+   милиця, а дограна частина браузера; зникне тег — підстановка не
+   спрацює, AE_RULES стане undefined і твердження нижче почервоніють. */
+const RULES_SRC=fs.readFileSync(path.join(BASE,'tools/ae_rules.js'),'utf8');
+html=html.replace('<script src="tools/ae_rules.js"></script>',
+                  '<script>'+RULES_SRC+'</script>');
 /* Інʼєкція повертає ту саму ваду, яку крок лікував: збірка екрана
    нативним append, що друкує «null» текстовим вузлом. */
 if(INJECT){
@@ -213,8 +220,13 @@ const w=dom.window;
   T('кнопки «Зберегти кодове слово» немає', !click('Зберегти кодове слово'));
   T('константа NET у коді лишилась', /localStorage\.getItem\('ae_net_code'\)/.test(src));
 
+  /* Було два (пояснення про ключ, технічні дані); 6а-2 додав третій —
+     «Перевірка даних». Число тримається навмисно: воно ловить акордеон,
+     що зʼявився повз рішення. */
   const accs=[...d.querySelectorAll('details.acc')];
-  T('акордеонів два', accs.length===2);
+  T('акордеонів три', accs.length===3);
+  T('третій акордеон — «Перевірка даних»',
+    accs.some(a=>a.querySelector('summary')&&a.querySelector('summary').textContent==='Перевірка даних'));
   T('пояснення про ключ лежить усередині акордеона',
     accs.some(a=>/console\.groq\.com/.test(a.textContent)));
   T('технічна таблиця лежить усередині акордеона',
@@ -228,6 +240,50 @@ const w=dom.window;
   T('поле ключа порожнє', keyField.value==='');
   T('ключ прибрано зі сховища', !w.localStorage.getItem('ae_groq_key'));
   T('імʼя користувача не постраждало', !!w.localStorage.getItem('ae_me'));
+
+  /* ── ПЕРЕВІРКА ДАНИХ (6а-2) ────────────────────────────────────
+     Гейт кроку — не вигляд панелі, а те, що браузер і диск судять
+     ОДНАКОВО. Читаємо вихід сторінки і вихід тих самих правил на сирих
+     файлах; порівнюємо повний текст, а не підсумкові числа: однакові
+     числа при різному тексті — саме той декоративний ✓ (1.15, пастка 4).
+     Це єдине місце, де ловиться розходження нормалізації: S.CAT віддає
+     items без label, і якщо колись зʼявиться правило на label, панель
+     скаже ✓ там, де командний рядок скаже ✗. */
+  console.log('\n— перевірка даних судить так само, як командний рядок —');
+  const rulesDisk=require(path.join(BASE,'tools/ae_rules.js'));
+  const rawCat=JSON.parse(fs.readFileSync(path.join(BASE,'data/catalog.json'),'utf8'));
+  const rawScn=JSON.parse(fs.readFileSync(path.join(BASE,'data/scenarios.json'),'utf8'));
+  const vDisk=rulesDisk.validate(rawCat,rawScn);
+  T('AE_RULES доїхали до сторінки', !!w.AE_RULES && typeof w.AE_RULES.validate==='function');
+  const vPage = w.AE_RULES && w.AE_RULES.validate ? w.AE_RULES.validate(S.CAT,S.SCEN) : null;
+  const flat=v=>v?v.out.map(m=>m.lvl+' '+m.msg).join('\n'):'—';
+  T('вердикт сторінки збігається з вердиктом диска дослівно',
+    !!vPage && flat(vPage)===flat(vDisk));
+  T('числа підсумку теж збігаються',
+    !!vPage && vPage.ok===vDisk.ok && vPage.warn===vDisk.warn && vPage.err===vDisk.err);
+
+  console.log('\n— панель перевірки за кодом куратора —');
+  const sums=[...d.querySelectorAll('summary')].map(x=>x.textContent);
+  T('панель «Перевірка даних» є на екрані', sums.includes('Перевірка даних'));
+  const codeField=[...d.querySelectorAll('input')].find(i=>i.placeholder==='код куратора');
+  T('поле коду куратора є', !!codeField);
+  /* ⚠ Читаємо ПАНЕЛЬ, а не d.body: body.textContent у jsdom включає текст
+     самих <script>, і перша редакція цих тверджень ловила збіг у вихідному
+     коді сторінки, а не на екрані. Проба, що бачить джерело, судить не те. */
+  const panel=[...d.querySelectorAll('details.acc')]
+    .find(a=>a.querySelector('summary') && a.querySelector('summary').textContent==='Перевірка даних');
+  T('панель знайдена як елемент', !!panel);
+  if(codeField && panel){
+    codeField.value='не той код'; codeField.dispatchEvent(new w.Event('input'));
+    click('Перевірити дані').click();
+    T('чужий код не відкриває вивід', !/підсумок: ✓/.test(panel.textContent));
+    codeField.value=S.cfg.curatorCode; codeField.dispatchEvent(new w.Event('input'));
+    click('Перевірити дані').click();
+    T('правильний код друкує підсумок',
+      panel.textContent.includes('підсумок: ✓'+vDisk.ok+' · ⚠'+vDisk.warn+' · ✗'+vDisk.err));
+    T('рядки вердикту видно, а не лише підсумок',
+      panel.textContent.includes(vDisk.out[0].msg));
+  }
 
   console.log(`\n✓${ok} · ✗${bad}`+(INJECT?' (inject)':''));
   process.exit(bad?1:0);
