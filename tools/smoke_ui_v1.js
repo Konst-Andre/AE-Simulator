@@ -32,6 +32,10 @@ if(INJECT){
      Саме так mood і загубився при переносі (S5 §2.8): нічого не падає,
      людина просто грає проти опору, не знаючи про нього. */
   html=html.replace("el('dt',{text:'Настрій'}), el('dd',{text:sc.mood}),", '');
+  /* Четверта вада: пост-прохід згортання загублено при переносі. Рядки
+     на екрані є, читаються нормально, шеврони просто зникли — рівно той
+     тип втрати, що ховається сесіями (S7 §2.2). */
+  html=html.replace("foldRows(briefDl,['Настрій','Ціль']);", '');
 }
 
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/?mock=1',
@@ -99,9 +103,27 @@ const w=dom.window;
   const dts=[...d.querySelectorAll('.brief dt')].map(x=>x.textContent);
   const dds=[...d.querySelectorAll('.brief dd')].map(x=>x.textContent);
   T('брифінг показує настрій клієнта', dds[dts.indexOf('Настрій')]===S.sc.mood);
-  T('настрій стоїть між «Клієнт» і «Умови»',
-    dts.indexOf('Клієнт')+1===dts.indexOf('Настрій') &&
-    dts.indexOf('Настрій')+1===dts.indexOf('Умови'));
+  /* Порядок змінено свідомо (S8): «Настрій» переїхав з-під «Клієнта» у
+     хвіст, до «Цілі». Це два довгі згортані рядки, і вони мусять бути
+     сусідами — інакше керовані шеврони розкидані по таблиці. */
+  T('настрій стоїть поряд із ціллю, у хвості брифінгу',
+    dts.indexOf('Настрій')>=0 &&
+    dts.indexOf('Настрій')+1===dts.indexOf('Ціль') &&
+    dts.indexOf('Ціль')===dts.length-1);
+  /* Згортання. Клас — на dt і dd, стан — атрибутами. Перевіряємо обидва
+     рядки окремо: третя ін'єкція виносить лише «Настрій», і без окремого
+     твердження про «Ціль» зняте згортання пройшло б тихо. */
+  const foldDt=[...d.querySelectorAll('.brief dt.fold')].map(x=>x.textContent.trim());
+  T('настрій згортається', foldDt.includes('Настрій'));
+  T('ціль згортається', foldDt.includes('Ціль'));
+  const goalDd=dds.length?d.querySelectorAll('.brief dd')[dts.indexOf('Ціль')]:null;
+  T('ціль відкрита за замовчуванням',
+    !!goalDd && goalDd.classList.contains('fold-b') && goalDd.getAttribute('data-open')==='1');
+  /* ⚠ Довжина перевіряється окремо: .every на порожньому наборі істинний,
+     тож без неї зникле згортання давало б зелений ✓ (1.15, пастка 4). */
+  const foldEls=[...d.querySelectorAll('.brief dt.fold')];
+  T('шеврон згортання — інлайновий SVG, не гліф',
+    foldEls.length===2 && foldEls.every(x=>!!x.querySelector('svg.chev')));
 
   const chat=d.querySelector('.chat');
   T('панель розмови існує', !!chat);
