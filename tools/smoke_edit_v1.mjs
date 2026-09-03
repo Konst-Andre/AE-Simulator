@@ -38,7 +38,7 @@ const require = createRequire(import.meta.url);
 const want = require(path.join(ROOT, 'tools/ae_rules.js')).validate(cat, scen);
 
 const O = 'https://konst-andre.github.io';
-const ENV = { AE_EDIT_CODE: 'гейт', AE_ORIGINS: O };
+const ENV = { AE_EDIT_CODE: 'гейт' };
 const post = (body, code = 'гейт', origin = O) => new Request('https://x/', {
   method: 'POST',
   headers: { Origin: origin, 'x-ae-edit-code': encodeURIComponent(code) },
@@ -58,13 +58,20 @@ is('GET каже, що живий', r.status === 200 && j.ok === true);
 is('правила зібрались', j.rules === 'живі', j.rules);
 is('запис вимкнений', j.writes === false);
 
+/* Твердження навмисно перевернуте (S11): охорона стоїть на коді, не на
+   домені. Якщо цей рядок колись почервоніє — хтось повернув перевірку
+   Origin, не прочитавши шапку воркера. Читати її, а не «лагодити» гейт. */
 r = await mod.fetch(post({ catalog: cat, scenarios: scen }, 'гейт', 'https://chuzhyi.example'), ENV);
-is('чужий Origin не пускається', r.status === 403);
+is('чужий Origin пускається — охорона не тут', r.status === 200);
+
+is('дозвіл на читання віддається всім',
+   r.headers.get('Access-Control-Allow-Origin') === '*',
+   r.headers.get('Access-Control-Allow-Origin'));
 
 r = await mod.fetch(post({ catalog: cat, scenarios: scen }, 'не той'), ENV);
 is('чужий код не пускається', r.status === 403);
 
-r = await mod.fetch(post({ catalog: cat, scenarios: scen }), { AE_ORIGINS: O });
+r = await mod.fetch(post({ catalog: cat, scenarios: scen }), {});
 j = await r.json();
 is('без секрета — червоніє, а не пускає', r.status === 500 && /AE_EDIT_CODE/.test(j.text));
 
