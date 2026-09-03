@@ -39,5 +39,29 @@ A(rungs.every(r => (r.ce==='none' || r.ct>=800) && (r.je==='none' || r.jt>=800))
 A(rungs.length>0 && rungs[0].ce==='low',
   'сходинка 0: клієнт мислить (Ж-3). Повертаєш none — повертай і стелю 700');
 
+/* ── ЄДИНА КОПІЯ ПРАВИЛ (6а-1) ────────────────────────────────────
+   Правила винесені в tools/ae_rules.js, щоб командний рядок, браузерна
+   перевірка і редактор судили за одним набором. Ризик на роки: хтось
+   вписує правило назад в обгортку, і копії розходяться мовчки — жоден
+   гейт не червоніє, просто три місця починають казати різне про той
+   самий файл. Читаємо ТЕКСТ обгортки, а не її поведінку. */
+const wrapPath = require('path').join(require('path').dirname(process.argv[1]),'ae_validate.js');
+let wrap = fs.readFileSync(wrapPath,'utf8');
+if(inj) wrap = wrap.replace("const {validate}=require('./ae_rules.js');",
+                            "const validate=()=>({out:[],ok:0,warn:0,err:0});  E('своє правило');");
+A(/require\(['"]\.\/ae_rules\.js['"]\)/.test(wrap),
+  'обгортка тягне правила з ae_rules.js, а не носить свої');
+A(!/(^|[^\w.])[EWO]\(/m.test(wrap),
+  'в обгортці немає власних E()/W()/O() — правил вона не відростила');
+/* Те, заради чого правила виносились: ae_rules.js мусить читатись
+   браузером. Один require/process/console — і 6а-2 падає на порожньому
+   місці. Перевіряємо саме це, а не факт існування файлу: зниклий файл
+   і так валить ae_validate.js, окреме твердження про нього ніколи б не
+   почервоніло. */
+let rules = fs.readFileSync(wrapPath.replace('ae_validate.js','ae_rules.js'),'utf8');
+if(inj) rules = rules.replace('function validate(', "const fs=require('fs');\nfunction validate(");
+A(!/\brequire\s*\(|\bprocess\.|\bconsole\./.test(rules.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g,'')),
+  'ae_rules.js без Node: ні require, ні process, ні console — читається браузером');
+
 console.log(`\n✓${ok} · ✗${bad}`+(inj?' (inject)':''));
 process.exit(bad?1:0);
