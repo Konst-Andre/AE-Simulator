@@ -1,0 +1,31 @@
+# Деплой воркера редактора.
+# живе доки: worker/ae-edit.js розгортається з репо
+#
+# Збірку робить wrangler: рядок import у воркері він розвʼязує сам і вкладає
+# тіло tools/ae_rules.js усередину. Тому push у правила теж тягне деплой —
+# інакше воркер судив би застарілими правилами.
+name: Деплой редактора
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/ae-edit.js'
+      - 'tools/ae_rules.js'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-edit.yml'
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Суха збірка ПЕРЕД деплоєм: якщо правила не вклались, падаємо тут,
+      # не розгорнувши зламаного воркера. Токен для цього кроку не потрібен.
+      - name: суха збірка (перевірка інтеропу правил)
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/aebuild
+      - name: гейт зібраного воркера
+        run: node tools/smoke_edit_v1.mjs /tmp/aebuild
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
