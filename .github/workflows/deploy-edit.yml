@@ -24,7 +24,7 @@ jobs:
       - name: суха збірка (перевірка інтеропу правил)
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/aebuild
       - name: гейт зібраного воркера
-        run: node tools/smoke_edit_v1.mjs /tmp/aebuild
+        run: node tools/smoke_edit_v2.mjs /tmp/aebuild
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
