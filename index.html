@@ -561,6 +561,12 @@ async function callModel(messages, schema, role){
    ═════════════════════════════════════════════════════════════════ */
 const MOCK = new URLSearchParams(location.search).has('mock');
 
+/* Щабель відкритості (Р2) — службовий канал, не навчальний. Учневі його
+   під час розмови не показують: прочитати клієнта самому і є вправою, а
+   індикатор її скасовує. Адреса ?step=1 відкриває щабель тому, хто
+   НАЛАШТОВУЄ клієнта, — інакше динаміка невидима й крутити нема чого. */
+const STEP = new URLSearchParams(location.search).has('step');
+
 const engineMock = {
   name:'заглушка',
   async turn(sc, history){
@@ -573,10 +579,14 @@ const engineMock = {
       'Скільки з мене?'
     ];
     const ended = n>=4;
+    /* Заглушка схеми не проходить, тому щабель складає сама: без нього
+       ?mock=1 віддавав би undefined там, де решта коду чекає рядок. */
+    const steps = ['насторожений','слухає','цікавиться','погоджується'];
     return {
       reply: ended ? 'Дякую. Гарного дня.' : lines[(n-1)%lines.length],
       cart: S.cart.slice(),
       ended, endReason: ended?'paid':'',
+      step: steps[Math.min(n,steps.length)-1] || 'закритий',
       feedback: ended ? 'Це заглушка розбору. Орієнтир — приріст близько '+potential(sc)+' ₴.' : ''
     };
   },
@@ -648,7 +658,7 @@ const engineLive = {
   },
   async ping(){
     const r = await callModel(
-      [{role:'user',content:'Поверни reply="працює", cart=[], ended=true, endReason="paid", feedback="".'}],
+      [{role:'user',content:'Поверни reply="працює", cart=[], ended=true, endReason="paid", feedback="", step="слухає".'}],
       S.cfg.schemas.turn, 'client');
     return r.reply;
   }
@@ -977,7 +987,8 @@ function Game(root){
     log.append(el('div',{class:'turn client'},[el('span',{class:'who',text:'КЛІЄНТ'}),el('span',{text:sc.open})]));
     for(const m of S.history)
       log.append(el('div',{class:'turn '+(m.role==='user'?'me':'client')},[
-        el('span',{class:'who',text:m.role==='user'?'ВИ':'КЛІЄНТ'}),
+        el('span',{class:'who',text:(m.role==='user'?'ВИ':'КЛІЄНТ')
+          + (STEP && m.step ? ' · '+m.step : '')}),
         el('span',{text:m.content})]));
     if(S.waiting) log.append(el('div',{class:'turn client'},[
       el('span',{class:'who',text:'КЛІЄНТ'}),
@@ -1018,7 +1029,10 @@ function Game(root){
     try{
       const r = await engine.turn(sc, S.history);
       S.waiting=false;
-      S.history.push({role:'assistant',content:r.reply});
+      /* Щабель кладемо в сам елемент історії: у модель їдуть тільки
+         role і content (engineLive.turn), тому зайвий ключ до промпта
+         не потрапляє, а до рендера потрапляє. Окремий масив зайвий. */
+      S.history.push({role:'assistant',content:r.reply,step:r.step||''});
       S.cart = r.cart;
       S.ended = r.ended; S.feedback = r.feedback||''; S.phrase='';
       paint(); tape();
