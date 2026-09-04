@@ -85,11 +85,10 @@ function validate(catalogRaw, scenariosRaw, charactersRaw){
      Носій приходить аргументом. Не прийшов — кажемо це вголос: мовчазний
      пропуск виглядав би як пройдена перевірка (12.12-г). */
   if(typeof charactersRaw === 'string' && charactersRaw.trim()){
-    const known = new Set(
-      [...('\n'+charactersRaw.replace(/<!--[\s\S]*?-->/g,'')).matchAll(/\n## (.+?)\n([\s\S]*?)(?=\n## |$)/g)]
-        .filter(m=>/### для клієнта\s*\S/.test(m[2]))
-        .map(m=>m[1].trim())
-    );
+    const recs = [...('\n'+charactersRaw.replace(/<!--[\s\S]*?-->/g,'')).matchAll(/\n## (.+?)\n([\s\S]*?)(?=\n## |$)/g)];
+    const hasClient = m=>/### для клієнта\s*\S/.test(m[2]);
+    const hasRisk   = m=>/### ризик\s*\S/.test(m[2]);
+    const known = new Set(recs.filter(hasClient).map(m=>m[1].trim()));
     known.size ? O('характерів у носії: '+known.size) : E('носій характерів прочитано, але жодного запису з блоком «для клієнта»');
     const orphan=SCEN.filter(s=>s.character && !known.has(s.character));
     orphan.length
@@ -97,6 +96,14 @@ function validate(catalogRaw, scenariosRaw, charactersRaw){
       : O('усі character мають запис у носії');
     const idle=[...known].filter(k=>!SCEN.some(s=>s.character===k));
     idle.length && W('характери без жодного сценарію: '+idle.join(', '));
+    /* Другий блок запису. «### для клієнта» їде в промпт клієнта,
+       «### ризик» — у промпт судді. Запис без другого блоку проходить
+       усі перевірки вище і дає судді порожній приціл: дефект того самого
+       класу, що характер без опису, тільки з іншого боку носія. */
+    const noRisk = recs.filter(m=>hasClient(m) && !hasRisk(m)).map(m=>m[1].trim());
+    noRisk.length
+      ? noRisk.forEach(n=>E('запис «'+n+'» не має блоку «### ризик» — промпт судді лишиться без прицілу'))
+      : O('усі записи носія мають обидва блоки');
   } else {
     W('носій характерів не переданий — значення character не звірені');
   }
