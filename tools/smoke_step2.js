@@ -13,7 +13,16 @@ let html=fs.readFileSync(BASE+'/index.html','utf8');
 if(INJECT) html=html.replace("return { ...r, cart: (r.cart||[]).filter(c=>pool.has(c)) };",
                              "return r;");   // ламаємо захист від чужих кодів у чеку
 
-const local=f=>fs.readFileSync(path.join(BASE,f),'utf8');
+const local=f=>{
+  let t=fs.readFileSync(path.join(BASE,f),'utf8');
+  /* Інжект під твердження «орієнтира в промпті клієнта немає»: підкидаємо
+     назад рядок, який зняв Р1. Ламаємо саме текст промпта, а не перевірку —
+     buildSystem досі передає ключ pot, тому вікно {{pot}} заповниться, і
+     дефект відтвориться один в один. */
+  if(INJECT && f.indexOf('client.md')>=0 && f.indexOf('parts')<0)
+    t += '\nОрієнтир для цього сценарію — приріст близько {{pot}} ₴.\n';
+  return t;
+};
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/',beforeParse(w){
   w.scrollTo=()=>{}; w.HTMLElement.prototype.scrollIntoView=()=>{};
   w.fetch=(u,opt)=>{
@@ -54,9 +63,17 @@ const w=dom.window;
   T('асортимент категорії у промпті ('+pool.length+' поз.)', pool.every(i=>sys.includes(i.c+' | '+i.n)));
   const alien=Object.values(S.ALL).find(i=>!pool.includes(i));
   T('чужого асортименту в промпті немає', !sys.includes(alien.c+' | '+alien.n));
-  T('орієнтир приросту у промпті', sys.includes('близько '+((()=>{
-      const b=sc.order.reduce((a,c)=>a+S.ALL[c].b,0), v=sc.bv.reduce((a,c)=>a+S.ALL[c].b,0);
-      return Math.max(1,Math.round(v-b));})())+' ₴'));
+  /* ── Р1 (S12 §1.3) · клієнт більше не суддя ───────────────────────────
+     Це твердження ІНВЕРТОВАНЕ. Доти воно вимагало, щоб орієнтир приросту
+     БУВ у системному промпті клієнта, — тобто гейт кодував рівно той
+     дефект, який Р1 знімає: клієнт судив розмову за числом, якого не мав
+     бачити. Тримаємо не формулювання «близько N ₴», а межу знань: жодної
+     гривні в промпті клієнта. Символ ₴ не може прийти ні з даних (перевірено:
+     назв позицій, who/mood/mode/open із гривнею — нуль; у goal вона є, але
+     goal у клієнта не заходить), ні з client.parts.md. Отже поява гривні
+     означає рівно одне — її вписали назад у текст промпта. */
+  T('орієнтира приросту в промпті клієнта немає',
+    !/₴/.test(sys) && !/орієнтир/i.test(sys) && !/приріст/i.test(sys));
 
   console.log('\n— ключ —');
   w.KEY.set('gsk_test123');
