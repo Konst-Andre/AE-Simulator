@@ -16,7 +16,7 @@
    перемішані за ходом коду; три масиви дали б ті самі числа при іншому
    тексті — тобто зелений гейт на зміненому виводі (1.15, пастка 4). */
 
-function validate(catalogRaw, scenariosRaw){
+function validate(catalogRaw, scenariosRaw, charactersRaw){
   /* Нормалізація форми файлу — це ПРАВИЛО, не читання: обидві форми
      («{categories:{…}}» і голий обʼєкт, «{scenarios:[…]}» і голий масив)
      приходять однаково і з диска, і з поля вибору файлу в браузері. */
@@ -55,7 +55,7 @@ function validate(catalogRaw, scenariosRaw){
   const dupNo=nums.filter((x,i)=>nums.indexOf(x)!==i);
   dupNo.length?W('однакові номери замовлень: '+[...new Set(dupNo)].join(', ')):O('номери замовлень унікальні ('+nums.length+' інтернет-замовлень)');
 
-  const REQ=['id','grp','title','cats','main','order','open','who','mood','mode'];
+  const REQ=['id','grp','title','cats','main','order','open','who','character','mood','mode'];
   let hang=0,badf=0,badcat=0,badmain=0;
   for(const s of SCEN){
     const tag='#'+s.id+' «'+(s.title||'?')+'»';
@@ -78,6 +78,28 @@ function validate(catalogRaw, scenariosRaw){
   !badcat&&O('усі cats існують у каталозі');
   !badmain&&O('main завжди входить у cats');
   !hang&&O('висячих кодів немає (order · bv · bm)');
+
+  // --- характер: значення мусить мати запис у носії
+  /* Списку девʼяти тут НЕМАЄ навмисно. Єдиний його дім — prompts/characters.md;
+     копія в коді розійшлася б із носієм рівно тоді, коли Оля додасть характер.
+     Носій приходить аргументом. Не прийшов — кажемо це вголос: мовчазний
+     пропуск виглядав би як пройдена перевірка (12.12-г). */
+  if(typeof charactersRaw === 'string' && charactersRaw.trim()){
+    const known = new Set(
+      [...('\n'+charactersRaw.replace(/<!--[\s\S]*?-->/g,'')).matchAll(/\n## (.+?)\n([\s\S]*?)(?=\n## |$)/g)]
+        .filter(m=>/### для клієнта\s*\S/.test(m[2]))
+        .map(m=>m[1].trim())
+    );
+    known.size ? O('характерів у носії: '+known.size) : E('носій характерів прочитано, але жодного запису з блоком «для клієнта»');
+    const orphan=SCEN.filter(s=>s.character && !known.has(s.character));
+    orphan.length
+      ? orphan.forEach(s=>E('#'+s.id+' — характеру «'+s.character+'» немає в носії'))
+      : O('усі character мають запис у носії');
+    const idle=[...known].filter(k=>!SCEN.some(s=>s.character===k));
+    idle.length && W('характери без жодного сценарію: '+idle.join(', '));
+  } else {
+    W('носій характерів не переданий — значення character не звірені');
+  }
 
   // --- потенціал > 0
   const bonus=cs=>cs.reduce((a,c)=>a+(ALL[c]?ALL[c].b:0),0);

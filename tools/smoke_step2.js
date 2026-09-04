@@ -12,6 +12,16 @@ let VALID='zipelor';   // код, який mock кладе в чек — вис�
 let html=fs.readFileSync(BASE+'/index.html','utf8');
 if(INJECT) html=html.replace("return { ...r, cart: (r.cart||[]).filter(c=>pool.has(c)) };",
                              "return r;");   // ламаємо захист від чужих кодів у чеку
+/* Третій інжект: знімаємо зріз блоку «для клієнта» — parseChars бере запис
+   цілком. Носій при цьому цілий, поле в даних ціле, промпт збирається без
+   жодної помилки; у нього просто починає текти рядок ризику. Це найтихіший
+   із можливих дефектів характеру, тому він і відтворюється. */
+if(INJECT) html=html.replace(
+  "const body = (m[2].match(/### для клієнта\\s*([\\s\\S]*?)(?=\\n### |$)/)||[,''])[1].trim();",
+  "const body = m[2].trim();");
+/* Четвертий інжект: губимо ключ у fill(). Дзеркальна половина: носій
+   прочитано, розібрано, звірено з даними — і нікуди не передано. */
+if(INJECT) html=html.replace("    character: S.P.chars[sc.character],\n", "");
 
 const local=f=>{
   let t=fs.readFileSync(path.join(BASE,f),'utf8');
@@ -62,7 +72,11 @@ const w=dom.window;
   const sc=S.SCEN.find(x=>x.no && x.cats.length===1);
   const sys=w.buildSystem(sc);
   T('плейсхолдерів не лишилось', !/\{\{\w+\}\}/.test(sys));
-  T('характер клієнта підставлено', sys.includes(sc.who) && sys.includes(sc.mood));
+  /* Ім'я цього твердження змінене у 2а-III. Доти воно звалось «характер
+     клієнта підставлено», а міряло who+mood. Після появи поля `character`
+     одне слово означало б два різні предмети, і розходження між ними
+     проходило б непоміченим. */
+  T('хто і настрій підставлені', sys.includes(sc.who) && sys.includes(sc.mood));
   T('перша репліка підставлена', sys.includes(sc.open));
   T('номер замовлення підставлено', sys.includes(String(sc.no)));
   const pool=sc.cats.flatMap(k=>S.CAT[k]);
@@ -95,6 +109,48 @@ const w=dom.window;
   T('усі пʼять щаблів названі в промпті клієнта',
     (turnSchema.properties.step.enum||[]).every(s=>sys.includes(s)));
   T('щабель не тече в репліку', /не пояснюється вголос/.test(sys));
+
+  /* ── Р4 · характер клієнта (2а-III) ──────────────────────────────────
+     Носій, дані і промпт — три половини, безглузді поодинці. Носій без
+     поля в даних нікому не адресований; поле без носія дає порожній
+     характер; обидва без підстановки — текст, який модель не побачить.
+     Рахуємо ПІСЛЯ розбору (12.12-г): заголовків у файлі може бути скільки
+     завгодно, у промпт піде рівно те, що пережило regex. */
+  const CH = fs.readFileSync(path.join(BASE,'prompts/characters.md'),'utf8');
+  const declared = (CH.match(/\n## /g)||[]).length;
+  T('носій розібрано, записів девʼять', Object.keys(S.P.chars).length===9);
+  T('розібрано рівно стільки, скільки оголошено ('+declared+')',
+    Object.keys(S.P.chars).length===declared);
+  T('усі 43 сценарії мають character', S.SCEN.every(s=>!!s.character));
+  T('кожен character має запис у носії',
+    S.SCEN.every(s=>!!S.P.chars[s.character]));
+  const dist={};
+  for(const s of S.SCEN) dist[s.character]=(dist[s.character]||0)+1;
+  T('розподіл збігається з бібліотекою §5 (6·4·5·3·4·9·6·3·3)',
+    JSON.stringify(Object.values(dist).sort((a,b)=>a-b))==='[3,3,3,4,4,5,6,6,9]');
+
+  /* Межа знань клієнта, друга по рахунку після гривні. Носій — єдиний файл,
+     де поруч лежить текст ДЛЯ моделі і текст ПРО модель. Рядок «ризик»
+     описує типову помилку фармацевта з цим характером; потрапивши в промпт,
+     він скаже клієнтові, чого від нього чекають, — і клієнт перестане бути
+     тим, кого відтворює. Тримаємо не формулювання, а факт відсутності. */
+  const risk = (CH.match(new RegExp('## '+sc.character+'[\\s\\S]*?### ризик\\s*([\\s\\S]*?)(?=\\n## |$)'))||[,''])[1].trim();
+  const riskHead = risk.split('\n')[0];
+  const block = S.P.chars[sc.character];
+  T('рядок ризику з носія прочитався ('+risk.length+' симв.)', risk.length>40);
+  /* Міряємо РОЗІБРАНИЙ блок, а не зібраний промпт. У промпті це твердження
+     не має шляху до падіння тоді, коли підстановку зламано окремо: характеру
+     там немає взагалі, і «ризику немає» виходить істинним порожньо. Два
+     дефекти маскували б один одного, а гейт світився б зеленим на обох. */
+  T('розібраний блок не несе рядка ризику', !block.includes(riskHead));
+  T('розібраний блок не несе заголовків носія', !/### (для клієнта|ризик)/.test(block));
+  T('розібраний блок не несе кодів словника',
+    !/\bХ-\d/.test(block) && !/\bА-\d/.test(block) && !/\bМ-\d/.test(block));
+  T('характер потрапив у системний промпт', sys.includes(block));
+  T('ризику в зібраному промпті немає', !sys.includes(riskHead));
+
+  T('ae_rules вимагає поле character',
+    /const REQ=\[[^\]]*'character'/.test(fs.readFileSync(path.join(BASE,'tools/ae_rules.js'),'utf8')));
 
   console.log('\n— ключ —');
   w.KEY.set('gsk_test123');
