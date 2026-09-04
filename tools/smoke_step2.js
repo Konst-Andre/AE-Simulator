@@ -21,6 +21,12 @@ const local=f=>{
      дефект відтвориться один в один. */
   if(INJECT && f.indexOf('client.md')>=0 && f.indexOf('parts')<0)
     t += '\nОрієнтир для цього сценарію — приріст близько {{pot}} ₴.\n';
+  /* Другий інжект: виймаємо step зі списку required схеми turn. Саме ця
+     половина губиться найлегше — поле лишається в properties, виглядає
+     присутнім, а strict-режим без required його не вимагає, і модель
+     мовчки перестає його віддавати. */
+  if(INJECT && f.indexOf('config.json')>=0)
+    t = t.replace(/,\s*"step"\s*\n(\s*)\]/, '\n$1]');
   return t;
 };
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/',beforeParse(w){
@@ -33,7 +39,7 @@ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/',beforeP
     const payload = isDebrief
       ? {overall:'Загалом непогано.',mistakes:['тиснули на ціну'],strengths:['почали розмову'],
          rules:['питайте про симптом'],curator:'звернути увагу на темп'}
-      : {reply:'Добре, беру.', cart:[VALID,'НЕІСНУЮЧИЙ_КОД'], ended:false, endReason:'', feedback:''};
+      : {reply:'Добре, беру.', cart:[VALID,'НЕІСНУЮЧИЙ_КОД'], ended:false, endReason:'', feedback:'', step:'цікавиться'};
     return Promise.resolve({ok:true,status:200,json:()=>Promise.resolve(
       {choices:[{message:{content:JSON.stringify(payload)}}]})});
   };
@@ -74,6 +80,21 @@ const w=dom.window;
      означає рівно одне — її вписали назад у текст промпта. */
   T('орієнтира приросту в промпті клієнта немає',
     !/₴/.test(sys) && !/орієнтир/i.test(sys) && !/приріст/i.test(sys));
+
+  /* ── Р2 · щабель відкритості ────────────────────────────────────────
+     Три половини, безглузді поодинці: слово в схемі, слово в промпті,
+     слово в історії. Схема без промпта дасть модель, що вигадує щабель
+     навмання; промпт без схеми — поле, яке strict не пропустить; обидва
+     без третьої — рух, якого ніде не видно, тобто рівно те, від чого Р2
+     і мав позбавити. */
+  const turnSchema = S.cfg.schemas.turn.schema;
+  T('схема turn знає поле step', !!turnSchema.properties.step);
+  T('step у required, а не лише в properties',
+    (turnSchema.required||[]).indexOf('step')>=0);
+  T('щаблів рівно пʼять', (turnSchema.properties.step.enum||[]).length===5);
+  T('усі пʼять щаблів названі в промпті клієнта',
+    (turnSchema.properties.step.enum||[]).every(s=>sys.includes(s)));
+  T('щабель не тече в репліку', /не пояснюється вголос/.test(sys));
 
   console.log('\n— ключ —');
   w.KEY.set('gsk_test123');
