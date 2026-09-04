@@ -4,12 +4,20 @@
 # Запускається на кожен push і кожен pull request. Нічого не деплоїть,
 # нічого не міняє — тільки читає data/*.json і каже ✓ або ✗.
 # ✗ = червоний хрестик біля коміту + лист авторові правки.
+#
+# У переліку paths стоять не лише дані, які гейт перевіряє, а й файли, у яких
+# живуть самі правила та довідники: tools/ae_rules.js (правила) і
+# prompts/characters.md (перелік характерів). Без них правку довідника можна
+# залити повз гейт, і дані стануть невірними без жодного червоного.
+# prompts/judge.md сюди НЕ входить свідомо: ae_validate його не читає, і шлях
+# у переліку без перевірки за ним — видимість нагляду. Твердження про judge.md
+# живуть у tools/smoke_step2.js, а той поки запускається руками.
 name: Перевірка даних
 on:
   push:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js']
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'prompts/characters.md']
   pull_request:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js']
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'prompts/characters.md']
   workflow_dispatch:
 jobs:
   validate:
