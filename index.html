@@ -389,13 +389,14 @@ async function boot(){
       fetch('prompts/judge.md').then(r=>r.text()),
     ]);
     S.cfg=cfg;
+    const CH = parseChars(stripComments(pChars));
     S.P = {
       client: stripComments(pClient),
       debrief: stripComments(pDebrief),
       judge: stripComments(pJudge),
       withNumber: (pParts.match(/## with_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
       withoutNumber: (pParts.match(/## without_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
-      chars: parseChars(stripComments(pChars)),
+      chars: CH.chars, risks: CH.risks,
     };
     if(!S.P.client || !S.P.withNumber || !S.P.judge) throw new Error('Файли промптів прочитались порожніми');
     S.CAT={}; S.LABEL={};
@@ -410,6 +411,12 @@ async function boot(){
        файл промпта: краще видимий екран помилки, ніж непомітно сірий клієнт. */
     const noChar = S.SCEN.filter(s=>!S.P.chars[s.character]).map(s=>'#'+s.id+' («'+(s.character||'поле порожнє')+'»)');
     if(noChar.length) throw new Error('Характер сценарію не знайдено в prompts/characters.md: '+noChar.join(', '));
+    /* Той самий клас дефекту, але з боку судді: запис у носії є, блоку
+       «ризик» у ньому немає — промпт судді збереться з порожнім прицілом,
+       і помітити це можна лише зіставивши два розбори. Перелік окремий,
+       бо причина інша: тут винен носій, а не дані сценарію. */
+    const noRisk = [...new Set(S.SCEN.map(s=>s.character))].filter(c=>S.P.chars[c] && !S.P.risks[c]);
+    if(noRisk.length) throw new Error('У prompts/characters.md немає блоку «### ризик» для характеру: '+noRisk.join(', '));
     S.me = JSON.parse(localStorage.getItem('ae_me')||'null');
     S.screen = S.me ? 'picker' : 'gate';
     render();
@@ -458,12 +465,17 @@ const stripComments = t => t.replace(/<!--[\s\S]*?-->/g,'').trim();
    людини і для судді, а клієнтові знати власну типову помилку нема чого —
    знаючи її, він перестане її провокувати. */
 function parseChars(t){
-  const out = {};
+  const chars = {}, risks = {};
+  const slice = (rec,head) =>
+    (rec.match(new RegExp('### '+head+'\\s*([\\s\\S]*?)(?=\\n### |$)'))||[,''])[1].trim();
   for(const m of ('\n'+t).matchAll(/\n## (.+?)\n([\s\S]*?)(?=\n## |$)/g)){
-    const body = (m[2].match(/### для клієнта\s*([\s\S]*?)(?=\n### |$)/)||[,''])[1].trim();
-    if(body) out[m[1].trim()] = body;
+    const name = m[1].trim();
+    const forClient = slice(m[2],'для клієнта');
+    const risk      = slice(m[2],'ризик');
+    if(forClient) chars[name] = forClient;
+    if(risk)      risks[name] = risk;
   }
-  return out;
+  return {chars, risks};
 }
 
 function pluralPos(n){ return n+' '+(n===1?'позиція':n<5?'позиції':'позицій'); }
@@ -482,6 +494,42 @@ function buildSystem(sc){
     character: S.P.chars[sc.character],
     orderCount: pluralPos(sc.order.length), order, open:sc.open,
     catalog, pot, initialCart: JSON.stringify(sc.order)
+  });
+}
+
+/* Промпт СУДДІ збирається окремою функцією з тієї самої причини, що й
+   промпт клієнта: інакше він існує тільки всередині живого виклику, і
+   ні гейт, ні майбутнє «Приміряти» не мають що подивитись. Двигун
+   відправляє, він не збирає. */
+function buildJudge(sc, history, cart){
+  const nameOf = cs => cs.map(c=>S.ALL[c]&&S.ALL[c].n).filter(Boolean).join('; ') || 'нічого';
+  const base = bonusOf(sc.order), now = bonusOf(cart);
+  const ideal = (S.cfg.rule==='stm' ? sc.bm : sc.bv) || [];
+  const transcript = ['КЛІЄНТ: '+sc.open]
+    .concat(history.map(m=>(m.role==='user'?'ФАРМАЦЕВТ: ':'КЛІЄНТ: ')+m.content))
+    .join('\n');
+  return fill(S.P.judge, {
+    who: sc.who, mode: sc.mode, goal: sc.goal||'—',
+    /* Два зрізи ОДНОГО запису носія, розведені по адресатах. Клієнтові
+       їде опис і не їде ризик; судді — навпаки: назва характеру, щоб
+       знати, з ким мав справу фармацевт, і рядок ризику, щоб знати, яку
+       саме помилку тут шукати. Порожнього запасу тут немає навмисно:
+       відсутній ризик зупиняє старт у boot(), і мовчазне '' сховало б
+       рівно той дефект, який там ловиться. */
+    character: sc.character, risk: S.P.risks[sc.character],
+    transcript,
+    /* Суддя досі не бачив асортименту: він міг радити тільки те, що ми
+       самі назвали ідеалом. Той самий пул, що й у клієнта (категорії
+       сценарію), плюс мітка й бонус — суддя оцінює гроші, клієнт про
+       них не знає і в його промпті їх немає. */
+    catalog: poolOf(sc).map(i=>i.c+' | '+i.n+' | '+(i.k||'—')+' | '+i.b+' ₴').join('\n'),
+    orderList: nameOf(sc.order), cartList: nameOf(cart),
+    baseSum: uah(base), nowSum: uah(now),
+    delta: uah(now-base), pot: potential(sc),
+    idealList: nameOf(ideal),
+    noSaleLine: sc.noSale
+      ? 'УВАГА: у цьому сценарії правильна дія — нічого не міняти. Приріст тут НЕ мета.'
+      : ''
   });
 }
 
@@ -655,29 +703,8 @@ const engineLive = {
      клієнта, і результату не бачила — приріст рахує застосунок ПІСЛЯ неї.
      Тому вона хвалила будь-що: розмова скінчилась швидко, отже добре. */
   async judge(sc, history, cart){
-    const nameOf = cs => cs.map(c=>S.ALL[c]&&S.ALL[c].n).filter(Boolean).join('; ') || 'нічого';
-    const base = bonusOf(sc.order), now = bonusOf(cart);
-    const ideal = (S.cfg.rule==='stm' ? sc.bm : sc.bv) || [];
-    const transcript = ['КЛІЄНТ: '+sc.open]
-      .concat(history.map(m=>(m.role==='user'?'ФАРМАЦЕВТ: ':'КЛІЄНТ: ')+m.content))
-      .join('\n');
-    const prompt = fill(S.P.judge, {
-      who: sc.who, mode: sc.mode, goal: sc.goal||'—',
-      transcript,
-      /* Суддя досі не бачив асортименту: він міг радити тільки те, що ми
-         самі назвали ідеалом. Той самий пул, що й у клієнта (категорії
-         сценарію), плюс мітка й бонус — суддя оцінює гроші, клієнт про
-         них не знає і в його промпті їх немає. */
-      catalog: poolOf(sc).map(i=>i.c+' | '+i.n+' | '+(i.k||'—')+' | '+i.b+' ₴').join('\n'),
-      orderList: nameOf(sc.order), cartList: nameOf(cart),
-      baseSum: uah(base), nowSum: uah(now),
-      delta: uah(now-base), pot: potential(sc),
-      idealList: nameOf(ideal),
-      noSaleLine: sc.noSale
-        ? 'УВАГА: у цьому сценарії правильна дія — нічого не міняти. Приріст тут НЕ мета.'
-        : ''
-    });
-    return callModel([{role:'user',content:prompt}], S.cfg.schemas.judge, 'judge');
+    return callModel([{role:'user',content:buildJudge(sc,history,cart)}],
+                     S.cfg.schemas.judge, 'judge');
   },
   async ping(){
     const r = await callModel(
@@ -1245,6 +1272,7 @@ function Result(root){
    (у консолі браузера можна подивитись S.cart, S.sc, S.cfg). */
 window.S = S; window.render = render; window.ENGINE = engine;
 window.engineLive = engineLive; window.KEY = KEY; window.buildSystem = buildSystem;
+window.buildJudge = buildJudge;
 
 /* iOS Safari не застосовує :active, доки на сторінці немає жодного
    слухача дотику. Порожній слухач на документі — умова вмикання:
