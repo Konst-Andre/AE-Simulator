@@ -378,12 +378,13 @@ const S = {
 /* ── ЗАВАНТАЖЕННЯ ────────────────────────────────────────────────── */
 async function boot(){
   try{
-    const [cfg,cat,scn,pClient,pParts,pDebrief,pJudge] = await Promise.all([
+    const [cfg,cat,scn,pClient,pParts,pChars,pDebrief,pJudge] = await Promise.all([
       fetch('config.json').then(r=>r.json()),
       fetch('data/catalog.json').then(r=>r.json()),
       fetch('data/scenarios.json').then(r=>r.json()),
       fetch('prompts/client.md').then(r=>r.text()),
       fetch('prompts/client.parts.md').then(r=>r.text()),
+      fetch('prompts/characters.md').then(r=>r.text()),
       fetch('prompts/debrief.md').then(r=>r.text()),
       fetch('prompts/judge.md').then(r=>r.text()),
     ]);
@@ -394,6 +395,7 @@ async function boot(){
       judge: stripComments(pJudge),
       withNumber: (pParts.match(/## with_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
       withoutNumber: (pParts.match(/## without_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
+      chars: parseChars(stripComments(pChars)),
     };
     if(!S.P.client || !S.P.withNumber || !S.P.judge) throw new Error('Файли промптів прочитались порожніми');
     S.CAT={}; S.LABEL={};
@@ -402,6 +404,12 @@ async function boot(){
       for(const it of v.items) S.ALL[it.c]={...it,cat:k};
     }
     S.SCEN=scn.scenarios;
+    /* Дані і носій характерів мусять сходитись. Порожній {{character}} — це
+       тихий дефект: промпт збереться, модель відповість, і клієнт просто
+       буде ніяким. Тому розходження зупиняє старт так само, як порожній
+       файл промпта: краще видимий екран помилки, ніж непомітно сірий клієнт. */
+    const noChar = S.SCEN.filter(s=>!S.P.chars[s.character]).map(s=>'#'+s.id+' («'+(s.character||'поле порожнє')+'»)');
+    if(noChar.length) throw new Error('Характер сценарію не знайдено в prompts/characters.md: '+noChar.join(', '));
     S.me = JSON.parse(localStorage.getItem('ae_me')||'null');
     S.screen = S.me ? 'picker' : 'gate';
     render();
@@ -444,6 +452,20 @@ function pickShift(n){
 const fill = (tpl,vars) => tpl.replace(/\{\{(\w+)\}\}/g, (m,k)=> k in vars ? vars[k] : m);
 const stripComments = t => t.replace(/<!--[\s\S]*?-->/g,'').trim();
 
+/* Носій характерів. Запис — це «## назва», і назва є значенням поля
+   `character` у сценарії. З кожного запису беремо ТІЛЬКИ блок «для клієнта».
+   Блок «ризик» лишається у файлі й нікуди звідси не йде: він написаний для
+   людини і для судді, а клієнтові знати власну типову помилку нема чого —
+   знаючи її, він перестане її провокувати. */
+function parseChars(t){
+  const out = {};
+  for(const m of ('\n'+t).matchAll(/\n## (.+?)\n([\s\S]*?)(?=\n## |$)/g)){
+    const body = (m[2].match(/### для клієнта\s*([\s\S]*?)(?=\n### |$)/)||[,''])[1].trim();
+    if(body) out[m[1].trim()] = body;
+  }
+  return out;
+}
+
 function pluralPos(n){ return n+' '+(n===1?'позиція':n<5?'позиції':'позицій'); }
 
 function buildSystem(sc){
@@ -457,6 +479,7 @@ function buildSystem(sc){
     : S.P.withoutNumber;
   return fill(S.P.client, {
     who:sc.who, mood:sc.mood, mode:sc.mode, numLine,
+    character: S.P.chars[sc.character],
     orderCount: pluralPos(sc.order.length), order, open:sc.open,
     catalog, pot, initialCart: JSON.stringify(sc.order)
   });
