@@ -12,12 +12,20 @@
 # prompts/judge.md сюди НЕ входить свідомо: ae_validate його не читає, і шлях
 # у переліку без перевірки за ним — видимість нагляду. Твердження про judge.md
 # живуть у tools/smoke_step2.js, а той поки запускається руками.
+#
+# Другий крок — tools/smoke_rules_v1.js. Він тут єдиний зі смоуків, бо єдиний
+# не має зашитого BASE і не потребує jsdom: читає файли відносно кореня репо.
+# ae_validate каже, чи дані ЧИСТІ; smoke_rules каже, чи правила мають ЗУБИ —
+# на підкинутому рядку вони мусять почервоніти саме своїм повідомленням.
+# Без другого кроку зелений перший означав би тільки «жодне правило не
+# спрацювало», що однаково правда і для правильних даних, і для видаленої
+# перевірки.
 name: Перевірка даних
 on:
   push:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'prompts/characters.md']
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'prompts/characters.md']
   pull_request:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'prompts/characters.md']
+    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'prompts/characters.md']
   workflow_dispatch:
 jobs:
   validate:
@@ -29,3 +37,5 @@ jobs:
           node-version: '20'
       - name: node tools/ae_validate.js
         run: node tools/ae_validate.js
+      - name: node tools/smoke_rules_v1.js
+        run: node tools/smoke_rules_v1.js
