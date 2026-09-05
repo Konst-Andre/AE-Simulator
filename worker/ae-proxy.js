@@ -82,6 +82,16 @@
    на півслові, і людина побачить «відповідь не читається» замість репліки.
    Це стереже smoke_step3 по ВСІХ сходинках, не лише активній.
 
+   ⚠ У РЕЖИМІ СХЕМИ ОБРІЗАНОЇ ВІДПОВІДІ НЕ ІСНУЄ. Коли запит іде з
+   json_schema, постачальник перевіряє готовий JSON і на обрізаному віддає
+   400 json_validate_failed — не «трохи менше тексту», а порожнечу. Тому
+   стелю судді треба брати під НАЙГІРШУ розмову, не під медіанну.
+   Виміряно на живих прогонах: розбір коротких розмов — 429 і 541 токен
+   виходу (200 OK), розбір розмови на шість реплік уперся в 1100 і згорів.
+   Звідси tokens.judge = 2000: удвічі більше за відоме «замало» і вчетверо
+   за медіану. Вхід судді ≈3,8 тис., тож 3,8 + 2,0 лишається під стелею
+   TPM 8 тис. на своїй моделі.
+
    `reasoning_format:'hidden'` мислення НЕ вимикає — він лише не повертає
    ланцюжок у відповіді. Вимикає його саме effort 'none'.
    Які значення effort приймає конкретна модель — див. EFFORT_OK нижче.
@@ -91,7 +101,7 @@
 const LADDER = [
   { model: 'qwen/qwen3.8-27b',    tested: true,  first: ['client'],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } },
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } },
   /* qwen3.6 приймає лише none | default (факт: провайдер відмовив на 'low',
      див. EFFORT_OK). З 'default' модель з'їдає всю стелю роздумами: у логах
      400 із виходом рівно 800 при стелі 800 — JSON не дописався, і схему
@@ -100,18 +110,18 @@ const LADDER = [
      доки не пройде живий сценарій на піні. */
   { model: 'qwen/qwen3.6-27b',    tested: false, first: [],
     reasoning_format: 'hidden',
-    effort: { client: 'none', judge: 'none' },   tokens: { client: 800, judge: 1200 } },
+    effort: { client: 'none', judge: 'none' },   tokens: { client: 800, judge: 2000 } },
   /* Старт судді. Живий прогін: сходинка тримає схему і відповідає стабільно
      — але у ролі КЛІЄНТА. У ролі судді її ще не бачив ніхто: розбір щоразу
      зрізав 429 спільного відра. Ціна ввімкнення названа тут, а не в самері:
      перший же розбір після цієї збірки і є її перевірка. */
   { model: 'openai/gpt-oss-120b', tested: true,  first: ['judge'],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } },
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } },
   /* Запас для обох ролей. Той самий живий прогін, та сама ціна. */
   { model: 'openai/gpt-oss-20b',  tested: true,  first: [],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 1200 } }
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } }
 ];
 
 /* ── ДОЗВОЛЕНІ ЗНАЧЕННЯ effort, ПО МОДЕЛЯХ ────────────────────────────
@@ -134,6 +144,10 @@ const LADDER = [
    Споживачів двоє: гейт smoke_step3 (перевіряє драбину до деплою) і сам
    воркер нижче (перевіряє її ще раз у момент запиту — бо цей файл
    деплоїться руками в дашборді й гейт над деплоєм не стоїть).
+
+   ⚠ ПОРЯДОК ЗНАЧЕНЬ НЕСЕ ЗМІСТ: перше в списку — найдешевше за роздумами.
+   Воркер бере саме його, коли переспитує модель після обрізаного JSON.
+   Переставиш — повтор почне коштувати більше за першу спробу.
    ─────────────────────────────────────────────────────────────────── */
 const EFFORT_OK = [
   { match: /^openai\/gpt-oss/, values: ['low', 'medium', 'high'] },
@@ -159,7 +173,7 @@ const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
    інакше чужий запит виставить max_completion_tokens 65536 і вигребе
    добову норму токенів за десяток викликів. */
 const LIM = {
-  maxTokens: 1200,
+  maxTokens: 2400,
   msgs: 40,
   chars: 60000,
   temperature: [0, 1.2],
@@ -286,28 +300,46 @@ async function handle(request, env) {
       continue;
     }
 
-    const body = {
-      ...base,
-      model: r.model,
-      reasoning_effort: effort,
-      reasoning_format: r.reasoning_format,
-      max_completion_tokens: Math.min(LIM.maxTokens, roleCap,
-        (typeof asked === 'number' && asked > 0) ? asked : roleCap)
-    };
+    /* ПОВТОР БЕЗ ЗАЙВИХ РОЗДУМІВ. Обрізаний JSON у режимі схеми — це не
+       «гірша відповідь», це відсутність відповіді: постачальник віддає 400
+       json_validate_failed. Причина майже завжди одна — роздуми з'їли стелю,
+       і на текст не лишилось. Тому переспитуємо ту саму модель найдешевшим
+       її режимом роздумів (перше значення в EFFORT_OK), звільняючи всю стелю
+       під відповідь.
+       Саме ту саму, а не наступну сходинку: 400 драбиною не сходить, і
+       прокручувати одну й ту саму багатослівність через усю драбину означає
+       заплатити квотою тричі за один і той самий обрив. */
+    const cheap  = (EFFORT_OK.find(e => e.match.test(r.model)) || {}).values;
+    const tries  = (cheap && cheap[0] !== effort) ? [effort, cheap[0]] : [effort];
 
-    let res;
-    try {
-      res = await fetch(GROQ, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.GROQ_KEY },
-        body: JSON.stringify(body)
-      });
-    } catch (e) {
-      lastMsg = 'мережа: ' + e.message;
-      continue;                       // мережа лягла — пробуємо наступну
+    let res = null, text = '';
+    for (const eff of tries) {
+      const body = {
+        ...base,
+        model: r.model,
+        reasoning_effort: eff,
+        reasoning_format: r.reasoning_format,
+        max_completion_tokens: Math.min(LIM.maxTokens, roleCap,
+          (typeof asked === 'number' && asked > 0) ? asked : roleCap)
+      };
+
+      try {
+        res = await fetch(GROQ, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + env.GROQ_KEY },
+          body: JSON.stringify(body)
+        });
+      } catch (e) {
+        lastMsg = 'мережа: ' + e.message;
+        res = null;
+        break;
+      }
+
+      text = await res.text();
+      if (res.ok || !(res.status === 400 && /json_validate_failed/.test(text))) break;
     }
 
-    const text = await res.text();
+    if (!res) continue;                 // мережа лягла — пробуємо наступну
 
     if (res.ok) {
       return new Response(text, {
@@ -338,6 +370,16 @@ async function handle(request, env) {
     if (res.status === 429) lastRetry = res.headers.get('retry-after');
 
     if (!step) {
+      /* Обрив після повтору. Віддавати сюди англійський текст постачальника
+         означає показати людині «Failed to generate JSON» замість розбору.
+         Код 422 навмисно свій: браузеру не треба знати словник Groq, щоб
+         відрізнити цей випадок від решти 400. */
+      if (res.status === 400 && /json_validate_failed/.test(text))
+        return say(422,
+          'Розбір цієї розмови вийшов задовгим і не помістився цілком. ' +
+          'Спробуйте «Пройти ще раз» — на коротшій розмові розбір складеться.',
+          { 'x-ae-model': r.model }, cors);
+
       return new Response(text, {
         status: res.status,
         headers: { 'Content-Type': 'application/json', ...cors, 'x-ae-model': r.model }
