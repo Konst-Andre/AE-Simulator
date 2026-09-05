@@ -1,6 +1,7 @@
 /* AE-Simulator · валідатор цілісності даних — ОБГОРТКА
    живе доки: catalog.json + scenarios.json лишаються джерелом даних тренажера
-   запуск: node tools/ae_validate.js   (читає data/catalog.json і data/scenarios.json)
+   запуск: node tools/ae_validate.js
+   (читає data/catalog.json · data/scenarios.json · prompts/characters.md · config.json)
 
    ⚠ Правил тут НЕМАЄ і бути не може. Вони живуть в tools/ae_rules.js —
    одним тілом на командний рядок, браузерну перевірку і редактор. Правило,
@@ -16,9 +17,14 @@ const scen=JSON.parse(fs.readFileSync(process.argv[3]||'data/scenarios.json','ut
    і правила скажуть про це ⚠ самі. */
 const charsPath=process.argv[4]||'prompts/characters.md';
 const chars=fs.existsSync(charsPath)?fs.readFileSync(charsPath,'utf8'):null;
+/* Четвертий файл — носій переліку щаблів (config.json, схема відповіді
+   клієнта). Читається так само: без розбору, без правил. Правило про mood
+   без нього скаже ⚠ саме. */
+const cfgPath=process.argv[5]||'config.json';
+const cfg=fs.existsSync(cfgPath)?JSON.parse(fs.readFileSync(cfgPath,'utf8')):null;
 
 const SIGN={ok:'  ✓ ',warn:'  ⚠ ',err:'  ✗ '};
-const r=validate(catalog,scen,chars);
+const r=validate(catalog,scen,chars,cfg);
 for(const m of r.out) console.log(SIGN[m.lvl]+m.msg);
 
 console.log('\n'+(r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err);
