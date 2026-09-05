@@ -619,11 +619,21 @@ async function callModel(messages, schema, role){
     temperature: m.temperature,
     top_p: m.top_p,
     presence_penalty: m.presence_penalty,
-    max_completion_tokens: judge ? (m.judgeMaxTokens||1100) : m.max_completion_tokens,
-    reasoning_effort: judge ? (m.judgeReasoning||'low') : m.reasoning_effort,
     reasoning_format: m.reasoning_format,
     response_format: { type:'json_schema', json_schema: schema }
   };
+  /* ОДНА СТЕЛЯ, ОДИН ДІМ. Через воркер стелю і роздуми призначає драбина —
+     браузер їх не називає взагалі. Раніше він усе-таки називав, а воркер
+     брав Math.min зі своєю: config просив 1100 при драбині на 1200, і
+     мовчки вигравала нижча. Коментар у config при цьому казав «через
+     проксі стелю призначає воркер» — тобто документація і код розійшлись,
+     а побачити це можна було тільки в чужому логу, по виходу рівно 1100.
+     У прямому режимі (ключ у браузері) воркера немає — там значення
+     беруться з config, і це єдине місце, де вони чинні. */
+  if(key){
+    body.max_completion_tokens = judge ? (m.judgeMaxTokens||1100) : m.max_completion_tokens;
+    body.reasoning_effort      = judge ? (m.judgeReasoning||'low') : m.reasoning_effort;
+  }
 
   let r;
   try{ r = await fetch(url,{method:'POST',headers,body:JSON.stringify(body)}); }
@@ -647,6 +657,10 @@ async function callModel(messages, schema, role){
       : 'Кодове слово мережі не підходить. Виправте його в налаштуваннях.');
     if(r.status===429) throw new Error('Забагато запитів поспіль. Зачекайте хвилину.');
     if(r.status===403) throw new Error('Застосунок відкрито з адреси, якої сервер не знає.');
+    /* 422 — свій код воркера: розбір не вмістився у стелю навіть після
+       повтору без роздумів. Текст уже український і вже пояснює, що
+       робити, тому показуємо його як є — так само, як 503. */
+    if(r.status===422) throw new Error(msg);
     if(r.status===503) throw new Error(msg);
     if(r.status===404) throw new Error('Модель «'+m.name+'» недоступна на цьому акаунті. '+msg);
     throw new Error('Модель повернула помилку: '+msg);
