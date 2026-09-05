@@ -87,9 +87,15 @@
    400 json_validate_failed — не «трохи менше тексту», а порожнечу. Тому
    стелю судді треба брати під НАЙГІРШУ розмову, не під медіанну.
    Виміряно на живих прогонах: розбір коротких розмов — 429 і 541 токен
-   виходу (200 OK), розбір розмови на шість реплік уперся в 1100 і згорів.
-   Звідси tokens.judge = 2000: удвічі більше за відоме «замало» і вчетверо
-   за медіану. Вхід судді ≈3,8 тис., тож 3,8 + 2,0 лишається під стелею
+   виходу (200 OK), розбір розмови на шість реплік уперся в 1100 і згорів,
+   розбір розмови на сім реплік узяв **1978** і вклався у 2000 із запасом
+   у 22 токени. Тобто 2000 не було межею — воно було майже межею, а
+   «майже» в режимі схеми коштує весь розбір.
+   Звідси tokens.judge = 3000: півтора рази від найбільшого спостереженого.
+   Розкид тут великий саме через роздуми: у 1978 токенах виходу тексту
+   розбору ~450, решта — прихований ланцюжок `medium`, і його довжина
+   росте з довжиною розмови, а не з довжиною відповіді.
+   Вхід судді ≈3,8 тис., тож 3,8 + 3,0 = 6,8 тис. лишається під стелею
    TPM 8 тис. на своїй моделі.
 
    `reasoning_format:'hidden'` мислення НЕ вимикає — він лише не повертає
@@ -101,7 +107,7 @@
 const LADDER = [
   { model: 'qwen/qwen3.8-27b',    tested: true,  first: ['client'],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } },
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 3000 } },
   /* qwen3.6 приймає лише none | default (факт: провайдер відмовив на 'low',
      див. EFFORT_OK). З 'default' модель з'їдає всю стелю роздумами: у логах
      400 із виходом рівно 800 при стелі 800 — JSON не дописався, і схему
@@ -110,18 +116,18 @@ const LADDER = [
      доки не пройде живий сценарій на піні. */
   { model: 'qwen/qwen3.6-27b',    tested: false, first: [],
     reasoning_format: 'hidden',
-    effort: { client: 'none', judge: 'none' },   tokens: { client: 800, judge: 2000 } },
+    effort: { client: 'none', judge: 'none' },   tokens: { client: 800, judge: 3000 } },
   /* Старт судді. Живий прогін: сходинка тримає схему і відповідає стабільно
      — але у ролі КЛІЄНТА. У ролі судді її ще не бачив ніхто: розбір щоразу
      зрізав 429 спільного відра. Ціна ввімкнення названа тут, а не в самері:
      перший же розбір після цієї збірки і є її перевірка. */
   { model: 'openai/gpt-oss-120b', tested: true,  first: ['judge'],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } },
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 3000 } },
   /* Запас для обох ролей. Той самий живий прогін, та сама ціна. */
   { model: 'openai/gpt-oss-20b',  tested: true,  first: [],
     reasoning_format: 'hidden',
-    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 2000 } }
+    effort: { client: 'low',  judge: 'medium' }, tokens: { client: 800, judge: 3000 } }
 ];
 
 /* ── ДОЗВОЛЕНІ ЗНАЧЕННЯ effort, ПО МОДЕЛЯХ ────────────────────────────
@@ -173,7 +179,7 @@ const GROQ = 'https://api.groq.com/openai/v1/chat/completions';
    інакше чужий запит виставить max_completion_tokens 65536 і вигребе
    добову норму токенів за десяток викликів. */
 const LIM = {
-  maxTokens: 2400,
+  maxTokens: 3200,
   msgs: 40,
   chars: 60000,
   temperature: [0, 1.2],
@@ -269,12 +275,22 @@ async function handle(request, env) {
      щоб першою стала та, яка оголосила цю роль своїм стартом. Провертання,
      а не відсікання: запас лишається повним, просто починається з іншого
      місця. Роль без свого старту (або старт вимкнений) іде з початку
-     драбини — це не помилка, це просто спільне відро, як було. */
+     драбини — це не помилка, це просто спільне відро, як було.
+
+     ЧУЖИЙ СТАРТ — ОСТАННІЙ ЗАПАС. Живий прогін показав другий бік
+     розведення: коли клієнт вичерпав своє відро і зійшов драбиною, він
+     сів рівно на модель судді — і відра злились назад саме в ту хвилину,
+     коли навантаження найбільше. Тому сходинка, яку іншa роль назвала
+     своїм стартом, відсувається в кінець запасу: падіння перестає
+     скасовувати розведення, поки є хоч одна нейтральна сходинка. */
   const enabled = LADDER.filter(r => r.tested);
   const k = enabled.findIndex(r => (r.first || []).includes(role));
   const rotated = k > 0 ? enabled.slice(k).concat(enabled.slice(0, k)) : enabled;
+  const mine    = rotated.filter(r => !(r.first || []).some(f => f !== role));
+  const foreign = rotated.filter(r =>  (r.first || []).some(f => f !== role));
+  const ordered = mine.concat(foreign);
 
-  const rungs = LADDER[p] ? [LADDER[p]] : rotated;
+  const rungs = LADDER[p] ? [LADDER[p]] : ordered;
   if (!rungs.length) return say(500, 'Жодна модель не увімкнена на сервері.', null, cors);
 
   let lastRetry = null, lastMsg = '', skipped = 0;
