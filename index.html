@@ -554,6 +554,41 @@ const NET = {
    config каже, що ми просили, заголовок каже, що ми отримали (wsd 1.10). */
 const LIVE = { model:'', rung:0 };
 
+/* ── ПІН СХОДИНКИ · режим перевірки ────────────────────────────────
+   Браузер називає НОМЕР сходинки заголовком x-ae-pin. Назву моделі він не
+   називає ніколи — назви живуть у драбині воркера, і копії тут немає.
+
+   Тому підписи чипів не оголошені, а ВИВЧЕНІ: після кожної відповіді
+   ім'я з заголовка x-ae-model лягає під номер із x-ae-rung. До першої
+   відповіді чип каже «сходинка 2», після — назву моделі. Оголошений
+   перелік назв був би другою копією закритого переліку і розійшовся б
+   із драбиною мовчки, коли в неї додадуть сходинку.
+
+   Ім'я запиту (x-ae-pin) НЕ збігається з іменем відповіді (x-ae-rung)
+   навмисно: інакше екран легко почав би показувати те, що ми просили,
+   замість того, що відповіло, — і перевірка підтверджувала б сама себе.
+
+   RUNGS — єдине число, що дублює драбину. Ціна названа: зайвий чип
+   попросить неіснуючу сходинку, воркер віддасть звичайну драбину, і
+   екран покаже «просив 5 — відповіла 0». Розбіжність видима, не мовчазна. */
+const RUNGS = 4;
+const PIN = {
+  get: ()=>localStorage.getItem('ae_pin')||'',
+  set: v=>v===''?localStorage.removeItem('ae_pin'):localStorage.setItem('ae_pin',String(v)),
+  names(){ try{ return JSON.parse(localStorage.getItem('ae_rung_names')||'{}'); }
+           catch{ return {}; } },
+  learn(rung, model){
+    if(!model) return;
+    const n = PIN.names();
+    if(n[rung]===model) return;
+    n[rung] = model;
+    localStorage.setItem('ae_rung_names', JSON.stringify(n));
+  },
+  /* Коротка назва для чипа: постачальник у підписі не потрібен, а рядок
+     «openai/gpt-oss-120b» рве ряд на телефоні. */
+  short: m => String(m||'').split('/').pop()
+};
+
 /* Роль ('client' | 'judge') не міняє того, ЩО ми просимо — вона міняє,
    скільки моделі дозволено думати. Через проксі значення призначає воркер
    зі свого списку; браузер лише називає роль заголовком. У прямому режимі
@@ -569,6 +604,10 @@ async function callModel(messages, schema, role){
      кирилицею — тому кодуємо у %-послідовність. Воркер декодує назад.
      Без цього fetch падає ще до виходу в мережу: «non ISO-8859-1 code point». */
   else if(NET.get()) headers['x-ae-code'] = encodeURIComponent(NET.get());
+  /* Пін має сенс тільки через воркер: у прямому режимі драбини немає взагалі,
+     модель там одна і названа в config. Тому заголовок іде разом із кодовим
+     словом, а не разом із ключем. */
+  if(!key && PIN.get()!=='') headers['x-ae-pin'] = PIN.get();
 
   const body = {
     model: m.name,
@@ -589,6 +628,7 @@ async function callModel(messages, schema, role){
   if(!key){
     LIVE.model = r.headers.get('x-ae-model') || '';
     LIVE.rung  = Number(r.headers.get('x-ae-rung') || 0);
+    PIN.learn(LIVE.rung, LIVE.model);
   } else { LIVE.model = m.name; LIVE.rung = 0; }
 
   let d;
@@ -736,6 +776,32 @@ function Settings(root){
   const keyInput = el('input',{type:'password', value:val, placeholder:'gsk_…',
     oninput:e=>val=e.target.value, onkeydown:e=>e.key==='Enter'&&test()});
 
+  /* Ряд сходинок і підпис під ним перемальовуються після кожного пінгу:
+     саме там з'являється вивчена назва моделі. Перемальовуємо ВСЕРЕДИНІ
+     екрана, а не через render(), бо render() зібрав би Settings заново і
+     стер рядок результату — тобто відповідь зникла б у мить, коли її
+     треба читати. */
+  const chipsBox = el('div',{class:'tabs',style:'margin-bottom:6px'});
+  const pinNote  = el('p',{class:'sub',style:'margin:0 0 14px;font-size:13px'});
+
+  const drawRungs = ()=>{
+    const names = PIN.names(), cur = PIN.get();
+    chipsBox.textContent = '';
+    chipsBox.append(el('button',{'aria-pressed':cur===''?'true':'false',text:'авто',
+      onclick:()=>{ PIN.set(''); drawRungs(); }}));
+    for(let i=0;i<RUNGS;i++){
+      chipsBox.append(el('button',{'aria-pressed':cur===String(i)?'true':'false',
+        text: names[i] ? PIN.short(names[i]) : 'сходинка '+i,
+        onclick:()=>{ PIN.set(i); drawRungs(); }}));
+    }
+    pinNote.textContent = cur===''
+      ? 'Авто: воркер бере першу увімкнену сходинку і сходить нижче лише на вичерпаній квоті.'
+      : ('Режим перевірки: всі запити йдуть на сходинку '+cur+
+         ', запасу немає. Поверніть «авто» перед роботою з людьми.');
+    pinNote.style.color = cur==='' ? 'var(--soft)' : 'var(--loss)';
+  };
+  drawRungs();
+
   const test = async ()=>{
     KEY.set(val);
     status.style.color='var(--soft)';
@@ -743,8 +809,14 @@ function Settings(root){
     try{
       const t0=Date.now();
       const r = await engineLive.ping();
+      const sec = ((Date.now()-t0)/1000).toFixed(1);
       status.style.color='var(--vtm)';
-      status.textContent='✓ Зв’язок є. Модель відповіла «'+r+'» за '+((Date.now()-t0)/1000).toFixed(1)+' с.';
+      /* Називаємо те, що ВІДПОВІЛО (заголовок), а не те, що просили (пін).
+         Репліка моделі йде останньою: вона доводить, що схема жива, але
+         питання ходу — яка саме модель на дроті. */
+      status.textContent='✓ '+(LIVE.model||'модель не назвалась')+
+        ' — сходинка '+LIVE.rung+', '+sec+' с. Відповіла: «'+r+'».';
+      drawRungs();
     }catch(e){
       status.style.color='var(--loss)';
       status.textContent='✗ '+e.message;
@@ -757,9 +829,31 @@ function Settings(root){
       el('h2',{class:'toptitle',text:'Налаштування'})
     ]),
     el('h1',{class:'lede',text:'Технічне'}),
-    el('p',{class:'sub',style:'margin:0 0 18px',html:
-      'Модель зараз: <b>'+(LIVE.model || S.cfg.model.name)+'</b>'+
-      (LIVE.rung ? ' — <b>резервна</b>' : '')+'.'}),
+    /* До першої відповіді назвати модель нічим: config.model.name — це
+       профіль ПРЯМОГО режиму, і через воркер він казав би не те, що на
+       дроті. Мовчимо чесно замість того, щоб показувати намір як факт. */
+    el('p',{class:'sub',style:'margin:0 0 18px',html: LIVE.model
+      ? ('Модель зараз: <b>'+LIVE.model+'</b> — сходинка '+LIVE.rung+'.')
+      : (KEY.get()
+          ? ('Модель зараз: <b>'+S.cfg.model.name+'</b> (прямий режим).')
+          : 'Яка модель на дроті — скаже перша ж відповідь. Натисніть «Перевірити зв’язок».')}),
+    el('h2',{style:'margin:0 0 10px;font-size:17px',text:'Сходинка драбини'}),
+    el('details',{class:'acc'},[
+      el('summary',{text:'Навіщо перемикати сходинку'}),
+      el('div',{class:'accbody'},[
+        el('p',{html:
+          'Драбина сама перемикає модель <b>тільки</b> тоді, коли квота вичерпана '+
+          'або модель зникла. Поки основна відповідає, нижні сходинки не '+
+          'викликаються ніколи — і перевірити їх без піна неможливо.'}),
+        el('p',{html:
+          'Пін притискає всі запити до однієї сходинки, навіть вимкненої на '+
+          'сервері. Це <b>режим перевірки</b>: назва моделі береться з відповіді '+
+          'сервера, а не з цього застосунку. Пінг доводить, що модель жива і '+
+          'тримає схему; мову й характер доводить лише живий сценарій.'})
+      ])
+    ]),
+    chipsBox,
+    pinNote,
     el('h2',{style:'margin:0 0 10px;font-size:17px',text:'Ключ Groq'}),
     el('details',{class:'acc'},[
       el('summary',{text:'Навіщо це поле і чому воно тимчасове'}),
@@ -1270,6 +1364,9 @@ function Result(root){
 
 /* Відкриваємо стан назовні: потрібно для смоук-тестів і зручно для дебагу
    (у консолі браузера можна подивитись S.cart, S.sc, S.cfg). */
+/* PIN і LIVE віддані назовні навмисно: без них гейт міг би судити пін лише
+   грепом по джерелу, а це перевірка тексту, не поведінки. */
+window.PIN = PIN; window.LIVE = LIVE;
 window.S = S; window.render = render; window.ENGINE = engine;
 window.engineLive = engineLive; window.KEY = KEY; window.buildSystem = buildSystem;
 window.buildJudge = buildJudge;
