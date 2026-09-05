@@ -29,15 +29,73 @@ A(/if \(env\.AE_CODE\) \{/.test(require('fs').readFileSync('worker/ae-proxy.js',
    стелю: effort != 'none' зі стелею < 800 обриває JSON на півслові.
    Перевіряємо ВСІ сходинки, включно з вимкненими: вимкнена сходинка
    вмикається одним словом, і в цей момент перевіряти вже пізно. */
-const W = require('fs').readFileSync('worker/ae-proxy.js','utf8');
-const rungRe = /effort:\s*\{\s*client:\s*'(\w+)',\s*judge:\s*'(\w+)'\s*\},\s*tokens:\s*\{\s*client:\s*(\d+),\s*judge:\s*(\d+)\s*\}/g;
+let W = require('fs').readFileSync('worker/ae-proxy.js','utf8');
+/* ІНʼЄКЦІЯ А (12.12-є: ціль — ДАНІ драбини, не код і не згадка про неї).
+   Повертає сходинці qwen3.6 значення, якого її модель не приймає. Пара
+   effort/стеля при цьому лишається цілою — тому червоніти має рівно одне
+   твердження, про перелік дозволених значень. */
+if(inj) W = W.replace("effort: { client: 'none', judge: 'none' }",
+                      "effort: { client: 'low', judge: 'low' }");
+/* ІНʼЄКЦІЯ Б: старт судді переїжджає на роль клієнта. Обидва старти
+   лишаються на ввімкнених сходинках — червоніє тільки твердження про
+   «рівно один старт на роль, і старти різні». */
+if(inj) W = W.replace("first: ['judge']", "first: ['client']");
+
+/* Розбираємо сходинку цілком: модель, прапорець, старт за роллю, пара
+   effort/стеля. Раніше регекс брав лише effort і tokens — і `tested` не
+   бачив узагалі, тому гейт казав «сходинок 4» там, де ввімкнена була одна.
+   Число оголошених і число ввімкнених — різні числа, обидва потрібні. */
+const rungRe = /\{\s*model:\s*'([^']+)',\s*tested:\s*(true|false),\s*first:\s*\[([^\]]*)\],[\s\S]*?effort:\s*\{\s*client:\s*'(\w+)',\s*judge:\s*'(\w+)'\s*\},\s*tokens:\s*\{\s*client:\s*(\d+),\s*judge:\s*(\d+)\s*\}/g;
 const rungs = [...W.matchAll(rungRe)].map(m => ({
-  ce:m[1], je:m[2], ct:+m[3], jt:+m[4] }));
-A(rungs.length >= 4, `драбина розібрана: сходинок ${rungs.length}`);
+  model:m[1], on:m[2]==='true',
+  first:(m[3].match(/'(\w+)'/g)||[]).map(s=>s.replace(/'/g,'')),
+  ce:m[4], je:m[5], ct:+m[6], jt:+m[7] }));
+const on = rungs.filter(r => r.on);
+A(rungs.length >= 4, `драбина розібрана: оголошено сходинок ${rungs.length}`);
 A(rungs.every(r => (r.ce==='none' || r.ct>=800) && (r.je==='none' || r.jt>=800)),
   'парність effort/стеля на ВСІХ сходинках драбини: не-none вимагає >=800');
 A(rungs.length>0 && rungs[0].ce==='low',
   'сходинка 0: клієнт мислить (Ж-3). Повертаєш none — повертай і стелю 700');
+
+/* Скільки сходинок ВВІМКНЕНО. Розведення ролей вимагає щонайменше двох:
+   на одній вони знову ділять хвилинне відро токенів. */
+A(on.length >= 2, `драбина ввімкнена: сходинок ${on.length} із ${rungs.length}`);
+
+/* Рівно один старт на роль, і старти різні. Одне твердження, не два:
+   обидві половини падають від тієї самої причини (12.12-ї). */
+const starts = {};
+for(const r of rungs) for(const f of r.first) (starts[f]=starts[f]||[]).push(r.model);
+A(['client','judge'].every(x => (starts[x]||[]).length===1) &&
+  starts.client && starts.judge && starts.client[0]!==starts.judge[0],
+  'старт за роллю: у клієнта і судді рівно по одній сходинці, і це різні моделі');
+A(rungs.filter(r=>r.first.length).every(r=>r.on),
+  'кожен оголошений старт стоїть на ВВІМКНЕНІЙ сходинці');
+
+/* ── дозволені значення effort, по моделях ─────────────────────────────
+   Постачальник приймає різні переліки для різних моделей і відмовляє
+   кодом 400, а 400 драбиною не сходить. Тобто сходинка з чужим значенням
+   не деградує, а обриває запит — і побачити це можна тільки піном або
+   тут. Читаємо перелік із того самого файла: там його дім. */
+const okRe = /\{\s*match:\s*\/((?:[^/\\]|\\.)+)\/,\s*values:\s*\[([^\]]*)\]/g;
+const table = [...W.matchAll(okRe)].map(m => ({
+  re:new RegExp(m[1]), vals:(m[2].match(/'(\w+)'/g)||[]).map(s=>s.replace(/'/g,'')) }));
+A(table.length >= 3, `перелік дозволених effort розібраний: записів ${table.length}`);
+const badEffort = [];
+for(const r of rungs){
+  const rec = table.find(t => t.re.test(r.model));
+  if(!rec) continue;
+  for(const v of [r.ce, r.je]) if(!rec.vals.includes(v)) badEffort.push(r.model+':'+v);
+}
+A(badEffort.length===0,
+  'кожне значення effort належить переліку своєї моделі'+
+  (badEffort.length?' — чужі: '+badEffort.join(', '):''));
+
+/* Оголошення без споживача — не захист. Тому окремо: воркер справді
+   провертає список за роллю і справді питає перелік у момент запиту. */
+A(/\(r\.first \|\| \[\]\)\.includes\(role\)/.test(W),
+  'воркер обирає старт саме полем first, а не порядком сходинок');
+A(/if \(!effortOk\(r\.model, effort\)\)/.test(W),
+  'воркер звіряє effort із переліком у циклі драбини, а не лише на словах');
 
 /* ── ЄДИНА КОПІЯ ПРАВИЛ (6а-1) ────────────────────────────────────
    Правила винесені в tools/ae_rules.js, щоб командний рядок, браузерна
