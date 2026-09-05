@@ -8,6 +8,8 @@
      3. складає тіло запиту САМ: модель і межі бере звідси, не з браузера
      4. драбина моделей — квота вичерпана або модель зникла → наступна сходинка
      5. каже українською, коли не може відповісти
+     6. пін: заголовок x-ae-pin із НОМЕРОМ сходинки притискає запит до неї
+        (режим перевірки; назву моделі браузер не називає ніколи)
 
    Чого НЕ робить (свідомо):
      · не рахує запити — на free tier стелю тримає сам Groq, дубль не додає захисту
@@ -96,7 +98,7 @@ function corsHeaders(origin, env) {
     headers: {
       'Access-Control-Allow-Origin': ok ? origin : 'null',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, x-ae-code, x-ae-role',
+      'Access-Control-Allow-Headers': 'Content-Type, x-ae-code, x-ae-role, x-ae-pin',
       'Access-Control-Expose-Headers': 'x-ae-model, x-ae-rung, x-ae-role, retry-after',
       'Access-Control-Max-Age': '86400',
       'Vary': 'Origin'
@@ -155,7 +157,15 @@ async function handle(request, env) {
     presence_penalty:  clamp(inBody.presence_penalty,  LIM.presence_penalty,  0.3)
   };
 
-  const rungs = LADDER.filter(r => r.tested);
+  /* ПІН. Браузер називає НОМЕР сходинки, не модель — назва лишається тут.
+     Пін обходить tested навмисно: він і є спосіб перевірити вимкнену
+     сходинку, не вмикаючи її для всіх. Запасу в пінованому режимі немає:
+     список із однієї сходинки, тож 429 чи зникла модель видно як помилку,
+     а не заміну. Немає заголовка → -1 → жодного індексу → звичайна драбина.
+     Номер поза межами теж падає у звичайну драбину, і відповідь прийде
+     від сходинки 0: розбіжність «просив 7 — відповіла 0» видно на екрані. */
+  const p = +(request.headers.get('x-ae-pin') || -1);
+  const rungs = LADDER[p] ? [LADDER[p]] : LADDER.filter(r => r.tested);
   if (!rungs.length) return say(500, 'Жодна модель не увімкнена на сервері.', null, cors);
 
   let lastRetry = null, lastMsg = '';
@@ -198,7 +208,11 @@ async function handle(request, env) {
           'Content-Type': 'application/json',
           ...cors,
           'x-ae-model': r.model,
-          'x-ae-rung': String(i),     // 0 = основна; >0 = резерв
+          /* Номер у ДРАБИНІ, не в перебраному списку. Раніше стояло i —
+             індекс серед увімкнених; при двох увімкнених сходинках 0 і 2
+             друга називалась «1», і пінований прогін завжди звітував «0».
+             Заголовок мусить називати те саме число, що просить пін. */
+          'x-ae-rung': String(LADDER.indexOf(r)),   // 0 = основна; >0 = резерв
           'x-ae-role': role           // яку роль воркер розпізнав
         }
       });
