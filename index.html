@@ -221,6 +221,22 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .t-zf{background:var(--zf);color:#fff}
 .t-none{background:var(--line);color:var(--ink)}
 
+/* ── Редактор даних (крок Р-1а) ───────────────────────────────────
+   Картки тут НЕ клікаються: поля сценарію — це крок Р-1б, і картка,
+   що натискається без наслідку, вчить, що натиск нічого не означає.
+   Тому cursor і натиск .card перебиваються, а не наслідуються. */
+.elist{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:12px}
+.ecard{cursor:default}
+.ecard:active{transform:none}
+/* Стан картки — той самий словник кольорів, що й у панелі перевірки
+   (✓ зелений · ⚠ приглушений · ✗ втрата). Другої палітри для того
+   самого вердикту не заводимо: два кольори одного ✗ читались би як
+   два різні ✗. */
+.est{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.emood{margin:0;color:var(--soft);font-size:13px;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.eline{margin:0;font-size:13.5px;line-height:1.45}
+
 .field{display:block;margin-bottom:12px}
 .field span{display:block;font-size:13px;color:var(--soft);margin-bottom:4px}
 .field input{width:100%;max-width:420px;font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);
@@ -784,7 +800,12 @@ const engine = MOCK ? engineMock : engineLive;
 /* ── ЕКРАНИ ──────────────────────────────────────────────────────── */
 function render(){
   const app=$('#app'); app.innerHTML='';
-  ({gate:Gate, picker:Picker, game:Game, result:Result, settings:Settings}[S.screen])(app);
+  /* Підписники куратора живуть рівно один рендер: екран, який їх ставив,
+     щойно знищено, і його елементи більше нікому не показувати. Без цього
+     рядка кожен перехід додавав би ще одну функцію на мертвий DOM. */
+  CURATOR.watch.length = 0;
+  ({gate:Gate, picker:Picker, game:Game, result:Result, settings:Settings,
+    edit:Editor}[S.screen])(app);
   window.scrollTo(0,0);
 }
 
@@ -912,6 +933,7 @@ function Settings(root){
     ]),
     status,
     dataCheck(),
+    editEntry(),
     el('details',{class:'acc',style:'margin-top:24px'},[
       el('summary',{text:'Технічні дані'}),
       el('div',{class:'accbody'},[
@@ -990,6 +1012,64 @@ function readFileText(f){
   });
 }
 
+/* ── КУРАТОР: одні двері, які на кроці Д переїдуть уперед екрана ───
+   Прапорець живе В ПАМʼЯТІ, не в localStorage: закритий застосунок =
+   зачинені двері. Це стіна від випадковості, а не безпека — код лежить
+   у відкритому config.json і видимий кожному, хто його відкриє. Право
+   ПИСАТИ в репозиторій дає інший код (секрет воркера), і змішувати їх
+   не можна: тоді запис у дані отримав би кожен, хто прочитав config.
+
+   ⚠ Дім цього прапорця не міняється кроком Д. Міняється лише місце,
+   де його питають: сьогодні — всередині екрана Налаштувань, після Д —
+   перед ним. Тому підписники, а не render(): відімкнення посеред
+   роботи не сміє змести вердикт, який людина щойно отримала. */
+const CURATOR = {
+  open:false,
+  watch:[],                       // очищається на кожному render()
+  unlock(code){
+    if(String(code).trim() !== String(S.cfg.curatorCode||'')) return false;
+    this.open = true;
+    for(const fn of this.watch) try{ fn(); }catch(_){}
+    return true;
+  }
+};
+
+/* ЄДИНА точка виклику правил на сторінці. Другий виклик, написаний
+   поруч, — це другий дім того самого суду: розійдуться вони мовчки й
+   рівно тоді, коли аргументи знову зміняться (S21 §1.2 — саме так
+   чотири споживачі роз'їхались на двох аргументах проти чотирьох).
+   Носії беруться з застосунку ЗАВЖДИ, навіть коли дані підсунуті
+   файлом: судиться файл, а не носій. */
+function runRules(cat, scen){
+  if(typeof AE_RULES==='undefined' || !AE_RULES.validate) return null;
+  return AE_RULES.validate(cat || S.CAT, scen || S.SCEN, S.P.charsRaw, S.cfg);
+}
+
+/* Маршрут рядка вердикту на картку. Повідомлення правил починаються
+   з '#'+id — рівно ті, що стосуються одного сценарію; агрегатні ✓
+   («обов'язкові поля на місці») не називають нікого і на картку не
+   лягають ніколи.
+   ⚠ ТОКЕН, не префікс. startsWith('#1') зловив би і '#14': на живих
+   даних id — числа 1…43, тобто пастка не гіпотетична, а гарантована.
+   \S+ зупиняється на пробілі, а формат тега («#id «назва» — текст»,
+   «#id mood — текст») пробіл після номера має завжди. */
+const idOfMsg = msg => { const m=/^#(\S+)/.exec(String(msg)); return m ? m[1] : null; };
+
+/* Розкладка вердикту: {byId:Map, general:[]}. Рядок з номером, якому
+   не знайшлось картки (сценарій щойно видалили), НЕ зникає — він іде
+   в «Загальні». Мовчазна втрата рядка виглядає точно як чисті дані. */
+function spreadVerdict(out, ids){
+  const byId=new Map(), general=[];
+  for(const m of out){
+    const id=idOfMsg(m.msg);
+    if(id!==null && ids.has(id)){
+      if(!byId.has(id)) byId.set(id,[]);
+      byId.get(id).push(m);
+    } else general.push(m);
+  }
+  return {byId, general};
+}
+
 function dataCheck(){
   const box = el('div',{class:'accbody',style:'display:none'});
   const head = el('p',{class:'sub',style:'margin:0'});
@@ -1006,6 +1086,8 @@ function dataCheck(){
       head.textContent='✗ Правила не завантажились: tools/ae_rules.js не прочитано.';
       return;
     }
+    /* Виклик стоїть один — у runRules(). Аргументи, які колись знову
+       зміняться, міняються там і одразу для обох споживачів. */
     /* Джерело називається ЗАВЖДИ, навіть коли файл не вибирали. Вердикт
        без імені того, що судилось, читається як вердикт про застосунок —
        і саме так зелений прогін чужого файлу став би доказом ні про що. */
@@ -1019,8 +1101,7 @@ function dataCheck(){
        навіть тоді, коли дані підсунуті файлом: судиться файл, а не
        носій, і підміняти носій разом із даними означало б судити
        вигадану пару. */
-    const r = AE_RULES.validate(picked.cat || S.CAT, picked.scen || S.SCEN,
-                                S.P.charsRaw, S.cfg);
+    const r = runRules(picked.cat, picked.scen);
     head.style.color = r.err ? 'var(--loss)' : 'var(--soft)';
     head.textContent = (r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err;
     const SIGN={ok:'✓',warn:'⚠',err:'✗'};
@@ -1035,7 +1116,10 @@ function dataCheck(){
     oninput:e=>code=e.target.value, onkeydown:e=>e.key==='Enter'&&unlock()});
   const gateRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end'});
   const unlock = ()=>{
-    if(code.trim()!==String(S.cfg.curatorCode||'')){
+    /* Той самий код відмикає і панель, і вхід у редактор: двері одні.
+       Вигляд панелі не змінився ані на піксель — змінилось лише те, що
+       відімкнення тепер чути ще комусь (CURATOR.watch). */
+    if(!CURATOR.unlock(code)){
       head.style.color='var(--loss)'; head.textContent='Код не підходить.'; return; }
     opened=true; gateRow.style.display='none';
     fileRow.style.display='flex'; run();
@@ -1094,6 +1178,151 @@ function dataCheck(){
       gateRow, fileRow, fileNote, srcLine, head, box
     ])
   ]);
+}
+
+/* ── ВХІД У РЕДАКТОР ──────────────────────────────────────────────
+   Блок мовчить, доки двері зачинені, і зʼявляється тим самим кодом,
+   що відмикає панель перевірки — без render(), щоб не змести вердикт,
+   який людина щойно отримала. */
+function editEntry(){
+  const box = el('div',{style:'margin-top:24px;max-width:520px'},[
+    el('h2',{style:'margin:0 0 6px;font-size:17px',text:'Редактор даних'}),
+    el('p',{class:'sub',style:'margin:0 0 10px',text:
+      'Сценарії списком, з вердиктом правил на кожному. Читання: '+
+      'нічого не змінює і нічого не надсилає.'}),
+    el('button',{class:'btn ghost',text:'Відкрити редактор',
+      onclick:()=>{ S.screen='edit'; render(); }})
+  ]);
+  box.style.display = CURATOR.open ? '' : 'none';
+  CURATOR.watch.push(()=>{ box.style.display=''; });
+  return box;
+}
+
+/* ── ЕКРАН РЕДАКТОРА · Р-1а: список і світлофор ───────────────────
+   Судить ЛОКАЛЬНО, тим самим тілом правил, що й воркер на записі
+   (S21 §2): відмову видно до кнопки, а не після мережі.
+
+   ⚠ ЩО САМЕ ПОКАЗУЄ СВІТЛОФОР — названо вголос, бо це не очевидно.
+   На чистих даних правила віддають 20 рядків, і рядків із номером
+   сценарію серед них НУЛЬ: усі ✓ агрегатні («обовʼязкові поля на
+   місці», «усі cats існують»). Номер несуть тільки ✗ і ⚠ про
+   конкретний сценарій. Отже «чиста картка» означає «жодного рядка
+   про неї не сказано», а не «правила її похвалили» — і напис на
+   картці мусить казати саме це, інакше зелений читається як доказ.
+
+   ⚠ Межа маршруту (12.12-и). Дефекти, що стосуються сценарію, але
+   названі без номера — «пул порожній», «дублі кодів товару», —
+   лягають у «Загальні» і на картці не видно. Сценарій, зламаний
+   через каталог, лишиться чистим. Ця частка не спіймана тут; вона
+   спіймана в «Загальних», але без адреси. */
+function Editor(root){
+  /* Пряме потрапляння на екран повз двері (S.screen ззовні, повернення
+     назад у PWA) не пускається: двері мають значити те саме завжди. */
+  if(!CURATOR.open){ S.screen='settings'; render(); return; }
+
+  const r = runRules();
+  const ids = new Set(S.SCEN.map(s=>String(s.id)));
+  const spread = r ? spreadVerdict(r.out, ids) : {byId:new Map(), general:[]};
+
+  const SIGN={ok:'✓',warn:'⚠',err:'✗'};
+  const TONE={ok:'var(--vtm)',warn:'var(--soft)',err:'var(--loss)'};
+  const line = m => el('div',{class:'tapeline'},[
+    el('span',{style:'color:'+TONE[m.lvl],text:SIGN[m.lvl]+' '+m.msg})]);
+
+  /* Стан картки рахується з РОЗКЛАДЕНИХ рядків, а не з полів сценарію:
+     другий підрахунок був би другим тілом правил у мʼякій формі. */
+  const stateOf = id => {
+    const ms = spread.byId.get(id) || [];
+    return { err: ms.filter(m=>m.lvl==='err').length,
+             warn: ms.filter(m=>m.lvl==='warn').length, all: ms };
+  };
+
+  let filter='all';
+  const listBox = el('div',{class:'elist'});
+
+  const counts = ()=>{
+    let e=0,w=0;
+    for(const s of S.SCEN){ const st=stateOf(String(s.id));
+      if(st.err) e++; else if(st.warn) w++; }
+    return {e,w};
+  };
+  const C = counts();
+
+  const drawList = ()=>{
+    listBox.innerHTML='';
+    let shown=0;
+    for(const s of S.SCEN){
+      const id=String(s.id), st=stateOf(id);
+      if(filter==='err'  && !st.err) continue;
+      if(filter==='warn' && !(st.warn && !st.err)) continue;
+      shown++;
+      const badge = st.err  ? el('span',{class:'est',style:'color:'+TONE.err,
+                                text:'✗ '+st.err+(st.warn?' · ⚠ '+st.warn:'')})
+                  : st.warn ? el('span',{class:'est',style:'color:'+TONE.warn,text:'⚠ '+st.warn})
+                            : el('span',{class:'est',style:'color:'+TONE.ok,text:'без зауважень'});
+      const card = el('div',{class:'card ecard'},[
+        el('div',{class:'ord',text:'#'+id+' · '+(s.grp||'—')}),
+        el('h3',{text:s.title||'без назви'}),
+        el('p',{text:[s.character||'характер не вказано', s.mode||'режим не вказано'].join(' · ')}),
+        el('p',{class:'emood',text:s.mood||'рядок mood порожній'}),
+        el('div',{class:'cardfoot'},[
+          el('span',{class:'sub',style:'font-size:12.5px',
+            text:(s.mood||'').length+' зн.'}),
+          badge
+        ])
+      ]);
+      /* Рядки правил лежать під карткою, а не в спливному вікні: на
+         телефоні вікно ховає те, заради чого його відкрили. */
+      if(st.all.length){
+        const det=el('details',{class:'acc',style:'margin:0'},[
+          el('summary',{text:'Що сказали правила ('+st.all.length+')'}),
+          el('div',{class:'accbody'}, st.all.map(line))
+        ]);
+        card.append(det);
+      }
+      listBox.append(card);
+    }
+    if(!shown) listBox.append(el('p',{class:'sub',text:'У цьому фільтрі порожньо.'}));
+  };
+
+  const chips = el('div',{class:'tabs'});
+  const mkChip = (key,label)=>{
+    const b=el('button',{text:label,'aria-pressed':String(filter===key),
+      onclick:()=>{ filter=key;
+        for(const x of chips.children) x.setAttribute('aria-pressed',String(x===b));
+        drawList(); }});
+    chips.append(b); return b;
+  };
+  mkChip('all','Усі ('+S.SCEN.length+')');
+  mkChip('err','✗ ('+C.e+')');
+  mkChip('warn','⚠ ('+C.w+')');
+
+  const headLine = r
+    ? el('p',{class:'eline',style:'color:'+(r.err?TONE.err:TONE.ok),
+        text:(r.err?'✗':'✓')+' підсумок правил: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err})
+    : el('p',{class:'eline',style:'color:'+TONE.err,
+        text:'✗ Правила не завантажились: tools/ae_rules.js не прочитано.'});
+
+  put(root,
+    el('div',{class:'top'},[
+      el('div',{class:'toprow'},[backBtn('назад',()=>{S.screen='settings';render()})]),
+      el('h1',{class:'toptitle',text:'Редактор даних'})
+    ]),
+    el('p',{class:'sub',style:'margin:0 0 4px',text:
+      'Судяться дані, які застосунок зараз завантажив. Збірка '+(S.cfg.build||'—')+'.'}),
+    headLine,
+    el('p',{class:'sub',style:'margin:6px 0 14px;font-size:12.5px',text:
+      'Картка називає тільки проблеми. Рядки ✓ стосуються всіх даних '+
+      'разом, тому лежать у «Загальних» — «без зауважень» на картці '+
+      'означає, що про неї не сказано нічого.'}),
+    chips,
+    el('details',{class:'acc'},[
+      el('summary',{text:'Загальні рядки ('+spread.general.length+')'}),
+      el('div',{class:'accbody'}, spread.general.map(line))
+    ]),
+    listBox
+  );
+  drawList();
 }
 
 function Gate(root){
