@@ -11,6 +11,10 @@ on:
     paths:
       - 'worker/ae-edit.js'
       - 'tools/ae_rules.js'
+      # Гейт у переліку разом із тим, що він охороняє: правка самого гейта
+      # інакше не запускає його ж (12.12-е). Зелений, який ніхто не ганяв
+      # після зміни, — це не зелений.
+      - 'tools/smoke_edit_v2.mjs'
       - 'wrangler.toml'
       - '.github/workflows/deploy-edit.yml'
   workflow_dispatch:
