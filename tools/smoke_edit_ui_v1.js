@@ -37,6 +37,8 @@
             node tools/smoke_edit_ui_v1.js --inject=ІН-З   (пул вибірника не з cats сценарію)
             node tools/smoke_edit_ui_v1.js --inject=ІН-И   (масив у чернетці звіряється тотожністю)
             node tools/smoke_edit_ui_v1.js --inject=ІН-І   (число полів написане рукою)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Ї   (обгортка вибірника — label)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Й   (смуга обраного стоїть над списком)
 
    S26 · ВИБІРНИК КОДІВ (Р-1г-1). Третій предмет охорони — ВВІД ЗА ПЕРЕЛІКОМ:
    order · bv · bm мусять братися вибором із пулу чинних cats, зберігати
@@ -183,6 +185,24 @@ if(arg==='ІН-І'){
   HTML=inject(HTML,
     "        el('summary',{text:'Не правиться тут ('+plural(roRows.length,'поле','поля','полів')+')'}),",
     "        el('summary',{text:'Не правиться тут (7 полів)'}),", 'ІН-І');
+}
+
+if(arg==='ІН-Ї'){
+  /* Повертає <label> як обгортку вибірника. <label> без for передає клік
+     першому контролу всередині себе — тобто дотик до порожнього місця
+     праворуч від підпису знімає галку з ПЕРШОЇ позиції, і при закритому
+     списку цього ніде не видно. Дефект помітили пальцем, не гейтом. */
+  HTML=inject(HTML,
+    "    return field(key, label, box, null, 'div');",
+    "    return field(key, label, box, null, 'label');", 'ІН-Ї');
+}
+if(arg==='ІН-Й'){
+  /* Знімає ховання смуги обраного. Смуга стоїть НАД списком, і кожна нова
+     галка додає їй рядок — тобто посуває вниз рівно те, у що людина
+     цілиться пальцем. Дефект не ламає даних: він ламає влучання. */
+  HTML=inject(HTML,
+    "    det.addEventListener('toggle', ()=>{ sel.style.display = det.open ? 'none' : ''; });",
+    "    /* ІН-Й */;", 'ІН-Й');
 }
 
 /* ── фікстури ──────────────────────────────────────────────────────
@@ -461,6 +481,15 @@ function cardsOf(d){
       f.querySelectorAll('input[type=checkbox]').length>0 &&
       f.querySelectorAll('input[type=text], textarea').length===0));
 
+  /* Смуга обраного не має права стояти над відкритим списком: кожна нова
+     галка додає їй рядок і посуває вниз те, у що цілиться палець. */
+  T('смуга обраного ховається, доки список відкритий', (()=>{
+    const det=fBv.querySelector('details'), sel=fBv.querySelector('.picksel');
+    det.open=true;  det.dispatchEvent(new wD.window.Event('toggle'));
+    const hid = sel.style.display==='none';
+    det.open=false; det.dispatchEvent(new wD.window.Event('toggle'));
+    return hid && sel.style.display!=='none'; })());
+
   /* Пул рахується ГЕЙТОМ із завантаженого каталогу, а не тим самим
      виразом, що на сторінці: інакше твердження порівнювало б дві
      однакові дірки. */
@@ -502,6 +531,19 @@ function cardsOf(d){
     (()=>{ const v=(wD.S.edraft['3']||{}).bm;
       return Array.isArray(v) && v.length===0 &&
         fBm.textContent.includes('нічого не обрано'); })());
+
+  /* ⚠ Проба стоїть ОСТАННЬОЮ серед полів, і саме на bm. Жест справжній —
+     клік по ПІДПИСУ поля, не по контролу, — а обгортка-<label> без for
+     віддала б його першому чекбоксу. Тобто зламане твердження тут не
+     просто червоніє: воно МІНЯЄ вибір. Поставлене раніше, воно потягло б
+     за собою сусідні твердження, і одна причина читалась би як дві
+     (12.12-ї). Після нього полями ніхто не користується. */
+  const beforeBm = rowsOf(fBm).map(r=>r.cb.checked);
+  fBm.querySelector('.flab')
+     .dispatchEvent(new wD.window.MouseEvent('click',{bubbles:true}));
+  T('дотик до тла поля не змикає жодного чекбокса',
+    rowsOf(fBm).map(r=>r.cb.checked).every((v,i)=>v===beforeBm[i]) &&
+    ((wD.S.edraft['3']||{}).bm||[]).length===0);
 
   const roAcc=[...dd.querySelectorAll('details.acc')]
     .find(x=>x.querySelector('summary').textContent.startsWith('Не правиться тут'));
