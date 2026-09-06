@@ -278,6 +278,36 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .echip{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;
   border:1px solid var(--line);color:var(--soft);white-space:nowrap}
 
+/* ── ВИБІРНИК КОДІВ (Р-1г-1) ───────────────────────────────────────
+   Обране показується НАЗВАМИ: у файлі живе код, у голові людини —
+   назва товару. Код лишається поруч дрібним, бо саме ним говорять
+   правила, і людина мусить упізнати рядок вироку. */
+.pick{max-width:420px}
+.picksel{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+/* Назва обраного НЕ обрізається. «Стрепсілс інтенсив 8,75 мг №16» —
+   дозування й кількість стоять у хвості рядка, і обрізана назва в
+   аптечному каталозі це інший товар. Тому white-space тут скинутий,
+   хоч .echip його й тримає. */
+.picksel .echip{white-space:normal;text-align:left}
+.pickno{font-size:12.5px;color:var(--soft)}
+/* Пул під cats буває до 52 позицій. Без власної прокрутки три вибірники
+   розтягли б картку на кілька екранів, і вирок правил унизу перестав би
+   бути видимим разом із вибором. */
+.picklist{max-height:38dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  margin:0 0 4px;border-top:1px dashed var(--line)}
+.pickitem{display:flex;gap:9px;align-items:flex-start;padding:8px 2px;
+  border-bottom:1px dashed var(--line);cursor:pointer}
+.pickitem:last-child{border-bottom:none}
+.pickitem input{flex:0 0 auto;width:19px;height:19px;margin:1px 0 0;accent-color:var(--vtm)}
+.pickitem .pn{flex:1;min-width:0;font-size:14px;color:var(--ink);line-height:1.35}
+.pickitem .pc{flex:0 0 auto;font-size:12px;color:var(--soft);
+  font-variant-numeric:tabular-nums;text-align:right;padding-top:1px}
+/* Рядок сум під bv/bm. Це ЧИСЛО, а не вирок: вирок про приріст каже
+   правило, і його рядок стоїть нижче у вердикті. Тому кольору тут
+   немає — пофарбоване число стало б другою оцінкою того самого. */
+.pickgain{max-width:420px;margin:2px 0 0;font-size:12.5px;color:var(--soft);
+  font-variant-numeric:tabular-nums}
+
 /* Акордеон. Технічний текст потрібен рідко, а місця на телефоні їсть
    багато: тримаємо його згорнутим. Нативний <details> — щоб не писати
    свій перемикач; дефолтний трикутник Safari гаситься окремим правилом,
@@ -1153,14 +1183,34 @@ const recOf = id => {
 };
 const scenAll = () => S.SCEN.map(s=>recOf(String(s.id)));
 /* Правка, що збіглася з файлом, — не правка. Без цього повернення поля
-   до вихідного тексту лишало б картку позначеною назавжди. */
+   до вихідного тексту лишало б картку позначеною назавжди.
+
+   ⚠ Масив порівнюється ВМІСТОМ (Р-1г-1). Для order · bv · bm значення —
+   новий масив на кожен дотик, і тотожність (===) для нього хибна ЗАВЖДИ:
+   поле лишалось би позначеним назавжди, а публікація везла б у тілі
+   запиту поле, якого ніхто не міняв, — тобто mergeDraft мовчки затер би
+   чужу правку рівно в цьому полі.
+   Порядок значущий, а не випадковий: вибірник його зберігає (наявні коди
+   лишаються на місці, нові йдуть у кінець), тому звірка по відсортованому
+   казала б «не змінено» там, де послідовність у файлі інша. */
+const sameVal = (a,b) => (Array.isArray(a) && Array.isArray(b))
+  ? (a.length===b.length && a.every((x,i)=>x===b[i]))
+  : a===b;
 const setDraft = (id, field, value) => {
   const base = S.SCEN.find(s=>String(s.id)===id);
   const d = S.edraft[id] || {};
-  if(base && base[field] === value) delete d[field]; else d[field] = value;
+  if(base && sameVal(base[field], value)) delete d[field]; else d[field] = value;
   if(Object.keys(d).length) S.edraft[id] = d; else delete S.edraft[id];
 };
 const draftFields = id => Object.keys(S.edraft[id] || {});
+
+/* Число в заголовку рахується з переліку, а не пишеться рукою. Написане
+   рукою воно замерзає брехнею на кроці, який перенесе ще одне поле у
+   форму: рядок стану, що каже неправду, гірший за відсутній рядок. */
+const plural = (n, one, few, many) => {
+  const a = n%100, b = n%10;
+  return n + ' ' + (a>=11&&a<=14 ? many : b===1 ? one : (b>=2&&b<=4) ? few : many);
+};
 
 /* ── ПУБЛІКАЦІЯ · Р-1в ────────────────────────────────────────────────
    Три предмети, і кожен окремий: АДРЕСА (оголошена в config, не зашита),
@@ -1624,11 +1674,11 @@ function Editor(root){
    публікація — окремий крок Р-1в, і доти екран мусить казати це
    словами, а не мовчати.
 
-   ⚠ ЩО ТУТ НЕ ПРАВИТЬСЯ І ЧОМУ (12.12-и). Поля id · no · cats · main ·
-   order · bv · bm показані, але read-only. Це не недогляд і не «на
-   потім»: cats — ключі з 23 категорій каталогу, решта — коди зі 181
-   позиції. Текстове поле тут дало б висячий код і ✗ у правилах,
-   а чесний ввід — це вибірник по каталогу, окремий предмет (Р-1г).
+   ⚠ ЩО ТУТ НЕ ПРАВИТЬСЯ І ЧОМУ (12.12-и). Після Р-1г-1 read-only лишились
+   чотири поля: id · no · cats · main. Коди (order · bv · bm) правляться
+   вибором із пулу чинних cats — текстове поле дало б висячий код і ✗ у
+   правилах. cats і main показані, але не правляться: зміна категорії
+   рухає пул під уже обраними кодами, і це окремий предмет (Р-1г-2).
    Показані вони тому, що картка без них виглядала б повною, не
    будучи такою.
 
@@ -1788,6 +1838,94 @@ function ScenCard(root){
     return field(key,label,n,hint);
   };
 
+  /* ── ВИБІРНИК КОДІВ · Р-1г-1 ──────────────────────────────────────
+     order · bv · bm — переліки кодів каталогу. Текстовий ввід тут дав би
+     висячий код і ✗ у правилах (ae_rules.js:88), тому ввід ТІЛЬКИ вибором.
+
+     Пул — позиції ЧИННИХ cats сценарію, і люка «взяти щось із чужої
+     групи» немає свідомо: чесний спосіб узяти чужу позицію — додати
+     категорію, а cats цим кроком ще не правиться. Екран каже цю межу
+     словами замість того, щоб мовчки не мати потрібного рядка.
+
+     ⚠ Обробник НЕ кличе render(). Повне перемальовування згорнуло б
+     <details> і скинуло прокрутку списку: людина, що ставить другу
+     галку, поверталась би на початок. Тому локальний draw() + refresh(),
+     як у полів тексту. */
+  const pool = (rec.cats||[]).flatMap(k => S.CAT[k] || []);
+  const poolSet = new Set(pool.map(i=>i.c));
+  const catNames = (rec.cats||[]).map(k => S.LABEL[k] || k).join(' · ');
+
+  const codeField = (key, label) => {
+    const box  = el('div',{class:'pick'});
+    const sel  = el('div',{class:'picksel'});
+    const list = el('div',{class:'picklist'});
+    const cur  = () => { const v = recOf(id)[key]; return Array.isArray(v) ? v.slice() : []; };
+
+    /* Набір рядків рахується ОДИН раз, на відкритті картки, і містить пул
+       плюс уже обране, що в пул не входить. Без другої частини код, який
+       у даних є, а в пулі його немає, не мав би чим зніматись — галки для
+       нього просто не було б на екрані. Набір сталий: зняте не зникає з
+       переліку, інакше зняти й повернути було б неможливо. */
+    const extra = cur().filter(c => !poolSet.has(c))
+      .map(c => S.ALL[c] || {c, n:'позиція не знайдена в каталозі', b:0});
+    const rows = [...pool, ...extra];
+
+    const boxes = [];
+    for(const it of rows){
+      const cb = el('input',{type:'checkbox'});
+      cb.addEventListener('change', () => toggle(it.c, cb.checked));
+      boxes.push([it.c, cb]);
+      list.append(el('label',{class:'pickitem'},[
+        cb,
+        el('span',{class:'pn', text: it.n}),
+        el('span',{class:'pc', text: it.c + (poolSet.has(it.c) ? '' : ' · поза cats')
+          + ' · ' + uah(it.b) + ' ₴'})
+      ]));
+    }
+
+    /* Число під bv/bm — ЧИСЛО, не вирок. Береться bonusOf, що вже живе на
+       сторінці (розділ «Гроші»), другого дому арифметики тут немає. Вирок
+       про приріст каже правило, і його рядок стоїть нижче у вердикті;
+       підпис «мало/досить» тут був би другою оцінкою того самого. */
+    const gain = key==='order' ? null : el('p',{class:'pickgain'});
+
+    const draw = () => {
+      const v = cur();
+      sel.innerHTML = '';
+      if(!v.length) sel.append(el('span',{class:'pickno',text:'нічого не обрано'}));
+      for(const c of v)
+        sel.append(el('span',{class:'echip', text: S.ALL[c] ? S.ALL[c].n : c}));
+      for(const [c,cb] of boxes) cb.checked = v.includes(c);
+      if(gain){
+        const o = recOf(id).order || [];
+        gain.textContent = 'бонус обраного ' + uah(bonusOf(v)) + ' ₴ · замовлення '
+          + uah(bonusOf(o)) + ' ₴ · різниця ' + uah(bonusOf(v) - bonusOf(o)) + ' ₴';
+      }
+    };
+
+    /* Порядок наявних кодів зберігається: нове дописується в кінець, зняте
+       вирізається на місці. Якби обране писалось у порядку каталогу, то
+       відкрити картку й торкнутись будь-чого означало б перетасувати
+       масив у файлі — диф, якого ніхто не просив, у коміті з чужим ім'ям. */
+    const toggle = (c, on) => {
+      const v = cur();
+      const i = v.indexOf(c);
+      if(on && i < 0) v.push(c);
+      if(!on && i >= 0) v.splice(i, 1);
+      setDraft(id, key, v);
+      draw(); refresh();
+    };
+
+    box.append(sel);
+    box.append(el('details',{class:'acc',style:'margin:0'},[
+      el('summary',{text:'Обрати — доступно ' + plural(rows.length,'позиція','позиції','позицій')}),
+      el('div',{class:'accbody',style:'padding-bottom:6px'},[list])
+    ]));
+    if(gain) box.append(gain);
+    draw();
+    return field(key, label, box);
+  };
+
   const chars = Object.keys(S.P.chars||{});
   const grps  = [...new Set(S.SCEN.map(x=>x.grp).filter(Boolean))];
 
@@ -1833,21 +1971,38 @@ function ScenCard(root){
     (()=>{ const f=textField('mood','Настрій дня (mood)',true,moodHint);
       f.querySelector('.flab').append(countEl); return f; })(),
 
+    /* Межа названа один раз на всі три поля, а не тричі під кожним:
+       причина в них спільна, і три копії одного пояснення читались би
+       як три різні обмеження. */
+    el('p',{class:'enote',text:
+      'Три поля нижче беруть коди з категорій цього сценарію'+
+      (catNames ? ' (' + catNames + ')' : '') + '. Щоб узяти позицію з іншої '+
+      'групи, треба спершу додати категорію — cats цією формою поки не правиться.'}),
+    codeField('order','Замовлення (order)'),
+    codeField('bv','Ідеал ВТМ (bv)'),
+    codeField('bm','Ідеал СТМ (bm)'),
+
     verdBox,
 
-    el('details',{class:'acc',style:'margin-top:18px'},[
-      el('summary',{text:'Не правиться тут (7 полів)'}),
-      el('div',{class:'accbody'},[
-        el('p',{class:'enote',style:'margin-bottom:8px',text:
-          'Коди каталогу і номери. Текстовий ввід тут дав би висячий код; '+
-          'чесний ввід — це вибірник по каталогу, окремий крок.'}),
-        el('div',{class:'ero'},[
-          ro('id', rec.id), ro('no (номер замовлення)', rec.no),
-          ro('cats', rec.cats), ro('main', rec.main), ro('order', rec.order),
-          ro('bv (ідеал ВТМ)', rec.bv), ro('bm (ідеал СТМ)', rec.bm)
+    (()=>{
+      /* Перелік і число — з одного місця. Число, написане рукою, замерзне
+         брехнею на кроці, який забере звідси cats і main (S25 §4.3). */
+      const roRows = [
+        ['id', rec.id],
+        ['no (номер замовлення)', rec.no],
+        ['cats', rec.cats],
+        ['main', rec.main]
+      ];
+      return el('details',{class:'acc',style:'margin-top:18px'},[
+        el('summary',{text:'Не правиться тут ('+plural(roRows.length,'поле','поля','полів')+')'}),
+        el('div',{class:'accbody'},[
+          el('p',{class:'enote',style:'margin-bottom:8px',text:
+            'Номери й категорії. Категорія задає пул, з якого беруться коди, '+
+            'тому її правка рухає вибір під трьома полями вище — це окремий крок.'}),
+          el('div',{class:'ero'}, roRows.map(([l,v])=>ro(l,v)))
         ])
-      ])
-    ])
+      ]);
+    })()
   );
   refresh();
 }
