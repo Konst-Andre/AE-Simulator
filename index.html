@@ -345,6 +345,19 @@ const el = (tag,attrs={},kids=[])=>{
   return n;
 };
 
+/* ⚠ Мишачий вказівник, не «не-мобільний». Ширина екрана тут ні до чого:
+   iPad із клавіатурою широкий, але пальцем; вузьке вікно на ноутбуці
+   вузьке, але мишею. Питаємо рівно те, що потрібно — чи є наведення й
+   точний вказівник. Читається ОДИН раз при завантаженні: перечитувати
+   нема заради чого, а живий запит у кожному натисканні клавіші — це
+   робота в найгарячішому місці.
+   matchMedia у частині середовищ (jsdom) — заглушка, що завжди каже «ні»;
+   try тут не заради jsdom, а тому що відсутній matchMedia не має права
+   вбити ввід репліки. */
+const POINTER_FINE = (()=>{ try{
+  return matchMedia('(hover:hover) and (pointer:fine)').matches;
+}catch(_){ return false; } })();
+
 /* Нативний root.append(null) НЕ пропускає порожнє повз себе — він робить
    з null текстовий вузол «null», і той друкується на екрані. Саме так
    на списку замовлень зʼявлялось слово «null» над кнопкою «Почати зміну».
@@ -1096,6 +1109,23 @@ const CURATOR = {
   }
 };
 
+/* ── КЛЮЧ ДО ВОРКЕРА (Р-1в-2) ─────────────────────────────────────
+   ДВА РІЗНІ КЛЮЧІ, і плутати їх не можна ні в коді, ні на екрані:
+     curatorCode  — відмикає ЕКРАН редактора. Лежить у config.json,
+                    тобто видимий кожному, хто відкриє файл.
+     AE_EDIT_CODE — відмикає ЗАПИС. Секрет воркера, ніде в репозиторії
+                    його немає, і сторінка його не знає, доки людина не
+                    надрукує (worker/ae-edit.js:225–228).
+   ⚠ ДІМ — ПАМʼЯТЬ МОДУЛЯ, не localStorage і не S. Код запису на диску
+   телефона переживає власника: телефон лишають розблокованим на столі,
+   передають, здають у сервіс. Памʼять гине з вкладкою, і це єдина
+   властивість, заради якої цей об'єкт існує окремо від S — S тут ні до
+   чого не зобов'язує, але сусідство з даними, які пишуться, притягує
+   збереження «за компанію».
+   ⚠ Не в CURATOR: там прапорець «екран відімкнено», і код, покладений
+   поруч, з часом почав би читатись як частина того самого дозволу. */
+const EDITKEY = { code:'' };
+
 /* ЄДИНА точка виклику правил на сторінці. Другий виклик, написаний
    поруч, — це другий дім того самого суду: розійдуться вони мовчки й
    рівно тоді, коли аргументи знову зміняться (S21 §1.2 — саме так
@@ -1211,6 +1241,14 @@ const mergeDraft = base => {
 
 async function publish(){
   if(!pubReady() || !S.esnap) return;
+  /* ⚠ Сторож стоїть ДО перечитування, а не перед fetch воркера. Запит без
+     ключа воркер відхилить однаково, але перечитування вже витратить один
+     із 60 запитів на годину — той самий бюджет, з якого живе замок. */
+  if(!EDITKEY.code.trim()){
+    S.epub = {state:'code', text:'Введіть код редактора — без нього воркер '+
+      'запису не приймає. Це інший ключ, ніж код куратора.'};
+    return render();
+  }
   S.epub = {state:'busy', text:'Перечитуємо файл перед записом…'};
   render();
   let fresh;
@@ -1238,7 +1276,13 @@ async function publish(){
   let res, j;
   try{
     res = await fetch(S.cfg.editEndpoint,{method:'POST',
-      headers:{'Content-Type':'application/json'},
+      /* ⚠ encodeURIComponent обовʼязковий: кирилиця в заголовку HTTP падає
+         на «non ISO-8859-1 code point» — уже наступали в ae-proxy. Воркер
+         розкодовує назад сам (ae-edit.js:226). Ключ їде заголовком, а не
+         в тілі: тіло воркер записує в репозиторій, і секрет у ньому
+         поїхав би в коміт. */
+      headers:{'Content-Type':'application/json',
+               'x-ae-edit-code':encodeURIComponent(EDITKEY.code.trim())},
       body:JSON.stringify({catalog:S.esnap.cat, scenarios:mergeDraft(fresh.obj),
         save:'scenarios', note:'редактор даних: сценаріїв '+n})});
     j = await res.json();
@@ -1248,6 +1292,14 @@ async function publish(){
   }
   /* Вердикт воркера показується як є. Переказ своїми словами був би
      другим домом того самого тексту (12.11). */
+  /* 403 від ЦІЄЇ адреси воркер віддає рівно в одному місці — невідповідність
+     коду (ae-edit.js:227). 403 від api.github.com (ліміт 60/год) сюди не
+     доходить: він падає в ghRead вище й ловиться своїм catch. Тому
+     розрізнення однозначне за адресою, а не за здогадом про текст. */
+  if(res.status===403){
+    S.epub = {state:'code', text:(j&&j.text)||'Код редактора не підходить.'};
+    return render();
+  }
   if(!res.ok || !j || j.saved===null || j.saved===undefined){
     S.epub = {state:'fail', text:(j&&(j.text||j.error))||('Воркер відповів '+res.status),
       lines:(j&&j.out||[]).filter(m=>m.lvl==='err').map(m=>'✗ '+m.msg)};
@@ -1595,16 +1647,42 @@ function PubBar(){
     return box;
   }
   const st = S.epub || {state:'busy', text:'Звіряємо з репозиторієм…'};
+  /* 'code' — запису не сталось через ключ (порожній або відхилений
+     воркером). Не 'fail': після fail пропонують звірити ще раз, а тут
+     звірка ні до чого — вона зелена, і зайве перечитування палить
+     ліміт 60/год, з якого живе замок. */
   const TONE = {ok:'var(--vtm)', busy:'var(--soft)', stale:'var(--loss)',
-                fail:'var(--loss)', conflict:'var(--loss)'};
+                fail:'var(--loss)', conflict:'var(--loss)', code:'var(--loss)'};
   box.append(el('p',{class:'publine',style:'color:'+(TONE[st.state]||'var(--soft)'),
     text:(st.state==='ok'?'✓ ':st.state==='busy'?'… ':'✗ ')+st.text}));
   for(const l of (st.lines||[]))
     box.append(el('p',{class:'publine',style:'color:var(--soft)',text:l}));
 
   const n = Object.keys(S.edraft).length;
+  /* Писати можна на зеленій звірці — і після відмови по ключу: звірка від
+     неправильного коду не псується, псується тільки спроба запису. */
+  const canWrite = (st.state==='ok' || st.state==='code') && S.esnap && n;
+
+  /* Поле ключа зʼявляється рівно разом із кнопкою запису. Поле для секрету
+     на екрані, який писати не може (stale · conflict · відмова читання),
+     вчить вводити ключ наосліп — і саме такий ввід потім не мають куди
+     подіти, крім збереження «щоб не набирати щоразу». */
+  if(canWrite){
+    box.append(el('label',{class:'field',style:'margin:8px 0 4px'},[
+      el('span',{text:'Код редактора'}),
+      /* ⚠ autocomplete:'off' і без name — щоб iOS не пропонував покласти
+         ключ у Keychain. Диск телефона — це рівно те, від чого код тікає
+         (див. EDITKEY). Пропозицію Safari все одно може показати; відмова
+         від неї лишається рішенням людини, але просимо ми зберігати. */
+      el('input',{type:'password', value:EDITKEY.code, autocomplete:'off',
+        placeholder:'ключ запису', oninput:e=>{ EDITKEY.code=e.target.value; }})]));
+    box.append(el('p',{class:'publine',style:'color:var(--soft);margin-bottom:8px',
+      text:'Це НЕ код куратора. Код куратора відмикає екран, цей — запис '+
+           'у репозиторій. Ніде не зберігається: закриєте вкладку — введете знову.'}));
+  }
+
   const row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px'});
-  if(st.state==='ok' && S.esnap && n)
+  if(canWrite)
     row.append(el('button',{class:'btn',style:'padding:8px 14px;font-size:14px',
       text:'Опублікувати правки ('+n+')', onclick:publish}));
   if(st.state==='fail'||st.state==='conflict'||st.state==='stale')
@@ -1918,8 +1996,22 @@ function Game(root){
     }finally{ btn.disabled=false; S.waiting=false; paint(); }
   };
 
+  /* Enter надсилає — але тільки там, де є миша. На телефоні Enter у
+     textarea — це новий рядок, і відібрати його означало б забрати
+     єдиний спосіб написати дві фрази підряд.
+     Shift+Enter лишає новий рядок скрізь: це той самий жест, що в
+     месенджерах, і людина не мусить його вчити тут заново.
+     ⌘/Ctrl+Enter працює всюди, як і працював, — на випадок, коли ознака
+     вказівника промахнулась.
+     ⚠ preventDefault обовʼязковий: без нього надіслана репліка лишає в
+     полі порожній рядок, і наступна починається з переносу.
+     ⚠ isComposing — Enter, яким підтверджують ієрогліф чи діакритику в
+     системному вводі, не є надсиланням. */
   const ta = el('textarea',{placeholder:'Що ви кажете клієнтові…',oninput:e=>draft=e.target.value,
-    onkeydown:e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))send()}});
+    onkeydown:e=>{
+      if(e.key!=='Enter' || e.isComposing || e.shiftKey) return;
+      if(e.metaKey || e.ctrlKey || POINTER_FINE){ e.preventDefault(); send(); }
+    }});
   const btn = el('button',{class:'btn',text:'Сказати',onclick:send});
 
   /* ── стрічка чека ── */
