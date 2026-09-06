@@ -9,9 +9,12 @@
 # живуть самі правила та довідники: tools/ae_rules.js (правила) і
 # prompts/characters.md (перелік характерів). Без них правку довідника можна
 # залити повз гейт, і дані стануть невірними без жодного червоного.
-# prompts/judge.md сюди НЕ входить свідомо: ae_validate його не читає, і шлях
-# у переліку без перевірки за ним — видимість нагляду. Твердження про judge.md
-# живуть у tools/smoke_step2.js, а той поки запускається руками.
+# ⚠ ПЕРЕЛІК ЗМІНЕНО В S23. Раніше тут стояв тільки prompts/characters.md, а
+# judge.md був виключений свідомо: ae_validate його не читає, і шлях без
+# перевірки за ним — видимість нагляду. Тепер за prompts/** стоїть справжня
+# перевірка: третій крок піднімає сторінку цілком, а boot() зупиняється
+# виїмкою на порожньому чи перейменованому промпті. Твердження про ЗМІСТ
+# judge.md і далі живуть у tools/smoke_step2.js, який запускається руками.
 #
 # Другий крок — tools/smoke_rules_v1.js. Він тут єдиний зі смоуків, бо єдиний
 # не має зашитого BASE і не потребує jsdom: читає файли відносно кореня репо.
@@ -20,12 +23,20 @@
 # Без другого кроку зелений перший означав би тільки «жодне правило не
 # спрацювало», що однаково правда і для правильних даних, і для видаленої
 # перевірки.
+#
+# Третій крок (S23) — tools/smoke_edit_ui_v1.js: екран редактора даних.
+# Він судить МАРШРУТ вердикту на картки і ЧЕРНЕТКУ картки сценарію, тобто
+# ламається він від правки index.html — саме тому index.html доданий у paths.
+# Без цього рядка правка сторінки проходила б повз гейт, який її й охороняє
+# (12.12-е). Ціна кроку — jsdom, тому перед ним стоїть окремий npm install:
+# решта смоуків у CI не тому, що не потрібні, а тому, що мають зашитий BASE;
+# цей бере корінь збірки першим аргументом і тому переносний.
 name: Перевірка даних
 on:
   push:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'prompts/characters.md']
+    paths: ['data/**', 'config.json', 'index.html', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'tools/smoke_edit_ui_v1.js', 'prompts/**']
   pull_request:
-    paths: ['data/**', 'config.json', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'prompts/characters.md']
+    paths: ['data/**', 'config.json', 'index.html', 'tools/ae_validate.js', 'tools/ae_rules.js', 'tools/smoke_rules_v1.js', 'tools/smoke_edit_ui_v1.js', 'prompts/**']
   workflow_dispatch:
 jobs:
   validate:
@@ -39,3 +50,7 @@ jobs:
         run: node tools/ae_validate.js
       - name: node tools/smoke_rules_v1.js
         run: node tools/smoke_rules_v1.js
+      - name: jsdom для смоука екрана
+        run: npm install --no-save jsdom
+      - name: node tools/smoke_edit_ui_v1.js
+        run: node tools/smoke_edit_ui_v1.js .
