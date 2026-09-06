@@ -222,9 +222,10 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .t-none{background:var(--line);color:var(--ink)}
 
 /* ── Редактор даних (крок Р-1а) ───────────────────────────────────
-   Картки тут НЕ клікаються: поля сценарію — це крок Р-1б, і картка,
-   що натискається без наслідку, вчить, що натиск нічого не означає.
-   Тому cursor і натиск .card перебиваються, а не наслідуються. */
+   Картка САМА не клікається й після Р-1б: усередині неї живе <details>
+   із рядками правил, і натиск по всій площі зʼїдав би акордеон — тобто
+   одна зона відповідала б на два різні наміри. Вхід у поля — окремою
+   кнопкою в підвалі картки. Тому cursor і натиск .card перебиваються. */
 .elist{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:12px}
 .ecard{cursor:default}
 .ecard:active{transform:none}
@@ -239,8 +240,37 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 
 .field{display:block;margin-bottom:12px}
 .field span{display:block;font-size:13px;color:var(--soft);margin-bottom:4px}
-.field input{width:100%;max-width:420px;font:inherit;font-size:16px;padding:9px 12px;border:1px solid var(--line);
+/* 16px на полях — не смак: Safari на iOS підʼїжджає зумом до будь-якого
+   поля, дрібнішого за 16, і повернути масштаб назад користувач мусить
+   руками. Тому те саме число стоїть на input, textarea і select. */
+.field input,.field textarea,.field select{width:100%;max-width:420px;font:inherit;font-size:16px;
+  padding:9px 12px;border:1px solid var(--line);
   border-radius:var(--r-md);background:#fff;color:inherit}
+.field textarea{resize:vertical;min-height:64px;line-height:1.4}
+/* Рідний вигляд select на iOS — сірий прямокутник системного кольору;
+   appearance:none знімає його, шеврон домальовується фоном. */
+.field select{-webkit-appearance:none;appearance:none;padding-right:34px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--soft) 50%),
+    linear-gradient(135deg,var(--soft) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.field .flab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;max-width:420px}
+.field .flab b{font-weight:600;color:var(--ink)}
+
+/* Підказка правила — під полем, а не в спливному вікні: на телефоні
+   вікно ховає рівно те поле, заради якого його відкрили. */
+.ehint{max-width:420px;margin:6px 0 0;padding:0 0 0 16px;font-size:12.5px;
+  line-height:1.5;color:var(--soft)}
+.ehint li{margin:0 0 1px}
+.ecount{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--soft)}
+.ecount.over{color:var(--loss)}
+/* Рядки, які правити не можна, і причина цього — поруч, а не мовчки. */
+.ero{max-width:420px;margin:0 0 14px}
+.ero .tapeline span:last-child{color:var(--ink);text-align:right;word-break:break-word}
+.enote{max-width:520px;margin:0 0 14px;font-size:13px;line-height:1.5;color:var(--soft)}
+.everd{max-width:520px;margin:0 0 14px}
+.echip{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;
+  border:1px solid var(--line);color:var(--soft);white-space:nowrap}
 
 /* Акордеон. Технічний текст потрібен рідко, а місця на телефоні їсть
    багато: тримаємо його згорнутим. Нативний <details> — щоб не писати
@@ -389,6 +419,17 @@ const S = {
   phrase:'',          // репліка, яку варто було сказати — від судді
   judging:false,      // суддя ще думає
   shift:null,         // {queue:[…], i:0, rows:[…]}
+
+  /* ── РЕДАКТОР ДАНИХ ──────────────────────────────────────────────
+     efilter — фільтр списку. Живе тут, а не локальною змінною в Editor():
+     повернення з картки викликає render(), і фільтр скидався б на «Усі»
+     щоразу, коли людина закриває сценарій. Той самий урок, що й fold.
+     edraft — чернетка: {id: {поле:значення}}. У ПАМʼЯТІ, не в localStorage:
+     сховище на диску тягне за собою звірку зі знімком перед публікацією
+     (S22 §1.3) і власний гейт — це крок Р-1в, не цей.
+     escen — ключ відкритого запису. Саме КЛЮЧ, а не індекс у SCEN: ключ
+     може вказувати на запис, якого в SCEN ще немає (створення, Р-1д). */
+  efilter:'all', edraft:{}, escen:null,
 };
 
 /* ── ЗАВАНТАЖЕННЯ ────────────────────────────────────────────────── */
@@ -805,7 +846,7 @@ function render(){
      рядка кожен перехід додавав би ще одну функцію на мертвий DOM. */
   CURATOR.watch.length = 0;
   ({gate:Gate, picker:Picker, game:Game, result:Result, settings:Settings,
-    edit:Editor}[S.screen])(app);
+    edit:Editor, escen:ScenCard}[S.screen])(app);
   window.scrollTo(0,0);
 }
 
@@ -1045,6 +1086,31 @@ function runRules(cat, scen){
   return AE_RULES.validate(cat || S.CAT, scen || S.SCEN, S.P.charsRaw, S.cfg);
 }
 
+/* ── ЧЕРНЕТКА ─────────────────────────────────────────────────────
+   Запис = дані з файлу, накриті правками. Другого місця, де правка
+   склеюється з записом, немає: і список, і картка, і вирок беруть
+   рівно цю функцію, інакше екран показував би одне, а правила судили
+   б інше — і розходження побачила б тільки людина, вже після запису.
+
+   recOf працює й тоді, коли базового запису немає (правка без файлу):
+   це майбутнє створення сценарію (Р-1д), і форма, написана на індекс
+   у SCEN, туди не переїхала б без переписування. */
+const recOf = id => {
+  const base = S.SCEN.find(s=>String(s.id)===id) || null;
+  const d = S.edraft[id];
+  return base ? (d ? {...base, ...d} : base) : (d ? {...d} : null);
+};
+const scenAll = () => S.SCEN.map(s=>recOf(String(s.id)));
+/* Правка, що збіглася з файлом, — не правка. Без цього повернення поля
+   до вихідного тексту лишало б картку позначеною назавжди. */
+const setDraft = (id, field, value) => {
+  const base = S.SCEN.find(s=>String(s.id)===id);
+  const d = S.edraft[id] || {};
+  if(base && base[field] === value) delete d[field]; else d[field] = value;
+  if(Object.keys(d).length) S.edraft[id] = d; else delete S.edraft[id];
+};
+const draftFields = id => Object.keys(S.edraft[id] || {});
+
 /* Маршрут рядка вердикту на картку. Повідомлення правил починаються
    з '#'+id — рівно ті, що стосуються одного сценарію; агрегатні ✓
    («обов'язкові поля на місці») не називають нікого і на картку не
@@ -1220,8 +1286,12 @@ function Editor(root){
      назад у PWA) не пускається: двері мають значити те саме завжди. */
   if(!CURATOR.open){ S.screen='settings'; render(); return; }
 
-  const r = runRules();
-  const ids = new Set(S.SCEN.map(s=>String(s.id)));
+  /* Судяться дані З ЧЕРНЕТКОЮ, а не з файлу: інакше список показував би
+     вердикт про текст, якого на екрані вже немає. Саме заради цієї
+     арності виклик правил зведено в одну точку (S22 §1.6). */
+  const SC = scenAll();
+  const r = runRules(null, SC);
+  const ids = new Set(SC.map(s=>String(s.id)));
   const spread = r ? spreadVerdict(r.out, ids) : {byId:new Map(), general:[]};
 
   const SIGN={ok:'✓',warn:'⚠',err:'✗'};
@@ -1237,12 +1307,11 @@ function Editor(root){
              warn: ms.filter(m=>m.lvl==='warn').length, all: ms };
   };
 
-  let filter='all';
   const listBox = el('div',{class:'elist'});
 
   const counts = ()=>{
     let e=0,w=0;
-    for(const s of S.SCEN){ const st=stateOf(String(s.id));
+    for(const s of SC){ const st=stateOf(String(s.id));
       if(st.err) e++; else if(st.warn) w++; }
     return {e,w};
   };
@@ -1251,10 +1320,10 @@ function Editor(root){
   const drawList = ()=>{
     listBox.innerHTML='';
     let shown=0;
-    for(const s of S.SCEN){
-      const id=String(s.id), st=stateOf(id);
-      if(filter==='err'  && !st.err) continue;
-      if(filter==='warn' && !(st.warn && !st.err)) continue;
+    for(const s of SC){
+      const id=String(s.id), st=stateOf(id), dr=draftFields(id);
+      if(S.efilter==='err'  && !st.err) continue;
+      if(S.efilter==='warn' && !(st.warn && !st.err)) continue;
       shown++;
       const badge = st.err  ? el('span',{class:'est',style:'color:'+TONE.err,
                                 text:'✗ '+st.err+(st.warn?' · ⚠ '+st.warn:'')})
@@ -1269,6 +1338,15 @@ function Editor(root){
           el('span',{class:'sub',style:'font-size:12.5px',
             text:(s.mood||'').length+' зн.'}),
           badge
+        ]),
+        /* Вхід у поля — окремою кнопкою, не натиском по картці: під
+           карткою лежить <details>, і спільна зона відповідала б на
+           два різні наміри одним жестом. */
+        el('div',{style:'display:flex;gap:8px;align-items:center;margin-top:2px'},[
+          el('button',{class:'btn ghost',style:'padding:6px 12px;font-size:13.5px',
+            text:'Правити', onclick:()=>{ S.escen=id; S.screen='escen'; render(); }}),
+          dr.length ? el('span',{class:'echip',
+            text:'чернетка · '+dr.length+(dr.length===1?' поле':' поля/полів')}) : null
         ])
       ]);
       /* Рядки правил лежать під карткою, а не в спливному вікні: на
@@ -1287,8 +1365,8 @@ function Editor(root){
 
   const chips = el('div',{class:'tabs'});
   const mkChip = (key,label)=>{
-    const b=el('button',{text:label,'aria-pressed':String(filter===key),
-      onclick:()=>{ filter=key;
+    const b=el('button',{text:label,'aria-pressed':String(S.efilter===key),
+      onclick:()=>{ S.efilter=key;
         for(const x of chips.children) x.setAttribute('aria-pressed',String(x===b));
         drawList(); }});
     chips.append(b); return b;
@@ -1309,8 +1387,16 @@ function Editor(root){
       el('h1',{class:'toptitle',text:'Редактор даних'})
     ]),
     el('p',{class:'sub',style:'margin:0 0 4px',text:
-      'Судяться дані, які застосунок зараз завантажив. Збірка '+(S.cfg.build||'—')+'.'}),
+      'Судяться дані, які застосунок зараз завантажив, разом із незбереженими '+
+      'правками. Збірка '+(S.cfg.build||'—')+'.'}),
     headLine,
+    /* Стан чернетки називається на самому екрані, а не тільки на картках:
+       людина мусить бачити, що вердикт угорі порахований НЕ по файлу. */
+    Object.keys(S.edraft).length
+      ? el('p',{class:'eline',style:'color:var(--soft)',text:
+          'Незбережених правок: сценаріїв '+Object.keys(S.edraft).length+
+          '. Вони живуть у цій сесії й у файл не пишуться.'})
+      : null,
     el('p',{class:'sub',style:'margin:6px 0 14px;font-size:12.5px',text:
       'Картка називає тільки проблеми. Рядки ✓ стосуються всіх даних '+
       'разом, тому лежать у «Загальних» — «без зауважень» на картці '+
@@ -1323,6 +1409,169 @@ function Editor(root){
     listBox
   );
   drawList();
+}
+
+/* ── КАРТКА СЦЕНАРІЮ · Р-1б + Р-2 ─────────────────────────────────
+   Поля одного сценарію з живим вироком правил. Форма НІЧОГО НЕ ПИШЕ:
+   ані у файл, ані в localStorage. Правка лягає в S.edraft (памʼять),
+   публікація — окремий крок Р-1в, і доти екран мусить казати це
+   словами, а не мовчати.
+
+   ⚠ ЩО ТУТ НЕ ПРАВИТЬСЯ І ЧОМУ (12.12-и). Поля id · no · cats · main ·
+   order · bv · bm показані, але read-only. Це не недогляд і не «на
+   потім»: cats — ключі з 23 категорій каталогу, решта — коди зі 181
+   позиції. Текстове поле тут дало б висячий код і ✗ у правилах,
+   а чесний ввід — це вибірник по каталогу, окремий предмет (Р-1г).
+   Показані вони тому, що картка без них виглядала б повною, не
+   будучи такою.
+
+   goal лежить поза REQ: правила про нього мовчать. Підписано на
+   екрані — інакше порожній вирок читався б як схвалення тексту. */
+function ScenCard(root){
+  /* Ті самі двері, що й у списку: екран за кодом куратора не має пускати
+     повз себе через повернення назад у PWA. */
+  if(!CURATOR.open){ S.screen='settings'; render(); return; }
+  const id = S.escen;
+  const rec = id===null ? null : recOf(id);
+  /* Ключ без запису — не аварія, а вихід зі стану, якого вже немає
+     (дані перезавантажились під відкритою карткою). */
+  if(!rec){ S.screen='edit'; render(); return; }
+
+  const SIGN={ok:'✓',warn:'⚠',err:'✗'};
+  const TONE={ok:'var(--vtm)',warn:'var(--soft)',err:'var(--loss)'};
+  const line = m => el('div',{class:'tapeline'},[
+    el('span',{style:'color:'+TONE[m.lvl],text:SIGN[m.lvl]+' '+m.msg})]);
+
+  /* Межа і перелік ознак приїжджають З ПРАВИЛ. Число 90 і вісім
+     формулювань, переписані сюди, були б другим домом (12.11): вони
+     розійшлися б із перевіркою рівно тоді, коли зʼявиться девʼята. */
+  const LIMIT = (typeof AE_RULES!=='undefined') ? AE_RULES.MOOD_LIMIT : null;
+  const SIGNS = ((typeof AE_RULES!=='undefined') && AE_RULES.MOOD_SIGNS) || [];
+
+  const verdBox  = el('div',{class:'everd'});
+  const countEl  = el('span',{class:'ecount'});
+  const dirtyBox = el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 14px'});
+  const marks = {};          // поле → значок «змінено»
+
+  /* Один перерахунок на кожен ввід. Замір: повний прогін правил на 43
+     сценаріях — близько 5 мс; дебаунс тут був би вікном, у якому екран
+     показує вирок про попередню літеру. */
+  const refresh = ()=>{
+    const SC = scenAll();
+    const r  = runRules(null, SC);
+    const ids = new Set(SC.map(x=>String(x.id)));
+    const my = r ? (spreadVerdict(r.out, ids).byId.get(id) || []) : null;
+
+    verdBox.innerHTML='';
+    if(!r){
+      verdBox.append(el('p',{class:'eline',style:'color:'+TONE.err,
+        text:'✗ Правила не завантажились: tools/ae_rules.js не прочитано.'}));
+    } else if(!my.length){
+      /* Не ✓: правила про цей сценарій не сказали нічого, і галочка була б
+         підписом, якого ніхто не ставив (S22 §4.1). */
+      verdBox.append(el('p',{class:'eline',style:'color:'+TONE.ok,
+        text:'Без зауважень — про цей сценарій правила не сказали нічого.'}));
+    } else {
+      verdBox.append(el('p',{class:'sub',style:'margin:0 0 6px;font-size:12.5px',
+        text:'Що правила кажуть про цей сценарій ('+my.length+'):'}));
+      for(const m of my) verdBox.append(line(m));
+    }
+
+    const mood = String(recOf(id).mood||'');
+    countEl.textContent = LIMIT===null || LIMIT===undefined
+      ? 'межу не прочитано' : mood.length+' / '+LIMIT;
+    countEl.className = 'ecount' + ((LIMIT && mood.length>LIMIT) ? ' over' : '');
+
+    const dr = draftFields(id);
+    for(const k of Object.keys(marks)) marks[k].style.display = dr.includes(k) ? '' : 'none';
+    dirtyBox.innerHTML='';
+    if(dr.length){
+      dirtyBox.append(el('span',{class:'echip',text:'змінено: '+dr.join(' · ')}));
+      dirtyBox.append(el('button',{class:'btn ghost',style:'padding:6px 12px;font-size:13.5px',
+        text:'Скинути правки', onclick:()=>{ delete S.edraft[id]; render(); }}));
+    }
+  };
+
+  /* Поле = підпис + значок «змінено» + сам ввід. Значок ставиться поруч
+     із полем, а не тільки в підсумку внизу: людина, яка гортає форму,
+     не бачить підсумку. */
+  const field = (key, label, node, hint)=>{
+    const mark = el('span',{class:'echip',text:'змінено',style:'display:none'});
+    marks[key]=mark;
+    return el('label',{class:'field'},[
+      el('span',{class:'flab'},[el('b',{text:label}), mark]),
+      node, hint||null ]);
+  };
+  const textField = (key,label,multi,hint,extraOnInput)=>{
+    const n = el(multi?'textarea':'input', multi?{rows:'3'}:{type:'text'});
+    n.value = rec[key]===undefined||rec[key]===null ? '' : String(rec[key]);
+    n.addEventListener('input', e=>{ setDraft(id,key,e.target.value);
+      if(extraOnInput) extraOnInput(e.target.value); refresh(); });
+    return field(key,label,n,hint);
+  };
+  /* Вибір, а не текст: перелік характерів має один дім — носій
+     prompts/characters.md, розібраний у boot(). Третього розбору тут
+     немає (12.11-а). Те саме міркування слабше стосується grp: група,
+     набрана руками, тихо розколює наявну на дві. */
+  const selField = (key,label,values,hint)=>{
+    const cur = rec[key]===undefined||rec[key]===null ? '' : String(rec[key]);
+    const opts = values.includes(cur) ? values : [cur, ...values];
+    const n = el('select',{}, opts.map(v=>el('option',{value:v,text:v||'—'})));
+    n.value = cur;
+    n.addEventListener('change', e=>{ setDraft(id,key,e.target.value); refresh(); });
+    return field(key,label,n,hint);
+  };
+
+  const chars = Object.keys(S.P.chars||{});
+  const grps  = [...new Set(S.SCEN.map(x=>x.grp).filter(Boolean))];
+
+  const moodHint = el('div',{},[
+    el('ul',{class:'ehint'}, SIGNS.map(t=>el('li',{text:t}))),
+    SIGNS.length ? null : el('p',{class:'ehint',
+      text:'Перелік ознак не прочитано з правил.'})
+  ]);
+
+  const ro = (label,val)=>el('div',{class:'tapeline'},[
+    el('span',{text:label}), el('span',{text: val===undefined||val===null||val===''
+      ? '—' : (Array.isArray(val)? (val.length?val.join(', '):'—') : String(val))})]);
+
+  put(root,
+    el('div',{class:'top'},[
+      el('div',{class:'toprow'},[backBtn('до списку',()=>{S.screen='edit';render()})]),
+      el('h1',{class:'toptitle',text:'#'+id+' · '+(rec.title||'без назви')})
+    ]),
+    el('p',{class:'enote',text:
+      'Правки живуть у цій сесії й у файл не пишуться. Публікація — '+
+      'окремий крок; кнопки запису тут немає навмисно.'}),
+    dirtyBox,
+
+    textField('title','Назва',false),
+    selField('grp','Група',grps,
+      el('p',{class:'ehint',text:'Перелік — з наявних груп. Нову групу цією формою не завести.'})),
+    selField('character','Характер',chars,
+      el('p',{class:'ehint',text:'Перелік — з носія характерів. Значення поза ним зупиняє старт застосунку.'})),
+    textField('who','Хто це (who)',false),
+    textField('mode','Режим видачі (mode)',false),
+    textField('open','Перша репліка (open)',true),
+    textField('goal','Мета розмови (goal)',true,
+      el('p',{class:'ehint',text:'Поза REQ: правила про це поле нічого не кажуть.'})),
+
+    (()=>{ const f=textField('mood','Настрій дня (mood)',true,moodHint);
+      f.querySelector('.flab').append(countEl); return f; })(),
+
+    verdBox,
+
+    el('h2',{style:'margin:18px 0 6px;font-size:15px',text:'Не правиться тут'}),
+    el('p',{class:'enote',style:'margin-bottom:8px',text:
+      'Коди каталогу і номери. Текстовий ввід тут дав би висячий код; '+
+      'чесний ввід — це вибірник по каталогу, окремий крок.'}),
+    el('div',{class:'ero'},[
+      ro('id', rec.id), ro('no (номер замовлення)', rec.no),
+      ro('cats', rec.cats), ro('main', rec.main), ro('order', rec.order),
+      ro('bv (ідеал ВТМ)', rec.bv), ro('bm (ідеал СТМ)', rec.bm)
+    ])
+  );
+  refresh();
 }
 
 function Gate(root){
