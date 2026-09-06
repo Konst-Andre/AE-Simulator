@@ -397,6 +397,11 @@ async function boot(){
       withNumber: (pParts.match(/## with_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
       withoutNumber: (pParts.match(/## without_number\s*([\s\S]*?)(?=\n## |$)/)||[,''])[1].trim(),
       chars: CH.chars, risks: CH.risks,
+      /* Сирий текст носія лишається поруч із розібраним: правила беруть
+         носій ТЕКСТОМ і розбирають його самі (12.11-а — перелік має один
+         дім). Розібрана мапа для них не годиться, а другого розбору тут
+         бути не може. */
+      charsRaw: pChars,
     };
     if(!S.P.client || !S.P.withNumber || !S.P.judge) throw new Error('Файли промптів прочитались порожніми');
     S.CAT={}; S.LABEL={};
@@ -1006,7 +1011,16 @@ function dataCheck(){
        і саме так зелений прогін чужого файлу став би доказом ні про що. */
     srcLine.textContent = 'Судиться: каталог — ' + (picked.catName || 'дані застосунку') +
                           ' · сценарії — ' + (picked.scenName || 'дані застосунку');
-    const r = AE_RULES.validate(picked.cat || S.CAT, picked.scen || S.SCEN);
+    /* ⚠ ЧОТИРИ АРГУМЕНТИ, не два. На двох правила не мовчать — вони
+       кажуть ⚠ «носій не переданий», і саме ті перевірки, заради яких
+       робились S17 і S18 (рядок mood) та звірка character з носієм,
+       стають інертними. Вердикт при цьому лишається зеленим і виглядає
+       як перевірка. Носій характерів і config беруться З ЗАСТОСУНКУ
+       навіть тоді, коли дані підсунуті файлом: судиться файл, а не
+       носій, і підміняти носій разом із даними означало б судити
+       вигадану пару. */
+    const r = AE_RULES.validate(picked.cat || S.CAT, picked.scen || S.SCEN,
+                                S.P.charsRaw, S.cfg);
     head.style.color = r.err ? 'var(--loss)' : 'var(--soft)';
     head.textContent = (r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err;
     const SIGN={ok:'✓',warn:'⚠',err:'✗'};
