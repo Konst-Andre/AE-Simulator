@@ -1,11 +1,14 @@
 /* ═══════════════════════════════════════════════════════════════════
-   AE-Simulator · воркер редактора — крок «в-1»: ТІЛЬКИ СУДДЯ
+   AE-Simulator · воркер редактора — крок «в-2»: СУД І ЗАПИС
    живе доки: форма для Олі не готова (крок «в-3»)
 
    Що робить:
      1. пускає тільки зі знанням коду редактора
-     2. судить надіслані дані ТИМИ САМИМИ правилами, що ганяються на push
-     3. каже українською
+     2. читає з репо носії закритих переліків (див. CARRIERS)
+     3. судить надіслані дані ТИМИ САМИМИ правилами, що ганяються на push,
+        і ТИМ САМИМ викликом на чотири аргументи
+     4. на прохання пише один файл із білого списку в репо
+     5. каже українською
 
    ⚠ ПЕРЕВІРКИ ДОМЕНУ (Origin) ТУТ НЕМАЄ — І ЦЕ НАВМИСНО. Не повертати.
    Origin підставляє браузер, і зі скрипта на сторінці його не підробити —
@@ -96,6 +99,21 @@ const REPO   = 'Konst-Andre/AE-Simulator';
 const BRANCH = 'main';
 const PATHS  = { catalog: 'data/catalog.json', scenarios: 'data/scenarios.json' };
 
+/* ⚠ НОСІЇ ЗАКРИТИХ ПЕРЕЛІКІВ — ЧИТАЮТЬСЯ ТУТ, НЕ ПРИХОДЯТЬ У ТІЛІ.
+   `rules.validate` бере чотири аргументи. Два останні — носії переліків
+   (характери · щаблі). Без них правила не мовчать, вони кажуть ⚠ — а ⚠
+   у цьому воркері свідомо НЕ блокує запис. Два розумні рішення склались
+   у дірку: виклик на два аргументи робив інертними рівно ті правила, що
+   охороняють `character` і рядок `mood`, і сирітський характер (✗ у CI)
+   проходив сюди як ⚠. У застосунку він дає виняток на старті — білий
+   екран усім, від збереження, яке сказало «Дані в порядку».
+   Носії беруться З РЕПО, а не з тіла запиту: те, що надсилає клієнт,
+   клієнт може й не надіслати — і перевірка знову впаде в ⚠, тепер уже
+   на його розсуд. Носій, який можна не передати, — не носій.
+   Недоступний носій = ВІДМОВА, однакова для перегляду і для запису:
+   форма, що судить м'якше за збереження, вчить довіряти зеленому. */
+const CARRIERS = { chars: 'prompts/characters.md', cfg: 'config.json' };
+
 const GH = 'https://api.github.com/repos/' + REPO + '/contents/';
 
 /* ⚠ btoa тут падає: український текст — не ISO-8859-1. Той самий шрам, що
@@ -131,6 +149,21 @@ function ghError(status) {
   if (status === 409 || status === 422)
     return 'Файл змінився, поки ви його правили. Відкрийте заново і повторіть.';
   return 'Репозиторій відповів помилкою ' + status + '. Спробуйте ще раз.';
+}
+
+/* Носій береться сирим текстом (`Accept: …raw`), а не JSON-обгорткою з
+   base64: правилам потрібен саме текст, і зайве декодування — зайве місце
+   для мовчазної поломки на кирилиці.
+   Токен додається, якщо він є. Публічний репозиторій читається й без
+   нього — але без токена GitHub рахує 60 запитів на годину, тож у
+   робочому режимі токен присутній і це не запасний шлях, а звичайний. */
+async function carrier(path, token) {
+  const head = ghHeaders(token);
+  head.Accept = 'application/vnd.github.raw';
+  if (!token) delete head.Authorization;
+  const res = await fetch(GH + path + '?ref=' + BRANCH, { headers: head });
+  if (!res.ok) return { ok: false, status: res.status };
+  return { ok: true, text: await res.text() };
 }
 
 async function commit(side, dataObj, note, token) {
@@ -177,9 +210,13 @@ async function handle(request, env) {
   if (request.method === 'GET') {
     return new Response(JSON.stringify({
       ok: true,
-      step: 'в-1',
+      step: 'в-2',
       rules: typeof rules.validate === 'function' ? 'живі' : 'НЕ ЗІБРАЛИСЬ',
-      writes: false
+      /* ⚠ Було `writes: false` при живому записі — рядок стану, що каже
+         неправду, гірший за відсутній: гейт заморозив брехню зеленою
+         (12.11-в, ознака «коментар стверджує, що це не працює»). */
+      writes: true,
+      carriers: [CARRIERS.chars, CARRIERS.cfg]
     }), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', ...cors } });
   }
 
@@ -210,8 +247,26 @@ async function handle(request, env) {
     return say(400, 'Судити можна тільки обидва файли разом: каталог і сценарії.', cors);
   }
 
+  /* ⚠ Носії читаються ДО суду і однаково для перегляду й запису.
+     `body.characters` / `body.config`, якщо вони колись приїдуть у тілі,
+     тут свідомо не читаються: див. коментар до CARRIERS. */
+  let chars, cfg;
+  {
+    const [c1, c2] = await Promise.all([
+      carrier(CARRIERS.chars, env.AE_GH_TOKEN),
+      carrier(CARRIERS.cfg,   env.AE_GH_TOKEN)
+    ]).catch(() => [{ ok: false, status: 0 }, { ok: false, status: 0 }]);
+    if (!c1.ok) return say(502, 'Не вдалося прочитати перелік характерів із '
+      + 'репозиторію (' + CARRIERS.chars + '). Без нього судити не можна.', cors);
+    if (!c2.ok) return say(502, 'Не вдалося прочитати налаштування із '
+      + 'репозиторію (' + CARRIERS.cfg + '). Без них судити не можна.', cors);
+    chars = c1.text;
+    try { cfg = JSON.parse(c2.text); }
+    catch (_) { return say(502, 'Налаштування в репозиторії не читаються як JSON.', cors); }
+  }
+
   let r;
-  try { r = rules.validate(body.catalog, body.scenarios); }
+  try { r = rules.validate(body.catalog, body.scenarios, chars, cfg); }
   catch (err) {
     return say(422, 'Дані не вдалося розібрати: ' + String(err && err.message || err), cors);
   }
