@@ -14,9 +14,23 @@
    інваріанти маршруту на них порожні й зелені ні про що. Тому гейт піднімає
    сторінку тричі: на живих даних і на двох фікстурах із відомим дефектом.
 
+   S23 · КАРТКА СЦЕНАРІЮ (Р-1б + Р-2). Другий предмет охорони — ЧЕРНЕТКА:
+   правка мусить доїхати до правил і не доїхати нікуди більше. Форма нічого
+   не публікує, тому «не написав» тут — таке саме твердження, як «показав».
+
+   ⚠ ТВЕРДЖЕННЯ БЕЗ ІНʼЄКЦІЇ, назване вголос: «вісім ознак під mood дослівно
+   з AE_RULES.MOOD_SIGNS». Шлях відмови в нього справжній (копія переліку в
+   index.html розійдеться, щойно зʼявиться девʼята ознака), але окремої
+   інʼєкції під нього немає: ІН-Д уже ловить той самий клас дефекту на
+   переліку характерів, а друга інʼєкція того ж класу дала б два твердження,
+   що падають від однієї причини (12.12-ї).
+
    Прогін:  node tools/smoke_edit_ui_v1.js
             node tools/smoke_edit_ui_v1.js --inject=ІН-А   (маршрут префіксом)
-            node tools/smoke_edit_ui_v1.js --inject=ІН-Б   (втрата рядка) */
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Б   (втрата рядка)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-В   (чернетка не доїхала до правил)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Г   (межа лічильника зашита числом)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Д   (перелік характерів не з носія) */
 
 const fs=require('fs'), path=require('path');
 const {JSDOM}=require('jsdom');
@@ -67,8 +81,35 @@ if(arg==='ІН-Б'){
      43 картки кажуть «без зауважень» — тобто зламані дані виглядають
      чистішими, ніж вони є. */
   HTML=inject(HTML,
-    "  const ids = new Set(S.SCEN.map(s=>String(s.id)));",
-    "  const ids = new Set(S.SCEN.map(s=>s.id));", 'ІН-Б');
+    "  const ids = new Set(SC.map(s=>String(s.id)));",
+    "  const ids = new Set(SC.map(s=>s.id));", 'ІН-Б');
+}
+
+/* ── ІНʼЄКЦІЇ КАРТКИ (S23) ────────────────────────────────────────── */
+if(arg==='ІН-В'){
+  /* Повертає розрив між формою і правилами: картка судить ФАЙЛ, а показує
+     чернетку. Дефект тихий — екран цілий, вирок правдоподібний, просто
+     він про текст, якого в полі вже немає. */
+  HTML=inject(HTML,
+    "    const r  = runRules(null, SC);",
+    "    const r  = runRules();", 'ІН-В');
+}
+if(arg==='ІН-Г'){
+  /* Дві правки, одна причина: сторінка бере межу літералом, а правила
+     тим часом кажуть інше число. Поки обидва по 90, копія непомітна —
+     тому інʼєкція мусить їх розвести, інакше вона нічого не доводить. */
+  HTML=inject(HTML,
+    "  const LIMIT = (typeof AE_RULES!=='undefined') ? AE_RULES.MOOD_LIMIT : null;",
+    "  const LIMIT = 90;", 'ІН-Г');
+  HTML=inject(HTML, "const MOOD_LIMIT = 90;", "const MOOD_LIMIT = 70;", 'ІН-Г·правила');
+}
+if(arg==='ІН-Д'){
+  /* Повертає копію закритого переліку в код сторінки (12.11-а): вибір
+     заповнюється власним масивом, а не носієм. Список навмисно неповний —
+     саме так копія й розходиться з носієм: тихо і не одразу. */
+  HTML=inject(HTML,
+    "  const chars = Object.keys(S.P.chars||{});",
+    "  const chars = ['відкритий','поспішає','рахує гроші'];", 'ІН-Д');
 }
 
 /* ── фікстури ──────────────────────────────────────────────────────
@@ -228,6 +269,72 @@ function cardsOf(d){
   T('сума рядків на екрані = кількість рядків вердикту (фікстура #41)',
     Object.values(cC).reduce((a,c)=>a+c.lines.length,0) + generalOf(C.d).length
       === eC.r.out.length);
+
+  console.log('\n— картка сценарію: поля, підказка, чернетка —');
+  const wD=mount(mutNone);
+  const D=await openEditor(wD, true);
+  const dd=D.d;
+  const cardOf = id => [...dd.querySelectorAll('.ecard')]
+    .find(c=>c.querySelector('.ord').textContent.startsWith('#'+id+' '));
+  /* Вхід у поля — тим самим жестом, що й у людини: кнопкою на картці. */
+  [...cardOf('3').querySelectorAll('button')].find(b=>b.textContent.trim()==='Правити').click();
+  T('кнопка на картці відкриває поля саме цього сценарію',
+    wD.S.screen==='escen' && wD.S.escen==='3' &&
+    dd.querySelector('.toptitle').textContent.startsWith('#3 '));
+
+  const labOf = name => [...dd.querySelectorAll('.field')]
+    .find(f=>f.querySelector('.flab b') && f.querySelector('.flab b').textContent===name);
+  const moodField = labOf('Настрій дня (mood)');
+  const moodTa = moodField && moodField.querySelector('textarea');
+
+  const SIGNS = wD.eval('AE_RULES.MOOD_SIGNS');
+  const shown = [...moodField.querySelectorAll('.ehint li')].map(x=>x.textContent);
+  T('ознаки під полем mood — дослівно ті, що каже AE_RULES',
+    shown.length===SIGNS.length && shown.every((t,i)=>t===SIGNS[i]));
+  /* Читається ВИХІД — текст лічильника, а не змінна сторінки: число можна
+     порахувати правильно і намалювати інше. */
+  T('лічильник називає межу, яку каже AE_RULES',
+    moodField.querySelector('.ecount').textContent.trim()
+      === String(wD.S.SCEN.find(s=>String(s.id)==='3').mood.length)+' / '+wD.eval('AE_RULES.MOOD_LIMIT'));
+  const chOpts=[...labOf('Характер').querySelectorAll('option')].map(o=>o.value);
+  const carrier=Object.keys(wD.S.P.chars);
+  T('перелік у виборі характеру — рівно ключі носія',
+    chOpts.length===carrier.length && carrier.every(c=>chOpts.includes(c)));
+  T('до правки картка каже «без зауважень», а не ✓',
+    dd.querySelector('.everd .eline').textContent.startsWith('Без зауважень'));
+
+  const lsBefore = wD.localStorage.length;
+  const moodBefore = wD.S.SCEN.find(s=>String(s.id)==='3').mood;
+  moodTa.value='клієнт чекав 5 хвилин';
+  moodTa.dispatchEvent(new wD.window.Event('input'));
+  /* Головне твердження чернетки: правка доїхала до ПРАВИЛ. Твердження про
+     значок у списку (нижче) читає той самий стан, але іншого споживача —
+     тому воно не прикраса цього, а окрема адреса. */
+  T('правка mood змінює вирок під полем',
+    [...dd.querySelectorAll('.everd .tapeline')].some(x=>x.textContent.includes('#3 mood')));
+  T('правка не пише в localStorage', wD.localStorage.length===lsBefore);
+  T('правка не мутує завантажені дані',
+    wD.S.SCEN.find(s=>String(s.id)==='3').mood===moodBefore);
+
+  /* Значок чернетки читається на НЕВІДФІЛЬТРОВАНОМУ списку. Спершу
+     звузити список фільтром, а потім шукати в ньому картку — означало б
+     поставити це твердження в залежність від маршруту вердикту: під
+     ІН-Б відфільтрований список порожній, і твердження падало б удруге
+     від чужої причини (12.12-ї). */
+  [...dd.querySelectorAll('.back')][0].click();
+  T('картка списку позначена чернеткою',
+    !!cardOf('3') && [...cardOf('3').querySelectorAll('.echip')]
+      .some(x=>x.textContent.startsWith('чернетка')));
+
+  /* Фільтр — стан екрана, а не локальна змінна функції. Перевіряється
+     найдешевшим перемальовуванням (вихід і повернення через двері), а не
+     входом у картку: вхід залежав би від того, чи фільтр щось показав. */
+  const chipErr=()=>[...dd.querySelectorAll('.tabs button')].find(b=>b.textContent.startsWith('✗'));
+  chipErr().click();
+  [...dd.querySelectorAll('.back')][0].click();
+  D.click('Відкрити редактор').click();
+  T('фільтр списку переживає перемальовування екрана',
+    chipErr().getAttribute('aria-pressed')==='true');
 
   console.log('\n— єдина точка виклику правил —');
   const src=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
