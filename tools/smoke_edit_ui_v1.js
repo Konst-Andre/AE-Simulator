@@ -30,7 +30,10 @@
             node tools/smoke_edit_ui_v1.js --inject=ІН-Б   (втрата рядка)
             node tools/smoke_edit_ui_v1.js --inject=ІН-В   (чернетка не доїхала до правил)
             node tools/smoke_edit_ui_v1.js --inject=ІН-Г   (межа лічильника зашита числом)
-            node tools/smoke_edit_ui_v1.js --inject=ІН-Д   (перелік характерів не з носія) */
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Д   (перелік характерів не з носія)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Е   (замок знято)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Є   (адреса зашита в коді)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Ж   (ключ їде сирим заголовком) */
 
 const fs=require('fs'), path=require('path');
 const {JSDOM}=require('jsdom');
@@ -79,6 +82,18 @@ if(arg==='ІН-Е'){
      яку S22 §1.3 назвав відсутністю обробки конфлікту. */
   HTML=inject(HTML, '  if(fresh.sha !== S.esnap.sha){',
     '  if(false){', 'ІН-Е');
+}
+/* ІН-Ж. Ключ їде СИРИМ, без відсоткового кодування. Дефект тихий: у
+   jsdom заголовок доїде як є, і мок, що розкодовує, побачить те саме
+   значення — тобто «запис пройшов». У браузері ж кирилиця в заголовку
+   HTTP кидає TypeError на «non ISO-8859-1 code point», і публікація
+   мовчки не відбувається. Саме тому твердження питає ще й ВИГЛЯД
+   заголовка, а не лише результат. Вилучення заголовка цілком червонить
+   те саме єдине твердження. */
+if(arg==='ІН-Ж'){
+  HTML=inject(HTML,
+    "               'x-ae-edit-code':encodeURIComponent(EDITKEY.code.trim())},",
+    "               'x-ae-edit-code':EDITKEY.code.trim()},", 'ІН-Ж');
 }
 if(arg==='ІН-Є'){
   /* Повертає зашиту адресу: звірка йде не туди, куди каже config.
@@ -147,6 +162,11 @@ const mutLong = s=>{ const c=JSON.parse(JSON.stringify(s));
    на звірці при вході, наступний — на перечитуванні перед записом. Різні
    значення = файл змінили під відкритою карткою.
    gh.failRead — відмова читання (403 по ліміту 60/год виглядає саме так). */
+/* ⚠ КИРИЛИЦЕЮ СВІДОМО. Латинський код проїхав би і сирим заголовком —
+   тобто гейт зеленів би на дефекті, який на пристрої дає TypeError
+   «non ISO-8859-1 code point» і мовчазну відмову запису. Мова коду тут
+   і є перевіркою. */
+const EDIT_CODE = 'ключ редактора';
 const b64 = s => Buffer.from(s,'utf8').toString('base64');
 function mount(mutate, gh={}){
   const log={reads:[], posts:[]};
@@ -157,7 +177,21 @@ function mount(mutate, gh={}){
       w.fetch=(u,opt)=>{
         if(typeof u==='string' && u.startsWith('http')){
           if(opt && opt.method==='POST'){
-            log.posts.push({url:u, body:JSON.parse(opt.body)});
+            const hdr = (opt.headers||{})['x-ae-edit-code'];
+            log.posts.push({url:u, body:JSON.parse(opt.body), code:hdr});
+            /* Звіряємо ЗІ ЗНАЧЕННЯМ, а не «заголовок є». Воркер порівнює з
+               секретом (ae-edit.js:227); мок, якому досить будь-якого
+               заголовка, не мав би як зіграти неправильний код — а саме
+               його людина й набере першим. */
+            let given = hdr || '';
+            try{ given = decodeURIComponent(given); }catch(_){ }
+            if(given !== EDIT_CODE) return Promise.resolve({ok:false,status:403,
+              json:()=>Promise.resolve({ok:false,text:'Код редактора не підходить.'})});
+            /* ⚠ МОК МУСИТЬ УМІТИ ВІДМОВЛЯТИ (S24 §4.3). Мок, який на будь-який
+               POST каже «Збережено», доводить, що дорога існує, — але не те,
+               що по ній проїдуть: рівно так ✓37 співіснували з відмовою на
+               першому ж натисканні на пристрої. Відмова тут — тими самими
+               словами й тим самим кодом, що в ae-edit.js:227. */
             return Promise.resolve({ok:true,status:200,json:()=>Promise.resolve(
               {ok:true,err:0,warn:0,out:[],saved:'data/scenarios.json',text:'Збережено.'})});
           }
@@ -395,8 +429,14 @@ function cardsOf(d){
     ta.value='клієнт чекав 5 хвилин'; ta.dispatchEvent(new w.window.Event('input'));
     [...d.querySelectorAll('.back')][0].click();
     await tick();
-    return {w,d,pub:()=>[...d.querySelectorAll('button')]
-      .find(b=>b.textContent.startsWith('Опублікувати'))};
+    return {w,d,
+      pub:()=>[...d.querySelectorAll('button')]
+        .find(b=>b.textContent.startsWith('Опублікувати')),
+      /* Поле шукається в смузі публікації, а не по порядку інпутів на
+         екрані: порядок елементів не має керувати гейтом (той самий шрам,
+         що з «Стерти ключ» на першому інпуті). */
+      keyIn:()=>d.querySelector('.pubbar .field input'),
+      key(v){ const i=this.keyIn(); i.value=v; i.dispatchEvent(new w.window.Event('input')); }};
   };
 
   const P=await withDraft({});
@@ -406,6 +446,30 @@ function cardsOf(d){
     P.w.__gh.reads.length>=2 &&
     P.w.__gh.reads.every(u=>u.startsWith(P.w.S.cfg.sourceApi)));
   T('на зеленій звірці кнопка публікації зʼявляється', !!P.pub());
+
+  /* ── КЛЮЧ ДО ВОРКЕРА (Р-1в-2) ─────────────────────────────────────
+     Код редактора — не код куратора. Перший відмикає екран і лежить у
+     публічному config.json; другий відмикає запис і не лежить ніде. */
+  T('поле коду редактора стоїть у смузі й назване іншим ключем',
+    !!P.keyIn() && P.keyIn().type==='password' &&
+    [...P.d.querySelectorAll('.pubbar')].some(x=>/НЕ код куратора/.test(x.textContent)));
+
+  /* Порожній код зупиняє ДО мережі: запит без ключа воркер відхилить
+     однаково, але перечитування вже витратить один із 60 запитів на годину. */
+  const readsWas = P.w.__gh.reads.length;
+  P.pub().click(); await tick();
+  T('без коду запису не відбувається, ліміт не витрачено, причина названа',
+    P.w.__gh.posts.length===0 && P.w.__gh.reads.length===readsWas &&
+    [...P.d.querySelectorAll('.publine')].some(x=>x.textContent.includes('Введіть код редактора')));
+
+  P.key(EDIT_CODE);
+  /* Дім ключа — памʼять вкладки. Диск телефона переживає власника. */
+  T('код редактора не лягає в localStorage', (()=>{
+    const ls=P.w.localStorage;
+    for(let i=0;i<ls.length;i++)
+      if(String(ls.getItem(ls.key(i))).includes(EDIT_CODE)) return false;
+    return true; })());
+
   P.pub().click(); await tick();
   const body=(P.w.__gh.posts[0]||{}).body;
   T('запис пішов рівно один раз і рівно за адресою з config.json',
@@ -420,11 +484,31 @@ function cardsOf(d){
   T('чернетка доїхала в тіло запиту',
     !!body && (body.scenarios.scenarios.find(s=>String(s.id)==='3')||{}).mood
       ==='клієнт чекав 5 хвилин');
-  T('після запису чернетка знята', Object.keys(P.w.S.edraft).length===0);
+  /* Одне твердження на обидві половини одного факту (12.12-ї): і що ключ
+     доїхав у тому вигляді, який воркер уміє прочитати, і що запис по ньому
+     пройшов. Двома окремими вони падають від однієї причини й читаються
+     як два дефекти — рівно та пастка, яку показала ІН-Е. */
+  T('код їде заголовком у відсотковому кодуванні, і запис по ньому проходить',
+    (P.w.__gh.posts[0]||{}).code !== EDIT_CODE &&
+    decodeURIComponent((P.w.__gh.posts[0]||{}).code||'') === EDIT_CODE &&
+    Object.keys(P.w.S.edraft).length===0);
+
+  /* Відмова воркера по коду — не «збій»: звірка від неправильного коду не
+     псується. Тому екран лишає поле й кнопку запису й НЕ пропонує звіряти
+     ще раз: зайва перезвірка палить ліміт 60/год, з якого живе замок. */
+  const R=await withDraft({}); R.key('не той ключ'); R.pub().click(); await tick();
+  T('відмова по коду лишає поле й кнопку запису, а не кнопку перезвірки',
+    !!R.keyIn() && !!R.pub() &&
+    ![...R.d.querySelectorAll('button')].some(b=>b.textContent.trim()==='Звірити ще раз') &&
+    [...R.d.querySelectorAll('.publine')].some(x=>x.textContent.includes('Код редактора не підходить')));
 
   /* ЗАМОК. Файл підмінили між входом і кнопкою — запис не мусить статись
      узагалі, а не «статись і поскаржитись». */
   const L=await withDraft({shaSeq:['sha-1','sha-2']});
+  /* ⚠ Код набирається ПРАВИЛЬНИЙ. Без нього запис зупинив би сторож
+     порожнього ключа, і твердження про замок зеленіло б від чужої
+     причини — найгірший вид зеленого. */
+  if(L.keyIn()) L.key(EDIT_CODE);
   const lockBtn=L.pub(); if(lockBtn) lockBtn.click(); await tick();
   /* Одне твердження на обидві половини одного факту: і що запису не було,
      і що людині сказали чому. Двома окремими вони падають від однієї

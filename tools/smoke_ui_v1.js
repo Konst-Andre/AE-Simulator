@@ -70,6 +70,13 @@ const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://x.test/?mock=1',
                               text:()=>Promise.resolve(raw)}); };
     w.scrollTo=()=>{};
     w.HTMLElement.prototype.scrollIntoView=()=>{};
+    /* Рідний matchMedia у jsdom завжди каже «ні» — тобто POINTER_FINE був
+       би хибним завжди, і твердження про Enter доводило б лише те, що
+       гілка недосяжна. Стаб відповідає на сам запит, а не на константу:
+       підміниться запит у коді — стаб перестане його впізнавати. */
+    w.matchMedia=q=>({matches:/hover:\s*hover/.test(q)&&/pointer:\s*fine/.test(q),
+      media:q, onchange:null, addListener(){}, removeListener(){},
+      addEventListener(){}, removeEventListener(){}, dispatchEvent(){return false;}});
   }});
 const w=dom.window;
 
@@ -173,7 +180,23 @@ const w=dom.window;
   console.log('\n— розмова до кінця (заглушка) —');
   const ta=d.querySelector('.say textarea');
   const say=[...d.querySelectorAll('.say button')][0];
-  for(let i=0;i<5;i++){
+  /* Enter на ПК. Кількість ходів не міняється: перший робиться клавішею,
+     решта — кнопкою. Додати шостий хід означало б тиснути в заглушене
+     поле, і твердження про завершення зеленіло б від чужої причини.
+     ⚠ Shift+Enter перевіряється ПЕРШИМ і на тому самому тексті: якби він
+     надіслав, наступна перевірка Enter'а все одно побачила б репліку в
+     стрічці й нічого не помітила. */
+  const key=(o)=>ta.dispatchEvent(new w.KeyboardEvent('keydown',
+    {key:'Enter',bubbles:true,cancelable:true,...o}));
+  ta.value='репліка 0'; ta.dispatchEvent(new w.Event('input'));
+  key({shiftKey:true}); await new Promise(r=>setTimeout(r,400));
+  T('Shift+Enter не надсилає — це новий рядок', S.history.length===0);
+  key({}); await new Promise(r=>setTimeout(r,400));
+  T('Enter надсилає репліку там, де є миша', S.history.length>0);
+  T('[джерело] на дотиковому екрані Enter лишається новим рядком',
+    /POINTER_FINE\s*=/.test(src) && /hover:hover\) and \(pointer:fine/.test(src) &&
+    /e\.metaKey \|\| e\.ctrlKey \|\| POINTER_FINE/.test(src));
+  for(let i=1;i<5;i++){
     ta.value='репліка '+i; ta.dispatchEvent(new w.Event('input'));
     say.click(); await new Promise(r=>setTimeout(r,400));
   }
