@@ -304,9 +304,16 @@ const w=dom.window;
   const rulesDisk=require(path.join(BASE,'tools/ae_rules.js'));
   const rawCat=JSON.parse(fs.readFileSync(path.join(BASE,'data/catalog.json'),'utf8'));
   const rawScn=JSON.parse(fs.readFileSync(path.join(BASE,'data/scenarios.json'),'utf8'));
-  const vDisk=rulesDisk.validate(rawCat,rawScn);
+  /* ⚠ ЧОТИРИ АРГУМЕНТИ з обох боків. Доти, доки і диск, і сторінка кликали
+     правила на двох, ця пара тверджень порівнювала два однаково знезубрені
+     виклики і зеленіла. Тепер вона ж і є сторожем: якщо сторінка колись
+     повернеться на два аргументи, дослівний вердикт розійдеться. */
+  const rawChars=fs.readFileSync(path.join(BASE,'prompts/characters.md'),'utf8');
+  const rawCfg=JSON.parse(fs.readFileSync(path.join(BASE,'config.json'),'utf8'));
+  const vDisk=rulesDisk.validate(rawCat,rawScn,rawChars,rawCfg);
   T('AE_RULES доїхали до сторінки', !!w.AE_RULES && typeof w.AE_RULES.validate==='function');
-  const vPage = w.AE_RULES && w.AE_RULES.validate ? w.AE_RULES.validate(S.CAT,S.SCEN) : null;
+  const vPage = w.AE_RULES && w.AE_RULES.validate
+    ? w.AE_RULES.validate(S.CAT,S.SCEN,S.P.charsRaw,S.cfg) : null;
   const flat=v=>v?v.out.map(m=>m.lvl+' '+m.msg).join('\n'):'—';
   T('вердикт сторінки збігається з вердиктом диска дослівно',
     !!vPage && flat(vPage)===flat(vDisk));
