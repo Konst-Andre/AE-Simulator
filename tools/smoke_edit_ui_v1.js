@@ -33,7 +33,15 @@
             node tools/smoke_edit_ui_v1.js --inject=ІН-Д   (перелік характерів не з носія)
             node tools/smoke_edit_ui_v1.js --inject=ІН-Е   (замок знято)
             node tools/smoke_edit_ui_v1.js --inject=ІН-Є   (адреса зашита в коді)
-            node tools/smoke_edit_ui_v1.js --inject=ІН-Ж   (ключ їде сирим заголовком) */
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Ж   (ключ їде сирим заголовком)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-З   (пул вибірника не з cats сценарію)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-И   (масив у чернетці звіряється тотожністю)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-І   (число полів написане рукою)
+
+   S26 · ВИБІРНИК КОДІВ (Р-1г-1). Третій предмет охорони — ВВІД ЗА ПЕРЕЛІКОМ:
+   order · bv · bm мусять братися вибором із пулу чинних cats, зберігати
+   порядок і зніматись назад до вихідного значення. Текстовий ввід тут дав
+   би висячий код, і правила його ловлять уже після запису. */
 
 const fs=require('fs'), path=require('path');
 const {JSDOM}=require('jsdom');
@@ -139,6 +147,42 @@ if(arg==='ІН-Д'){
   HTML=inject(HTML,
     "  const chars = Object.keys(S.P.chars||{});",
     "  const chars = ['відкритий','поспішає','рахує гроші'];", 'ІН-Д');
+}
+
+/* ── ІНʼЄКЦІЇ ВИБІРНИКА (S26) ─────────────────────────────────────── */
+if(arg==='ІН-З'){
+  /* Повертає пул, не звужений категоріями сценарію: перелік набраний у
+     коді, а не порахований із cats. Клас відмінний від ІН-Д (там копія
+     ЗАКРИТОГО переліку розходиться з носієм; тут перелік ВІДКРИТИЙ і
+     правильний, але не той, що в цього сценарію) — тому й твердження
+     різні, і падають вони поодинці.
+     Дефект тихий: на екрані більше рядків, усі справжні, усі з каталогу,
+     і жоден вибір із них не дасть ✗ — тільки ⚠ «поза cats сценарію»
+     після запису, тобто вже в репозиторії. */
+  HTML=inject(HTML,
+    "  const pool = (rec.cats||[]).flatMap(k => S.CAT[k] || []);",
+    "  const pool = ['nose','throat'].flatMap(k => S.CAT[k] || []);", 'ІН-З');
+}
+if(arg==='ІН-И'){
+  /* Повертає звірку масиву тотожністю. Для order · bv · bm значення —
+     новий масив на кожен дотик, тож правка ніколи не «збігається з
+     файлом»: поле лишається позначеним назавжди, і публікація везе в
+     тілі запиту поле, якого ніхто не міняв. Найтихіший з дефектів
+     чернетки: екран цілий, вибір правильний, файл після запису теж
+     правильний — але mergeDraft перезаписав це поле поверх чужої
+     правки, і сліду про це немає ніде. */
+  HTML=inject(HTML,
+    "  if(base && sameVal(base[field], value)) delete d[field]; else d[field] = value;",
+    "  if(base && base[field] === value) delete d[field]; else d[field] = value;", 'ІН-И');
+}
+if(arg==='ІН-І'){
+  /* Повертає число, написане рукою. Зараз воно збігається — і саме тому
+     інʼєкція мусить розвести його з переліком: доки збігається, копія
+     непомітна, а на кроці, що забере звідси cats і main, заголовок
+     замерзне брехнею (S25 §4.3). */
+  HTML=inject(HTML,
+    "        el('summary',{text:'Не правиться тут ('+plural(roRows.length,'поле','поля','полів')+')'}),",
+    "        el('summary',{text:'Не правиться тут (7 полів)'}),", 'ІН-І');
 }
 
 /* ── фікстури ──────────────────────────────────────────────────────
@@ -393,6 +437,77 @@ function cardsOf(d){
   T('правка не пише в localStorage', wD.localStorage.length===lsBefore);
   T('правка не мутує завантажені дані',
     wD.S.SCEN.find(s=>String(s.id)==='3').mood===moodBefore);
+
+  console.log('\n— вибірник кодів: пул, порядок, зняття —');
+  /* Рядок читається з ВИХОДУ: код береться з підпису на екрані, а не з
+     внутрішньої структури сторінки. Список можна побудувати правильно
+     й намалювати не те. */
+  const rowsOf = f => [...f.querySelectorAll('.pickitem')].map(r=>({
+    cb: r.querySelector('input[type=checkbox]'),
+    code: (r.querySelector('.pc').textContent.split(' · ')[0]||'').trim() }));
+  const chipsOf = f => [...f.querySelectorAll('.picksel .echip')].map(x=>x.textContent);
+  /* Значок «змінено» читається як його ПОКАЗАНО: refresh() ховає його
+     стилем, а не виймає з дерева. */
+  const markOn = f => [...f.querySelectorAll('.flab .echip')]
+    .some(x=>x.textContent==='змінено' && x.style.display!=='none');
+
+  const fOrd = labOf('Замовлення (order)');
+  const fBv  = labOf('Ідеал ВТМ (bv)');
+  const fBm  = labOf('Ідеал СТМ (bm)');
+  const sc3  = wD.S.SCEN.find(s=>String(s.id)==='3');
+
+  T('order · bv · bm правляться вибором, а не текстом',
+    [fOrd,fBv,fBm].every(f => !!f &&
+      f.querySelectorAll('input[type=checkbox]').length>0 &&
+      f.querySelectorAll('input[type=text], textarea').length===0));
+
+  /* Пул рахується ГЕЙТОМ із завантаженого каталогу, а не тим самим
+     виразом, що на сторінці: інакше твердження порівнювало б дві
+     однакові дірки. */
+  const wantPool = sc3.cats.flatMap(k => wD.S.CAT[k].map(i=>i.c));
+  T('перелік вибірника — рівно позиції категорій цього сценарію',
+    [fOrd,fBv,fBm].every(f => { const cs=rowsOf(f).map(r=>r.code);
+      return cs.length===wantPool.length && cs.every((c,i)=>c===wantPool[i]); }));
+
+  T('обране показане назвою з каталогу, а не кодом',
+    (()=>{ const ch=chipsOf(fBv);
+      return ch.length===sc3.bv.length &&
+        ch.every((t,i)=>t===wD.S.ALL[sc3.bv[i]].n); })());
+
+  /* Знімається ОСТАННІЙ обраний: повернення дописує код у кінець, тож
+     масив відновлюється буквально. Знявши перший із двох, ми отримали б
+     інший порядок — і «змінено» лишилось би справедливо. */
+  const lastBv = sc3.bv[sc3.bv.length-1];
+  const rowBv  = rowsOf(fBv).find(r=>r.code===lastBv);
+  rowBv.cb.click();
+  const bvMarkedAfterOff = markOn(fBv);
+  rowBv.cb.click();
+  T('знятий і повернутий код лишає поле незміненим (масив звіряється вмістом)',
+    bvMarkedAfterOff && !markOn(fBv));
+
+  const free = rowsOf(fOrd).find(r=>!r.cb.checked);
+  free.cb.click();
+  /* Предмет — ЗНАЧЕННЯ, що поїде у файл, а не його малюнок: перетасований
+     масив дав би диф, якого ніхто не просив, у коміті з чужим імʼям. */
+  T('новий код дописується в кінець, наявні лишаються на місці',
+    (()=>{ const v=(wD.S.edraft['3']||{}).order||[];
+      return v.length===sc3.order.length+1 &&
+        sc3.order.every((c,i)=>v[i]===c) && v[v.length-1]===free.code; })());
+
+  for(const r of rowsOf(fBm)) if(r.cb.checked) r.cb.click();
+  /* Порожній перелік законний: чотири сценарії мають порожній order. Але
+     порожнім мусить бути МАСИВ — порожній рядок чи undefined тут дали б
+     ✗ «немає поля» від REQ, тобто форма ламала б дані мовчки. */
+  T('порожній перелік — законний стан і лишається масивом',
+    (()=>{ const v=(wD.S.edraft['3']||{}).bm;
+      return Array.isArray(v) && v.length===0 &&
+        fBm.textContent.includes('нічого не обрано'); })());
+
+  const roAcc=[...dd.querySelectorAll('details.acc')]
+    .find(x=>x.querySelector('summary').textContent.startsWith('Не правиться тут'));
+  T('число в заголовку «не правиться тут» порахане з переліку',
+    !!roAcc && (roAcc.querySelector('summary').textContent.match(/\((\d+)/)||[,''])[1]
+      === String(roAcc.querySelectorAll('.ero .tapeline').length));
 
   /* Значок чернетки читається на НЕВІДФІЛЬТРОВАНОМУ списку. Спершу
      звузити список фільтром, а потім шукати в ньому картку — означало б
