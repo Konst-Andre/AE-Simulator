@@ -1810,11 +1810,21 @@ function ScenCard(root){
 
   /* Поле = підпис + значок «змінено» + сам ввід. Значок ставиться поруч
      із полем, а не тільки в підсумку внизу: людина, яка гортає форму,
-     не бачить підсумку. */
-  const field = (key, label, node, hint)=>{
+     не бачить підсумку.
+
+     ⚠ ОБГОРТКА — НЕ ЗАВЖДИ <label> (S26, девайс). <label> без for
+     передає клік ПЕРШОМУ контролу всередині себе. Для поля з одним
+     вводом це і є потрібна поведінка: тицьнув будь-де в рядок — потрапив
+     у поле. Для вибірника з одинадцятьма чекбоксами той самий механізм
+     означає, що дотик до порожнього місця праворуч від підпису знімає
+     галку з першої позиції — при закритому списку, ніде її не показуючи.
+     Плюс <label class=pickitem> всередині був би вкладеним label, чого
+     HTML не дозволяє. Тому контейнер, що тримає більше одного контролу,
+     приходить тегом 'div'. */
+  const field = (key, label, node, hint, wrap)=>{
     const mark = el('span',{class:'echip',text:'змінено',style:'display:none'});
     marks[key]=mark;
-    return el('label',{class:'field'},[
+    return el(wrap||'label',{class:'field'},[
       el('span',{class:'flab'},[el('b',{text:label}), mark]),
       node, hint||null ]);
   };
@@ -1917,13 +1927,21 @@ function ScenCard(root){
     };
 
     box.append(sel);
-    box.append(el('details',{class:'acc',style:'margin:0'},[
+    /* ⚠ Смуга обраного ховається, доки список відкритий (S26, девайс).
+       Вона стоїть НАД списком, і кожна нова галка додає їй рядок — тобто
+       посуває вниз рівно те, у що людина цілиться пальцем. Поки список
+       відкритий, стан обраного видно самими галками, і смуга дублювала б
+       його ціною стрибка. Ховається на подію toggle, а не через :has():
+       :has() у Safari молодший за пристрої, на яких це має працювати. */
+    const det = el('details',{class:'acc',style:'margin:0'},[
       el('summary',{text:'Обрати — доступно ' + plural(rows.length,'позиція','позиції','позицій')}),
       el('div',{class:'accbody',style:'padding-bottom:6px'},[list])
-    ]));
+    ]);
+    det.addEventListener('toggle', ()=>{ sel.style.display = det.open ? 'none' : ''; });
+    box.append(det);
     if(gain) box.append(gain);
     draw();
-    return field(key, label, box);
+    return field(key, label, box, null, 'div');
   };
 
   const chars = Object.keys(S.P.chars||{});
