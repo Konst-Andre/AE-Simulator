@@ -73,6 +73,20 @@ if(arg==='ІН-А'){
     "      byId.get(id2).push(m); continue; }\n" +
     "    if(id!==null && ids.has(id)){", 'ІН-А');
 }
+if(arg==='ІН-Е'){
+  /* Повертає відсутність замка: перечитаний sha більше ні з чим не
+     звіряється, і правка їде поверх чужої мовчки — рівно та поведінка,
+     яку S22 §1.3 назвав відсутністю обробки конфлікту. */
+  HTML=inject(HTML, '  if(fresh.sha !== S.esnap.sha){',
+    '  if(false){', 'ІН-Е');
+}
+if(arg==='ІН-Є'){
+  /* Повертає зашиту адресу: звірка йде не туди, куди каже config.
+     Твердження сформульоване як РІВНІСТЬ із оголошенням (12.11), тому
+     ловить саме розходження, а не «схоже на GitHub». */
+  HTML=inject(HTML, "  const url = S.cfg.sourceApi + path + '?ref=' +",
+    "  const url = 'https://api.github.com/repos/inshyj/repo/contents/' + path + '?ref=' +", 'ІН-Є');
+}
 if(arg==='ІН-Б'){
   /* Повертає мовчазну втрату. Номер у повідомленні — рядок ('3'), id
      сценарію — число (3); варто ключам розійтись типом, і жоден рядок
@@ -124,10 +138,39 @@ const mutOne  = s=>{ const c=JSON.parse(JSON.stringify(s));
 const mutLong = s=>{ const c=JSON.parse(JSON.stringify(s));
   c.scenarios.find(x=>String(x.id)==='41').mood=BAD_MOOD; return c; };
 
-function mount(mutate){
+/* ── МОК РЕПОЗИТОРІЮ Й ВОРКЕРА (S24) ──────────────────────────────────
+   Сторінка тепер стукає у два різні місця: відносними шляхами — по свої
+   файли (це GitHub Pages), повним URL — по ІСТИНУ (api.github.com) і по
+   запис (воркер). Мок мусить розрізняти їх так само, як розрізняє
+   браузер, інакше твердження про замок судили б вигадку.
+   gh.shaSeq — черга відбитків для data/scenarios.json: перший видається
+   на звірці при вході, наступний — на перечитуванні перед записом. Різні
+   значення = файл змінили під відкритою карткою.
+   gh.failRead — відмова читання (403 по ліміту 60/год виглядає саме так). */
+const b64 = s => Buffer.from(s,'utf8').toString('base64');
+function mount(mutate, gh={}){
+  const log={reads:[], posts:[]};
+  const shaQ=(gh.shaSeq||[]).slice();
   const dom=new JSDOM(HTML,{runScripts:'dangerously',url:'https://x.test/?mock=1',
     beforeParse(w){
-      w.fetch=(u)=>{ const raw=fs.readFileSync(path.join(BASE,files[u]||u),'utf8');
+      w.TextDecoder=TextDecoder;
+      w.fetch=(u,opt)=>{
+        if(typeof u==='string' && u.startsWith('http')){
+          if(opt && opt.method==='POST'){
+            log.posts.push({url:u, body:JSON.parse(opt.body)});
+            return Promise.resolve({ok:true,status:200,json:()=>Promise.resolve(
+              {ok:true,err:0,warn:0,out:[],saved:'data/scenarios.json',text:'Збережено.'})});
+          }
+          log.reads.push(u);
+          if(gh.failRead) return Promise.resolve({ok:false,status:403});
+          const scn=u.includes('scenarios');
+          const name=scn?'data/scenarios.json':'data/catalog.json';
+          const raw=fs.readFileSync(path.join(BASE,name),'utf8');
+          const sha=scn?(shaQ.length?shaQ.shift():'sha-scn'):'sha-cat';
+          return Promise.resolve({ok:true,status:200,
+            json:()=>Promise.resolve({sha,encoding:'base64',content:b64(raw)})});
+        }
+        const raw=fs.readFileSync(path.join(BASE,files[u]||u),'utf8');
         const val = u==='data/scenarios.json' ? mutate(JSON.parse(raw)) : null;
         return Promise.resolve({
           json:()=>Promise.resolve(val!==null?val:JSON.parse(raw)),
@@ -135,6 +178,7 @@ function mount(mutate){
       w.scrollTo=()=>{};
       w.HTMLElement.prototype.scrollIntoView=()=>{};
     }});
+  dom.window.__gh=log;
   return dom.window;
 }
 
@@ -335,6 +379,66 @@ function cardsOf(d){
   D.click('Відкрити редактор').click();
   T('фільтр списку переживає перемальовування екрана',
     chipErr().getAttribute('aria-pressed')==='true');
+
+  console.log('\n— публікація: адреса, замок, тіло запиту —');
+  const tick=()=>new Promise(r=>setTimeout(r,60));
+  /* Спільна дорога для всіх трьох прогонів: увійти, змінити mood, вийти
+     до списку. Публікація живе в списку, бо пише файл цілком, а не картку. */
+  const withDraft = async gh => {
+    const w=mount(mutNone,gh); const E=await openEditor(w,true); const d=E.d;
+    const card = id => [...d.querySelectorAll('.ecard')]
+      .find(c=>c.querySelector('.ord').textContent.startsWith('#'+id+' '));
+    [...card('3').querySelectorAll('button')].find(b=>b.textContent.trim()==='Правити').click();
+    const ta=[...d.querySelectorAll('.field')]
+      .find(f=>f.querySelector('.flab b')&&f.querySelector('.flab b').textContent==='Настрій дня (mood)')
+      .querySelector('textarea');
+    ta.value='клієнт чекав 5 хвилин'; ta.dispatchEvent(new w.window.Event('input'));
+    [...d.querySelectorAll('.back')][0].click();
+    await tick();
+    return {w,d,pub:()=>[...d.querySelectorAll('button')]
+      .find(b=>b.textContent.startsWith('Опублікувати'))};
+  };
+
+  const P=await withDraft({});
+  /* Рівність із оголошенням, а не «схоже на github»: зразок у гейті був
+     би третьою копією адреси (12.11). */
+  T('звірка стукає рівно за адресою з config.json',
+    P.w.__gh.reads.length>=2 &&
+    P.w.__gh.reads.every(u=>u.startsWith(P.w.S.cfg.sourceApi)));
+  T('на зеленій звірці кнопка публікації зʼявляється', !!P.pub());
+  P.pub().click(); await tick();
+  const body=(P.w.__gh.posts[0]||{}).body;
+  T('запис пішов рівно один раз і рівно за адресою з config.json',
+    P.w.__gh.posts.length===1 && P.w.__gh.posts[0].url===P.w.S.cfg.editEndpoint);
+  /* Воркер судить обидва боки разом і пише те, що надіслали, ЦІЛИМ файлом:
+     обгортка, загублена по дорозі, зникла б із репозиторію. */
+  T('у тілі — обидва боки, бік запису названий',
+    !!body && body.save==='scenarios' && !!body.catalog && !!body.scenarios);
+  T('файл іде цілим: обгортка version уціліла',
+    !!body && body.scenarios.version===JSON.parse(
+      fs.readFileSync(path.join(BASE,'data/scenarios.json'),'utf8')).version);
+  T('чернетка доїхала в тіло запиту',
+    !!body && (body.scenarios.scenarios.find(s=>String(s.id)==='3')||{}).mood
+      ==='клієнт чекав 5 хвилин');
+  T('після запису чернетка знята', Object.keys(P.w.S.edraft).length===0);
+
+  /* ЗАМОК. Файл підмінили між входом і кнопкою — запис не мусить статись
+     узагалі, а не «статись і поскаржитись». */
+  const L=await withDraft({shaSeq:['sha-1','sha-2']});
+  const lockBtn=L.pub(); if(lockBtn) lockBtn.click(); await tick();
+  /* Одне твердження на обидві половини одного факту: і що запису не було,
+     і що людині сказали чому. Двома окремими вони падають від однієї
+     причини й читаються як два дефекти (12.12-ї) — ІН-Е це показала. */
+  T('розбіжність відбитка зупиняє запис і названа на екрані',
+    L.w.__gh.posts.length===0 &&
+    [...L.d.querySelectorAll('.publine')].some(x=>x.textContent.includes('Не збережено')));
+
+  /* Відмова читання = зупинка. «Не змогли звірити» не має права
+     виглядати як «збіглось». */
+  const F=await withDraft({failRead:true});
+  T('відмова читання не дає кнопки публікації й названа на екрані',
+    !F.pub() &&
+    [...F.d.querySelectorAll('.publine')].some(x=>x.textContent.includes('зупинена')));
 
   console.log('\n— єдина точка виклику правил —');
   const src=fs.readFileSync(path.join(BASE,'index.html'),'utf8');
