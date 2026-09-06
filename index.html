@@ -237,6 +237,12 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .emood{margin:0;color:var(--soft);font-size:13px;display:-webkit-box;
   -webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .eline{margin:0;font-size:13.5px;line-height:1.45}
+/* Смуга публікації має ВЛАСНИЙ клас, хоч виглядає так само, як рядок
+   вердикту. .eline — це рядок, сказаний правилами; гейт рахує їх і звіряє
+   суму з вердиктом. Смуга стану, одягнена в той самий клас, додалась би
+   до цієї суми й почервонила б твердження про зовсім інший предмет. */
+.publine{margin:0;font-size:13.5px;line-height:1.45}
+.pubbar{margin:0 0 4px}
 
 .field{display:block;margin-bottom:12px}
 .field span{display:block;font-size:13px;color:var(--soft);margin-bottom:4px}
@@ -430,6 +436,19 @@ const S = {
      escen — ключ відкритого запису. Саме КЛЮЧ, а не індекс у SCEN: ключ
      може вказувати на запис, якого в SCEN ще немає (створення, Р-1д). */
   efilter:'all', edraft:{}, escen:null,
+
+  /* ── ПУБЛІКАЦІЯ (Р-1в) ───────────────────────────────────────────
+     RAW — сирі обʼєкти файлів, як вони лежать на диску, разом з
+     обгорткою (version · note). S.SCEN — це scn.scenarios, тобто
+     нутрощі; публікувати треба ФАЙЛ, і обгортка, викинута при
+     завантаженні, зникла б із репозиторію разом із version.
+     esnap — знімок істини з репозиторію: {sha, scn, cat}. Не з тієї
+     адреси, звідки прийшла сторінка: Pages відстає від репо на час
+     деплою і кешується CDN, тож «те, що показує екран» і «те, що
+     лежить у main» — різні речі, і публікація мусить спиратись на
+     друге (S22 §1.3).
+     epub — стан звірки й запису: {state, text, lines}. */
+  RAW:null, esnap:null, epub:null,
 };
 
 /* ── ЗАВАНТАЖЕННЯ ────────────────────────────────────────────────── */
@@ -467,6 +486,8 @@ async function boot(){
       for(const it of v.items) S.ALL[it.c]={...it,cat:k};
     }
     S.SCEN=scn.scenarios;
+    /* Обгортки лишаються цілими: публікація пише файл, а не масив. */
+    S.RAW={cat, scn};
     /* Дані і носій характерів мусять сходитись. Порожній {{character}} — це
        тихий дефект: промпт збереться, модель відповість, і клієнт просто
        буде ніяким. Тому розходження зупиняє старт так само, як порожній
@@ -1111,6 +1132,134 @@ const setDraft = (id, field, value) => {
 };
 const draftFields = id => Object.keys(S.edraft[id] || {});
 
+/* ── ПУБЛІКАЦІЯ · Р-1в ────────────────────────────────────────────────
+   Три предмети, і кожен окремий: АДРЕСА (оголошена в config, не зашита),
+   ЗВІРКА (істина береться з репозиторію, не з Pages) і ЗАПИС (воркер).
+
+   ⚠ Чому звірка взагалі потрібна. commit() у worker/ae-edit.js бере sha
+   сам, за мілісекунду до PUT, і тіла з sha не приймає — тобто гонки він
+   не бачить: правка, зроблена кимось, поки форма була відкрита, буде
+   затерта МОВЧКИ (S22 §1.3). Замок робиться тут, на клієнті: знімок при
+   вході + перечитування перед записом. Серверний варіант (воркер приймає
+   baseSha і чесно віддає 409) кращий, але це його код і його гейт.
+
+   ⚠ Відмова читання = ЗУПИНКА, а не «схоже, що збіглось». Ліміт
+   api.github.com без токена — 60 запитів/годину на IP; 403 по ліміту
+   виглядає як звичайна помилка мережі, і поблажливе поводження з нею
+   перетворило б замок на прикрасу. */
+const pubReady = () => !!(S.cfg && S.cfg.editEndpoint && S.cfg.sourceApi);
+
+/* base64 → текст. atob віддає байти по одному символу; кирилиця без
+   декодування UTF-8 приїхала б кракозябрами, і звірка «файл не змінився»
+   червоніла б завжди. */
+const b64text = b64 => {
+  const bin = atob(String(b64).replace(/\s+/g,''));
+  if(typeof TextDecoder!=='undefined')
+    return new TextDecoder('utf-8').decode(Uint8Array.from(bin,c=>c.charCodeAt(0)));
+  return decodeURIComponent(escape(bin));
+};
+
+async function ghRead(path){
+  const url = S.cfg.sourceApi + path + '?ref=' + (S.cfg.sourceBranch||'main');
+  const r = await fetch(url,{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+  if(!r.ok) throw new Error(r.status===403
+    ? 'GitHub відмовив (403) — найімовірніше вичерпано 60 запитів на годину.'
+    : 'GitHub відповів ' + r.status + ' на ' + path);
+  const j = await r.json();
+  return { sha:j.sha, obj:JSON.parse(b64text(j.content)) };
+}
+
+/* Знімок береться один раз на вхід у редактор і одразу звіряється з тим,
+   що завантажила сторінка. Розбіжність тут означає не гонку, а застарілу
+   сторінку — і лікується перезавантаженням, а не публікацією. */
+async function loadSnap(){
+  /* ⚠ Прапорець ставиться, а render() НЕ викликається: loadSnap стартує
+     зсередини Editor(), до put(root,…). Перемальовування звідти пішло б
+     рекурсією — внутрішній Editor малює сторінку, зовнішній дописує в неї
+     свої вузли другим разом, і вердикт задвоюється. Смуга й так побачить
+     'busy': прапорець виставлений синхронно, до першого await. */
+  S.epub = {state:'busy', text:'Звіряємо з репозиторієм…'};
+  try{
+    const [scn,cat] = await Promise.all([
+      ghRead('data/scenarios.json'), ghRead('data/catalog.json')]);
+    S.esnap = {sha:scn.sha, scn:scn.obj, cat:cat.obj};
+    const same = JSON.stringify(scn.obj.scenarios||scn.obj)
+              === JSON.stringify((S.RAW&&S.RAW.scn&&S.RAW.scn.scenarios)||S.SCEN);
+    S.epub = same
+      ? {state:'ok', text:'Звірено з репозиторієм: дані сторінки збігаються з main.'}
+      : {state:'stale', text:'Сторінка показує НЕ те, що лежить у репозиторії. '
+          + 'Публікація зупинена: правка лягла б поверх чужої. Перезавантажте сторінку.'};
+  }catch(e){
+    S.esnap = null;
+    S.epub = {state:'fail', text:'Не вдалося звірити з репозиторієм. '
+      + String(e&&e.message||e) + ' Публікація зупинена.'};
+  }
+  render();
+}
+
+/* Чернетка накладається на СВІЖИЙ файл, а не на той, що в памʼяті:
+   інакше публікація повертала б застарілі сусідні записи. */
+const mergeDraft = base => {
+  const out = JSON.parse(JSON.stringify(base));
+  const arr = out.scenarios || out;
+  for(const rec of arr){
+    const d = S.edraft[String(rec.id)];
+    if(d) Object.assign(rec, d);
+  }
+  return out;
+};
+
+async function publish(){
+  if(!pubReady() || !S.esnap) return;
+  S.epub = {state:'busy', text:'Перечитуємо файл перед записом…'};
+  render();
+  let fresh;
+  try{ fresh = await ghRead('data/scenarios.json'); }
+  catch(e){
+    S.epub = {state:'fail', text:'Перед записом файл прочитати не вдалося. '
+      + String(e&&e.message||e) + ' Не збережено.'};
+    return render();
+  }
+  /* Замок. sha — це відбиток вмісту файлу в git; інший sha означає, що
+     між входом у редактор і цією секундою файл змінили. */
+  if(fresh.sha !== S.esnap.sha){
+    const a = new Map((S.esnap.scn.scenarios||[]).map(s=>[String(s.id),JSON.stringify(s)]));
+    const b = new Map((fresh.obj.scenarios||[]).map(s=>[String(s.id),JSON.stringify(s)]));
+    const moved=[];
+    for(const [k,v] of b) if(a.get(k)!==v) moved.push('#'+k+(a.has(k)?'':' (новий)'));
+    for(const k of a.keys()) if(!b.has(k)) moved.push('#'+k+' (зник)');
+    S.epub = {state:'conflict',
+      text:'Файл змінився, поки картка була відкрита. Не збережено — інакше '
+         + 'чужа правка зникла б мовчки. Перезавантажте сторінку.',
+      lines: moved.length ? ['Розійшлись: '+moved.join(' · ')] : []};
+    return render();
+  }
+  const n = Object.keys(S.edraft).length;
+  let res, j;
+  try{
+    res = await fetch(S.cfg.editEndpoint,{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({catalog:S.esnap.cat, scenarios:mergeDraft(fresh.obj),
+        save:'scenarios', note:'редактор даних: сценаріїв '+n})});
+    j = await res.json();
+  }catch(e){
+    S.epub = {state:'fail', text:'Воркер не відповів. '+String(e&&e.message||e)};
+    return render();
+  }
+  /* Вердикт воркера показується як є. Переказ своїми словами був би
+     другим домом того самого тексту (12.11). */
+  if(!res.ok || !j || j.saved===null || j.saved===undefined){
+    S.epub = {state:'fail', text:(j&&(j.text||j.error))||('Воркер відповів '+res.status),
+      lines:(j&&j.out||[]).filter(m=>m.lvl==='err').map(m=>'✗ '+m.msg)};
+    return render();
+  }
+  S.edraft = {};
+  S.epub = {state:'ok', text:(j.text||'Збережено.')
+    + ' Сторінка ще показує стару версію: GitHub Pages оновиться за хвилину-дві.'};
+  S.esnap = null;
+  render();
+}
+
 /* Маршрут рядка вердикту на картку. Повідомлення правил починаються
    з '#'+id — рівно ті, що стосуються одного сценарію; агрегатні ✓
    («обов'язкові поля на місці») не називають нікого і на картку не
@@ -1286,6 +1435,12 @@ function Editor(root){
      назад у PWA) не пускається: двері мають значити те саме завжди. */
   if(!CURATOR.open){ S.screen='settings'; render(); return; }
 
+  /* Звірка з репозиторієм стартує сама, один раз на вхід у редактор, і лише
+     доки про неї нічого не сказано. Умова стоїть на epub, а не на esnap:
+     після відмови знімка немає, і умова «немає знімка» крутила б спроби по
+     колу на кожному render(). */
+  if(pubReady() && S.epub===null) loadSnap();
+
   /* Судяться дані З ЧЕРНЕТКОЮ, а не з файлу: інакше список показував би
      вердикт про текст, якого на екрані вже немає. Саме заради цієї
      арності виклик правил зведено в одну точку (S22 §1.6). */
@@ -1394,9 +1549,9 @@ function Editor(root){
        людина мусить бачити, що вердикт угорі порахований НЕ по файлу. */
     Object.keys(S.edraft).length
       ? el('p',{class:'eline',style:'color:var(--soft)',text:
-          'Незбережених правок: сценаріїв '+Object.keys(S.edraft).length+
-          '. Вони живуть у цій сесії й у файл не пишуться.'})
+          'Незбережених правок: сценаріїв '+Object.keys(S.edraft).length+'.'})
       : null,
+    PubBar(),
     el('p',{class:'sub',style:'margin:6px 0 14px;font-size:12.5px',text:
       'Картка називає тільки проблеми. Рядки ✓ стосуються всіх даних '+
       'разом, тому лежать у «Загальних» — «без зауважень» на картці '+
@@ -1427,6 +1582,39 @@ function Editor(root){
 
    goal лежить поза REQ: правила про нього мовчать. Підписано на
    екрані — інакше порожній вирок читався б як схвалення тексту. */
+/* ── СМУГА ПУБЛІКАЦІЇ ─────────────────────────────────────────────────
+   Один рядок стану й не більше однієї дії. Кнопка запису зʼявляється
+   ТІЛЬКИ на зеленій звірці: кнопка, яка стоїть завжди й іноді відмовляє,
+   вчить тиснути її наосліп. */
+function PubBar(){
+  const box = el('div',{class:'pubbar'});
+  if(!pubReady()){
+    box.append(el('p',{class:'publine',style:'color:var(--soft)',text:
+      'Публікація недоступна: у config.json не оголошено editEndpoint або '+
+      'sourceApi. Адреса не вгадується — це навмисно.'}));
+    return box;
+  }
+  const st = S.epub || {state:'busy', text:'Звіряємо з репозиторієм…'};
+  const TONE = {ok:'var(--vtm)', busy:'var(--soft)', stale:'var(--loss)',
+                fail:'var(--loss)', conflict:'var(--loss)'};
+  box.append(el('p',{class:'publine',style:'color:'+(TONE[st.state]||'var(--soft)'),
+    text:(st.state==='ok'?'✓ ':st.state==='busy'?'… ':'✗ ')+st.text}));
+  for(const l of (st.lines||[]))
+    box.append(el('p',{class:'publine',style:'color:var(--soft)',text:l}));
+
+  const n = Object.keys(S.edraft).length;
+  const row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px'});
+  if(st.state==='ok' && S.esnap && n)
+    row.append(el('button',{class:'btn',style:'padding:8px 14px;font-size:14px',
+      text:'Опублікувати правки ('+n+')', onclick:publish}));
+  if(st.state==='fail'||st.state==='conflict'||st.state==='stale')
+    row.append(el('button',{class:'btn ghost',style:'padding:8px 14px;font-size:14px',
+      text:'Звірити ще раз', onclick:()=>{
+        S.epub=null; S.esnap=null; loadSnap(); render(); }}));
+  if(row.children.length) box.append(row);
+  return box;
+}
+
 function ScenCard(root){
   /* Ті самі двері, що й у списку: екран за кодом куратора не має пускати
      повз себе через повернення назад у PWA. */
@@ -1525,10 +1713,18 @@ function ScenCard(root){
   const chars = Object.keys(S.P.chars||{});
   const grps  = [...new Set(S.SCEN.map(x=>x.grp).filter(Boolean))];
 
-  const moodHint = el('div',{},[
-    el('ul',{class:'ehint'}, SIGNS.map(t=>el('li',{text:t}))),
-    SIGNS.length ? null : el('p',{class:'ehint',
-      text:'Перелік ознак не прочитано з правил.'})
+  /* ⚠ ШТОРКА (Р-1б-2). Вісім ознак читаються один раз, а місце займають
+     щоразу — девайс-тест назвав екран правильним, але шумним. Складено під
+     <details>, а НЕ прибрано: querySelectorAll бачить .ehint li і в
+     згорнутому стані, тож твердження гейта про «ознаки дослівно з
+     AE_RULES.MOOD_SIGNS» лишається чинним. Перевірено прогоном. */
+  const moodHint = el('details',{class:'acc'},[
+    el('summary',{text:'Що саме перевіряє правило ('+SIGNS.length+')'}),
+    el('div',{class:'accbody'},[
+      el('ul',{class:'ehint'}, SIGNS.map(t=>el('li',{text:t}))),
+      SIGNS.length ? null : el('p',{class:'ehint',
+        text:'Перелік ознак не прочитано з правил.'})
+    ])
   ]);
 
   const ro = (label,val)=>el('div',{class:'tapeline'},[
@@ -1541,8 +1737,8 @@ function ScenCard(root){
       el('h1',{class:'toptitle',text:'#'+id+' · '+(rec.title||'без назви')})
     ]),
     el('p',{class:'enote',text:
-      'Правки живуть у цій сесії й у файл не пишуться. Публікація — '+
-      'окремий крок; кнопки запису тут немає навмисно.'}),
+      'Правки живуть у цій сесії. Публікація — у списку редактора, однією '+
+      'кнопкою на всі змінені сценарії: файл пишеться цілком.'}),
     dirtyBox,
 
     textField('title','Назва',false),
@@ -1561,14 +1757,18 @@ function ScenCard(root){
 
     verdBox,
 
-    el('h2',{style:'margin:18px 0 6px;font-size:15px',text:'Не правиться тут'}),
-    el('p',{class:'enote',style:'margin-bottom:8px',text:
-      'Коди каталогу і номери. Текстовий ввід тут дав би висячий код; '+
-      'чесний ввід — це вибірник по каталогу, окремий крок.'}),
-    el('div',{class:'ero'},[
-      ro('id', rec.id), ro('no (номер замовлення)', rec.no),
-      ro('cats', rec.cats), ro('main', rec.main), ro('order', rec.order),
-      ro('bv (ідеал ВТМ)', rec.bv), ro('bm (ідеал СТМ)', rec.bm)
+    el('details',{class:'acc',style:'margin-top:18px'},[
+      el('summary',{text:'Не правиться тут (7 полів)'}),
+      el('div',{class:'accbody'},[
+        el('p',{class:'enote',style:'margin-bottom:8px',text:
+          'Коди каталогу і номери. Текстовий ввід тут дав би висячий код; '+
+          'чесний ввід — це вибірник по каталогу, окремий крок.'}),
+        el('div',{class:'ero'},[
+          ro('id', rec.id), ro('no (номер замовлення)', rec.no),
+          ro('cats', rec.cats), ro('main', rec.main), ro('order', rec.order),
+          ro('bv (ідеал ВТМ)', rec.bv), ro('bm (ідеал СТМ)', rec.bm)
+        ])
+      ])
     ])
   );
   refresh();
