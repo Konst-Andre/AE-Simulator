@@ -39,11 +39,29 @@
             node tools/smoke_edit_ui_v1.js --inject=ІН-І   (число полів написане рукою)
             node tools/smoke_edit_ui_v1.js --inject=ІН-Ї   (обгортка вибірника — label)
             node tools/smoke_edit_ui_v1.js --inject=ІН-Й   (смуга обраного стоїть над списком)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-К   (перелік кодів не перебудовується під новим cats)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Л   (перелік main не з чинних cats)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-М   (зняття категорії тихо переставляє main)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-Н   (сторожа порожніх cats немає)
+            node tools/smoke_edit_ui_v1.js --inject=ІН-О   (рядок-межа зашитий при побудові)
 
    S26 · ВИБІРНИК КОДІВ (Р-1г-1). Третій предмет охорони — ВВІД ЗА ПЕРЕЛІКОМ:
    order · bv · bm мусять братися вибором із пулу чинних cats, зберігати
    порядок і зніматись назад до вихідного значення. Текстовий ввід тут дав
-   би висячий код, і правила його ловлять уже після запису. */
+   би висячий код, і правила його ловлять уже після запису.
+
+   S27 · КАТЕГОРІЇ (Р-1г-2). Четвертий предмет охорони — ЗВʼЯЗАНА ПАРА:
+   cats задає пул трьох вибірників кодів, main мусить лежати всередині
+   cats. Судиться не склад пулу (це третій предмет), а РУХ: чи перелік
+   перерахувався після правки категорій, чи main пішов за ними, і чи
+   правка cats не полізла мовчки у сусідні поля.
+
+   ⚠ ТВЕРДЖЕННЯ БЕЗ ІНʼЄКЦІЇ, назване вголос (друге): «зняття категорії не
+   прибирає обраних кодів із запису». Шлях відмови справжній — автозняття
+   «щоб не лишати ⚠» напрошується саме тут, — але клас дефекту той самий,
+   що ловить ІН-М на main: побічна правка сусіднього поля від дотику до
+   цього. Друга інʼєкція того ж класу дала б два твердження, що падають
+   від однієї причини (12.12-ї). */
 
 const fs=require('fs'), path=require('path');
 const {JSDOM}=require('jsdom');
@@ -161,9 +179,15 @@ if(arg==='ІН-З'){
      Дефект тихий: на екрані більше рядків, усі справжні, усі з каталогу,
      і жоден вибір із них не дасть ✗ — тільки ⚠ «поза cats сценарію»
      після запису, тобто вже в репозиторії. */
+  /* ⚠ НОСІЙ ПЕРЕПИСАНО НА S27. До Р-1г-2 пул був константою, і ін'єкція
+     підміняла її списком категорій. Тепер пул — вираз від чернетки, і
+     підміна цілого виразу зламала б заразом РУХ (перебудову, порожній
+     стан), тобто одна причина дала б чотири ✗ (12.12-ї). Тому ключ
+     ігнорується, а залежність від cats лишається живою: пул порожніє
+     разом із cats і росте разом із ним — але складом бреше. */
   HTML=inject(HTML,
-    "  const pool = (rec.cats||[]).flatMap(k => S.CAT[k] || []);",
-    "  const pool = ['nose','throat'].flatMap(k => S.CAT[k] || []);", 'ІН-З');
+    "  const poolNow  = () => catsNow().flatMap(k => S.CAT[k] || []);",
+    "  const poolNow  = () => catsNow().flatMap(k => S.CAT['throat'] || []);", 'ІН-З');
 }
 if(arg==='ІН-И'){
   /* Повертає звірку масиву тотожністю. Для order · bv · bm значення —
@@ -203,6 +227,50 @@ if(arg==='ІН-Й'){
   HTML=inject(HTML,
     "    det.addEventListener('toggle', ()=>{ sel.style.display = det.open ? 'none' : ''; });",
     "    /* ІН-Й */;", 'ІН-Й');
+}
+
+/* ІН-К. Перелік кодів не перераховується після правки cats: перебудовник
+   зареєстрований, але переліку не чіпає — перемальовує самі галки. Дефект
+   тихий саме тим, що екран реагує (чипси й вирок міняються), а список
+   позицій лишається від попередніх категорій. */
+if(arg==='ІН-К'){
+  HTML=inject(HTML,
+    "    codeFields.push(()=>{ build(); draw(); });",
+    "    codeFields.push(()=>{ draw(); });", 'ІН-К');
+}
+/* ІН-Л. Перелік main зібраний з усього каталогу, а не з чинних cats.
+   Клас відмінний від ІН-Д (там копія переліку в коді сторінки): тут
+   джерело живе, але взяте ширшим за потрібне, і форма пропонує вибрати
+   те, що правила відразу назвуть ✗ (ae_rules.js:88). */
+if(arg==='ІН-Л'){
+  HTML=inject(HTML,
+    "    const ks = catsNow();",
+    "    const ks = Object.keys(S.CAT);", 'ІН-Л');
+}
+/* ІН-М. Зняття категорії тихо переставляє main на першу зі списку. Саме
+   та «зручність», що напрошується: ⚠ у вердикті зникає, а у файл їде
+   вибір, якого ніхто не робив. */
+if(arg==='ІН-М'){
+  HTML=inject(HTML,
+    "      setDraft(id, 'cats', v);\n      draw(); afterCats();",
+    "      setDraft(id, 'cats', v);\n      if(!v.includes(recOf(id).main)) setDraft(id,'main',v[0]||'');\n      draw(); afterCats();", 'ІН-М');
+}
+/* ІН-Н. Сторожа порожніх cats немає — заголовок рахує позиції глухо.
+   «Доступно 0 позицій» читається як поломка каталогу, а не як наслідок
+   власної щойно знятої галки. */
+if(arg==='ІН-Н'){
+  HTML=inject(HTML,
+    "      sum.textContent = !catsNow().length",
+    "      sum.textContent = false", 'ІН-Н');
+}
+/* ІН-О. Рядок-межа наливається один раз, при побудові картки: після
+   правки cats він називає категорії, яких у запису вже немає. Клас той
+   самий, що ІН-І (напис, що замерз брехнею), але носій інший — там
+   число, тут перелік, і полагоджені вони різними механізмами. */
+if(arg==='ІН-О'){
+  HTML=inject(HTML,
+    "    mainRebuild();\n    limitLine.textContent = limitText();\n    refresh();",
+    "    mainRebuild();\n    refresh();", 'ІН-О');
 }
 
 /* ── фікстури ──────────────────────────────────────────────────────
@@ -570,6 +638,125 @@ function cardsOf(d){
   D.click('Відкрити редактор').click();
   T('фільтр списку переживає перемальовування екрана',
     chipErr().getAttribute('aria-pressed')==='true');
+
+  console.log('\n— категорії: пул перебудовується, main тримається —');
+  /* Окреме підняття сторінки. Блок вище наробив чернеток на #3, і судити
+     категорії на ньому означало б судити стан, складений попередніми
+     твердженнями: ✗ читалось би як дефект категорій, а прийшло б із
+     чужого блоку (12.12-ї). */
+  const wE=mount(mutNone);
+  const E=await openEditor(wE, true);
+  const de=E.d;
+
+  /* Сценарій обирається ВЛАСТИВІСТЮ, а не номером: ≥2 категорії (щоб
+     зняття лишало запис живим) і хоча б один код у order із категорії
+     main (щоб було чому випасти з пулу). Зараз під це підходить #4;
+     номер тут — факт даних, а не умова гейта. */
+  const scE = wE.S.SCEN.find(s => (s.cats||[]).length>=2 && s.main &&
+    (s.order||[]).some(c => (wE.S.CAT[s.main]||[]).some(i=>i.c===c)));
+  T('у даних є сценарій, на якому категорії можна судити (≥2 cats, код із main)', !!scE);
+  const openCard = id => [...[...de.querySelectorAll('.ecard')]
+    .find(c=>c.querySelector('.ord').textContent.startsWith('#'+id+' '))
+    .querySelectorAll('button')].find(b=>b.textContent.trim()==='Правити').click();
+  openCard(scE.id);
+
+  const labE  = name => [...de.querySelectorAll('.field')]
+    .find(f=>f.querySelector('.flab b') && f.querySelector('.flab b').textContent===name);
+  const rowsE = f => [...f.querySelectorAll('.pickitem')].map(r=>({
+    cb: r.querySelector('input[type=checkbox]'),
+    pc: r.querySelector('.pc').textContent,
+    code: (r.querySelector('.pc').textContent.split(' · ')[0]||'').trim() }));
+  const fCats = labE('Категорії (cats)');
+  const fMain = labE('Головна категорія (main)');
+  const fOrdE = labE('Замовлення (order)');
+  const mainOpts = () => [...fMain.querySelectorAll('option')].map(o=>o.value);
+  const limitEl  = () => [...de.querySelectorAll('p.enote')]
+    .find(p=>p.textContent.includes('коди з категорій') || p.textContent.includes('брати нізвідки'));
+  const idE = String(scE.id);
+  const recE = k => wE.eval('JSON.stringify(recOf("'+idE+'").'+k+')');
+
+  T('cats правиться вибором, main — переліком, і жодне не текстом',
+    !!fCats && !!fMain &&
+    fCats.querySelectorAll('input[type=checkbox]').length>0 &&
+    !!fMain.querySelector('select') &&
+    fCats.querySelectorAll('input[type=text], textarea').length===0 &&
+    fMain.querySelectorAll('input[type=text], textarea').length===0);
+
+  /* Перелік категорій береться ГЕЙТОМ із завантаженого каталогу. Той самий
+     вираз, що на сторінці, порівнював би дві однакові дірки. */
+  const catKeys = Object.keys(wE.S.CAT);
+  T('перелік категорій — рівно ключі каталогу',
+    (()=>{ const ks=rowsE(fCats).map(r=>r.code);
+      return ks.length===catKeys.length && ks.every((k,i)=>k===catKeys[i]); })());
+
+  /* Число позицій у рядку — не оздоба: воно і є ціною дії. Знімаючи галку,
+     людина знімає до 52 позицій із вибору нижче, і без числа наслідок
+     видно тільки після дії. */
+  T('рядок категорії називає стільки позицій, скільки їх у каталозі',
+    rowsE(fCats).filter(r=>wE.S.CAT[r.code]).every(r=>{
+      const n=(r.pc.match(/·\s(\d+)\s/)||[,''])[1];
+      return n===String(wE.S.CAT[r.code].length); }));
+
+  const roE=[...de.querySelectorAll('details.acc')]
+    .find(x=>x.querySelector('summary').textContent.startsWith('Не правиться тут'));
+  T('cats і main пішли з блоку «не правиться тут»',
+    !!roE && [...roE.querySelectorAll('.ero .tapeline')].length===2 &&
+    !roE.textContent.includes('cats') && !roE.textContent.includes('main'));
+
+  /* ── додавання категорії ── */
+  const addKey = catKeys.find(k=>!scE.cats.includes(k));
+  const rowsBefore = rowsE(fOrdE).length;
+  rowsE(fCats).find(r=>r.code===addKey).cb.click();
+
+  /* Предмет — РУХ, а не склад: склад судить твердження третього предмета
+     вище. Зростання числа рядків доводить, що перелік перерахувався, і
+     лишається зеленим під ін'єкцією, що бреше самим складом пулу. */
+  T('після доданої категорії перелік кодів перерахувався',
+    rowsE(fOrdE).length > rowsBefore);
+  T('перелік main — рівно чинні категорії запису',
+    (()=>{ const want=JSON.parse(recE('cats'));
+      const got=mainOpts();
+      return got.length===want.length && want.every((k,i)=>got[i]===k); })());
+  T('рядок-межа називає чинні категорії, а не ті, що були при відкритті',
+    !!limitEl() && JSON.parse(recE('cats'))
+      .every(k=>limitEl().textContent.includes(wE.S.LABEL[k]||k)));
+
+  /* ── зняття категорії, що була main ── */
+  const mainBefore = String(scE.main);
+  const orderBefore = recE('order');
+  rowsE(fCats).find(r=>r.code===mainBefore).cb.click();
+
+  /* Твердження ТІЛЬКИ про ЗНАЧЕННЯ і про те, що екран його показує. Два
+     хвости, які тут напрошуються, свідомо відрізані.
+     «І вердикт про це сказав» судив би дорогу чернетки до правил —
+     предмет ІН-В; дорога має свій дім вище, на mood.
+     «І опція позначена "поза cats"» судила б СКЛАД переліку — предмет
+     ІН-Л; склад має свій дім на твердженні вище. Обидва хвости дали б
+     другий ✗ від чужої причини (12.12-ї).
+     ⚠ Наслідок названий вголос: сама позначка «поза cats» на опції main
+     власного твердження не має. Під ІН-Л вона зникає разом зі складом
+     переліку, тобто причина покрита; окремої дороги відмови в неї немає. */
+  T('зняття категорії, що була main, не міняє значення main',
+    JSON.parse(recE('main'))===mainBefore &&
+    fMain.querySelector('select').value===mainBefore);
+  /* Твердження без ін'єкції, назване в шапці: клас той самий, що ІН-М. */
+  T('зняття категорії не прибирає обраних кодів із запису',
+    recE('order')===orderBefore);
+
+  /* ⚠ ОСТАННІМ — воно РУЙНУЄ стан (S26 §4.3): знімає всі категорії й
+     перевідкриває картку. Поставлене раніше, воно потягло б за собою
+     сусідів, і одна причина читалась би як кілька дефектів.
+     Перевідкриття тут не формальність: сторож судиться на СВІЖІЙ побудові
+     переліку, тому він лишається зеленим під ін'єкцією, що ламає саме
+     перебудову, — і червоніє тільки від власної причини. */
+  for(const r of rowsE(fCats)) if(r.cb.checked) r.cb.click();
+  [...de.querySelectorAll('.back')][0].click();
+  openCard(scE.id);
+  T('порожні категорії названі словами, а не «доступно 0 позицій»',
+    (()=>{ const f=labE('Замовлення (order)');
+      const t=f.querySelector('summary').textContent;
+      return JSON.parse(recE('cats')).length===0 &&
+        t.includes('категорій не обрано') && !/доступно 0/.test(t); })());
 
   console.log('\n— публікація: адреса, замок, тіло запиту —');
   const tick=()=>new Promise(r=>setTimeout(r,60));
