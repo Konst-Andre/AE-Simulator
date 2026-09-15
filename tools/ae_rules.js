@@ -40,6 +40,18 @@ const MOOD_SIGNS = [
   'не повторює інший рядок mood — ні дослівно, ні двома спільними словами',
 ];
 
+/* ── ОБЛАСТІ ПРАВИЛ ───────────────────────────────────────────────────
+   Порядок і людські підписи для екрана A7. Дім переліку — тут, поруч із
+   секціями, які його ставлять; UI бере AE_RULES.AREAS і власної копії не
+   тримає (12.11). Ключ рядка — поле area, не grp: grp — поле сценарію. */
+const AREAS = [
+  ['catalog',    'Каталог товарів'],
+  ['scenarios',  'Сценарії'],
+  ['characters', 'Характери й настрій клієнтів'],
+  ['potential',  'Що можна допродати'],
+  ['shift',      'Чи збирається зміна'],
+];
+
 function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
   /* Нормалізація форми файлу — це ПРАВИЛО, не читання: обидві форми
      («{categories:{…}}» і голий обʼєкт, «{scenarios:[…]}» і голий масив)
@@ -50,59 +62,71 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
   const SCEN = (scenariosRaw && scenariosRaw.scenarios) || scenariosRaw;
 
   const out=[]; let ok=0,warn=0,err=0;
-  const E=m=>{out.push({lvl:'err', msg:m}); err++};
-  const W=m=>{out.push({lvl:'warn',msg:m}); warn++};
-  const O=m=>{out.push({lvl:'ok',  msg:m}); ok++};
+  let AREA=null;   // ставить кожна секція нижче; рядок без області = дефект
+  /* X92 · say — людське речення поруч із технічним msg. Беремо лише рядок:
+     forEach(E) передав би індекс, і say став би числом (S72, мікроскоп C2). */
+  const SAY=t=>typeof t==='string'?t:null;
+  /* Українська множина для say: 1 товар · 2–4 товари · 5+ товарів (11–14 — «товарів»). */
+  const PL=(n,one,few,many)=>{const d=n%10,h=n%100; return n+' '+(d===1&&h!==11?one:d>=2&&d<=4&&(h<12||h>14)?few:many)};
+  const E=(m,t)=>{out.push({lvl:'err', msg:m, say:SAY(t), area:AREA}); err++};
+  const W=(m,t,n)=>{out.push({lvl:'warn',msg:m, say:SAY(t), norm:n===true, area:AREA}); warn++};
+  const O=(m,t)=>{out.push({lvl:'ok',  msg:m, say:SAY(t), area:AREA}); ok++};
 
+  AREA='catalog';
   // --- індекс товарів
   const ALL={},dupC=[];
   for(const [cat,arr] of Object.entries(CAT))
     for(const it of arr){ if(ALL[it.c])dupC.push(it.c); ALL[it.c]={...it,cat}; }
-  dupC.length?E('дублі кодів товару: '+dupC.join(', ')):O('коди товарів унікальні ('+Object.keys(ALL).length+')');
+  dupC.length?E('дублі кодів товару: '+dupC.join(', '),'Кілька товарів мають однаковий код: '+dupC.join(', ')):O('коди товарів унікальні ('+Object.keys(ALL).length+')','Кожен товар має власний код, плутанини не буде ('+PL(Object.keys(ALL).length,'товар','товари','товарів')+')');
 
   // --- поля товару
   const badItem=[];
   for(const [c,it] of Object.entries(ALL)){
-    if(typeof it.n!=='string'||!it.n.trim())badItem.push(c+' — немає назви');
-    if(typeof it.b!=='number'||!(it.b>=0))badItem.push(c+' — бонус не число');
-    if(!['ВТМ','ЗФ','—',undefined,null].includes(it.k)&&typeof it.k!=='string')badItem.push(c+' — мітка k');
+    if(typeof it.n!=='string'||!it.n.trim())badItem.push([c+' — немає назви','Товар '+c+' без назви']);
+    if(typeof it.b!=='number'||!(it.b>=0))badItem.push([c+' — бонус не число','У товару '+c+' бонус записано не числом']);
+    if(!['ВТМ','ЗФ','—',undefined,null].includes(it.k)&&typeof it.k!=='string')badItem.push([c+' — мітка k','У товару '+c+' неправильна мітка марки']);
   }
-  badItem.length?badItem.forEach(E):O('поля товарів цілі (n, b, k)');
+  badItem.length?badItem.forEach(([m,t])=>E(m,t)):O('поля товарів цілі (n, b, k)','У кожного товару є назва, бонус і мітка марки');
   const noPrice=Object.values(ALL).filter(i=>i.p===null).length;
-  noPrice&&W('товарів без ціни (p:null): '+noPrice+' — норма, позиція нова');
+  noPrice&&W('товарів без ціни (p:null): '+noPrice+' — норма, позиція нова',PL(noPrice,'товар','товари','товарів')+' ще без ціни. Так буває з новими позиціями, виправляти не треба',true);
 
+  AREA='scenarios';
   // --- сценарії
   const ids=SCEN.map(s=>s.id), dupId=ids.filter((x,i)=>ids.indexOf(x)!==i);
-  dupId.length?E('дублі id сценаріїв: '+[...new Set(dupId)].join(', ')):O('id сценаріїв унікальні ('+SCEN.length+')');
+  dupId.length?E('дублі id сценаріїв: '+[...new Set(dupId)].join(', '),'Кілька сценаріїв мають однаковий номер: '+[...new Set(dupId)].join(', ')):O('id сценаріїв унікальні ('+SCEN.length+')','Усі сценарії різні ('+PL(SCEN.length,'сценарій','сценарії','сценаріїв')+')');
 
   const nums=SCEN.filter(s=>s.no).map(s=>s.no);
   const dupNo=nums.filter((x,i)=>nums.indexOf(x)!==i);
-  dupNo.length?W('однакові номери замовлень: '+[...new Set(dupNo)].join(', ')):O('номери замовлень унікальні ('+nums.length+' інтернет-замовлень)');
+  dupNo.length?W('однакові номери замовлень: '+[...new Set(dupNo)].join(', '),'Номери замовлень повторюються: '+[...new Set(dupNo)].join(', ')):O('номери замовлень унікальні ('+nums.length+' інтернет-замовлень)','Номери '+nums.length+' інтернет-замовлень не повторюються');
 
   const REQ=['id','grp','title','cats','main','order','open','who','character','mood','mode'];
+  /* X92 · людські назви полів — для say. Дім — тут, поруч із REQ. */
+  const FSAY={id:'номер',grp:'група',title:'назва',cats:'категорії',main:'головний товар',order:'замовлення',
+    open:'перша репліка',who:'хто клієнт',character:'характер',mood:'настрій',mode:'обставини',bv:'ідеал ВТМ',bm:'ідеал СТМ'};
   let hang=0,badf=0,badcat=0,badmain=0;
   for(const s of SCEN){
     const tag='#'+s.id+' «'+(s.title||'?')+'»';
-    for(const f of REQ) if(s[f]===undefined||s[f]===null||s[f]===''){E(tag+' — немає поля '+f);badf++}
-    for(const k of (s.cats||[])) if(!CAT[k]){E(tag+' — категорія «'+k+'» не існує');badcat++}
-    if(s.main&&!(s.cats||[]).includes(s.main)){E(tag+' — main «'+s.main+'» не у cats');badmain++}
+    for(const f of REQ) if(s[f]===undefined||s[f]===null||s[f]===''){E(tag+' — немає поля '+f,'Сценарій '+tag+': не заповнено «'+FSAY[f]+'»');badf++}
+    for(const k of (s.cats||[])) if(!CAT[k]){E(tag+' — категорія «'+k+'» не існує','Сценарій '+tag+': категорії «'+k+'» немає в каталозі');badcat++}
+    if(s.main&&!(s.cats||[]).includes(s.main)){E(tag+' — main «'+s.main+'» не у cats','Сценарій '+tag+': головний товар не з категорій сценарію');badmain++}
     for(const fld of ['order','bv','bm'])
-      for(const c of (s[fld]||[])) if(!ALL[c]){E(tag+' — '+fld+': код «'+c+'» не існує в каталозі');hang++}
+      for(const c of (s[fld]||[])) if(!ALL[c]){E(tag+' — '+fld+': код «'+c+'» не існує в каталозі','Сценарій '+tag+': товару з кодом «'+c+'» немає в каталозі');hang++}
     // ідеальна розмова має бути в межах доступного асортименту
     const pool=new Set((s.cats||[]).flatMap(k=>(CAT[k]||[]).map(i=>i.c)));
     for(const fld of ['order','bv','bm'])
       for(const c of (s[fld]||[])) if(ALL[c]&&!pool.has(c))
-        W('#'+s.id+' — '+fld+': «'+c+'» поза cats сценарію (модель його не побачить)');
+        W('#'+s.id+' — '+fld+': «'+c+'» поза cats сценарію (модель його не побачить)','Сценарій #'+s.id+': товар «'+c+'» не з категорій сценарію — модель його не побачить');
     if(!s.noSale){
-      if(!s.bv||!s.bv.length)W(tag+' — немає bv (ідеал під правило ВТМ)');
-      if(!s.bm||!s.bm.length)W(tag+' — немає bm (ідеал під правило СТМ)');
+      if(!s.bv||!s.bv.length)W(tag+' — немає bv (ідеал під правило ВТМ)','Сценарій '+tag+': немає ідеального набору під правило ВТМ');
+      if(!s.bm||!s.bm.length)W(tag+' — немає bm (ідеал під правило СТМ)','Сценарій '+tag+': немає ідеального набору під правило СТМ');
     }
   }
-  !badf&&O('обовʼязкові поля на місці ('+REQ.join(', ')+')');
-  !badcat&&O('усі cats існують у каталозі');
-  !badmain&&O('main завжди входить у cats');
-  !hang&&O('висячих кодів немає (order · bv · bm)');
+  !badf&&O('обовʼязкові поля на місці ('+REQ.join(', ')+')','У кожному сценарії заповнено все потрібне');
+  !badcat&&O('усі cats існують у каталозі','Усі категорії зі сценаріїв є в каталозі');
+  !badmain&&O('main завжди входить у cats','Головний товар належить до категорій свого сценарію');
+  !hang&&O('висячих кодів немає (order · bv · bm)','Кожен товар із замовлень є в каталозі');
 
+  AREA='characters';   // і розділ mood нижче
   // --- характер: значення мусить мати запис у носії
   /* Списку девʼяти тут НЕМАЄ навмисно. Єдиний його дім — prompts/characters.md;
      копія в коді розійшлася б із носієм рівно тоді, коли Оля додасть характер.
@@ -117,23 +141,23 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
     const hasRisk   = m=>/### ризик\s*\S/.test(m[2]);
     const known = new Set(recs.filter(hasClient).map(m=>m[1].trim()));
     charNames = [...known];
-    known.size ? O('характерів у носії: '+known.size) : E('носій характерів прочитано, але жодного запису з блоком «для клієнта»');
+    known.size ? O('характерів у носії: '+known.size,'Описано характерів клієнтів: '+known.size) : E('носій характерів прочитано, але жодного запису з блоком «для клієнта»','Файл характерів прочитано, але жодного опису для клієнта в ньому немає');
     const orphan=SCEN.filter(s=>s.character && !known.has(s.character));
     orphan.length
-      ? orphan.forEach(s=>E('#'+s.id+' — характеру «'+s.character+'» немає в носії'))
-      : O('усі character мають запис у носії');
+      ? orphan.forEach(s=>E('#'+s.id+' — характеру «'+s.character+'» немає в носії','Сценарій #'+s.id+': характеру «'+s.character+'» немає серед описаних'))
+      : O('усі character мають запис у носії','Кожен клієнт у сценаріях має опис характеру');
     const idle=[...known].filter(k=>!SCEN.some(s=>s.character===k));
-    idle.length && W('характери без жодного сценарію: '+idle.join(', '));
+    idle.length && W('характери без жодного сценарію: '+idle.join(', '),'Характери, які не використано в жодному сценарії: '+idle.join(', '));
     /* Другий блок запису. «### для клієнта» їде в промпт клієнта,
        «### ризик» — у промпт судді. Запис без другого блоку проходить
        усі перевірки вище і дає судді порожній приціл: дефект того самого
        класу, що характер без опису, тільки з іншого боку носія. */
     const noRisk = recs.filter(m=>hasClient(m) && !hasRisk(m)).map(m=>m[1].trim());
     noRisk.length
-      ? noRisk.forEach(n=>E('запис «'+n+'» не має блоку «### ризик» — промпт судді лишиться без прицілу'))
-      : O('усі записи носія мають обидва блоки');
+      ? noRisk.forEach(n=>E('запис «'+n+'» не має блоку «### ризик» — промпт судді лишиться без прицілу','У характеру «'+n+'» немає підказки для судді'))
+      : O('усі записи носія мають обидва блоки','У кожного характеру є опис і для клієнта, і для судді');
   } else {
-    W('носій характерів не переданий — значення character не звірені');
+    W('носій характерів не переданий — значення character не звірені','Файл характерів не завантажився — характери сценаріїв не перевірено');
   }
 
   /* --- рядок mood: обставини цього дня, а не характер і не щабель
@@ -164,19 +188,19 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
   const mWords = t => new Set((String(t).toLowerCase().match(/[а-яїієґёa-zʼ']{5,}/g)||[]));
   const moodOf = s => typeof s.mood==='string' ? s.mood : '';
   let moodBad=0;
-  const ME=m=>{E(m);moodBad++};
+  const ME=(m,t)=>{E(m,t);moodBad++};
 
   for(const s of SCEN){
-    const m=moodOf(s), tag='#'+s.id+' mood';
+    const m=moodOf(s), tag='#'+s.id+' mood', hs='Сценарій #'+s.id+': опис настрою ';
     if(!m) continue;                       // порожнє поле вже спіймав REQ
-    if(m.length>MOOD_LIMIT) ME(tag+' — довжина '+m.length+' > '+MOOD_LIMIT);
-    if(/[«»"„“]/.test(m))   ME(tag+' — пряма мова в лапках (дім — open)');
-    if(/\d/.test(m))        ME(tag+' — цифра в рядку');
-    if(/₴|орієнтир|приріст/i.test(m)) ME(tag+' — межа знань: цього слова клієнт не знає');
+    if(m.length>MOOD_LIMIT) ME(tag+' — довжина '+m.length+' > '+MOOD_LIMIT,hs+'задовгий ('+m.length+' символів, можна '+MOOD_LIMIT+')');
+    if(/[«»"„“]/.test(m))   ME(tag+' — пряма мова в лапках (дім — open)',hs+'містить пряму мову в лапках — їй місце в першій репліці');
+    if(/\d/.test(m))        ME(tag+' — цифра в рядку',hs+'містить цифру');
+    if(/₴|орієнтир|приріст/i.test(m)) ME(tag+' — межа знань: цього слова клієнт не знає',hs+'містить слово, якого клієнт не знає');
     for(const fld of ['open','who','mode']){
       const wb=mWords(s[fld]||'');
       const inter=[...mWords(m)].filter(w=>wb.has(w)).sort();
-      if(inter.length) ME(tag+' — повторює '+fld+': '+inter.join(', '));
+      if(inter.length) ME(tag+' — повторює '+fld+': '+inter.join(', '),hs+'повторює слова з поля «'+FSAY[fld]+'»: '+inter.join(', '));
     }
   }
 
@@ -185,14 +209,14 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
       const m=moodOf(s).toLowerCase(); if(!m) continue;
       for(const n of charNames){
         const nl=n.toLowerCase();
-        if(m.includes(nl)){ ME('#'+s.id+' mood — назва характеру «'+n+'» (дім — prompts/characters.md)'); continue; }
+        if(m.includes(nl)){ ME('#'+s.id+' mood — назва характеру «'+n+'» (дім — prompts/characters.md)','Сценарій #'+s.id+': опис настрою називає характер «'+n+'»'); continue; }
         const hit=rootsOf(n).find(r=>m.includes(r));
-        if(hit) ME('#'+s.id+' mood — корінь назви характеру «'+hit+'» («'+n+'»)');
+        if(hit) ME('#'+s.id+' mood — корінь назви характеру «'+hit+'» («'+n+'»)','Сценарій #'+s.id+': опис настрою натякає на назву характеру «'+n+'»');
       }
     }
-    O('mood звірений з переліком характерів ('+charNames.length+')');
+    O('mood звірений з переліком характерів ('+charNames.length+')','Настрій ніде не видає назву характеру');
   } else {
-    W('носія характерів немає — mood не звірений з назвами характерів');
+    W('носія характерів немає — mood не звірений з назвами характерів','Файл характерів не завантажився — настрій не звірено з назвами характерів');
   }
 
   /* Перелік щаблів має рівно один машинний дім — config.json, схема відповіді
@@ -204,27 +228,28 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
       const m=moodOf(s).toLowerCase(); if(!m) continue;
       for(const st of STEPS){
         const hit=[st.toLowerCase(), ...rootsOf(st)].find(r=>m.includes(r));
-        if(hit){ ME('#'+s.id+' mood — назва щабля «'+st+'»: стартовий щабель виводиться з рядка, а не називається в ньому'); break; }
+        if(hit){ ME('#'+s.id+' mood — назва щабля «'+st+'»: стартовий щабель виводиться з рядка, а не називається в ньому','Сценарій #'+s.id+': опис настрою підказує етап, з якого почнеться розмова'); break; }
       }
     }
-    O('mood звірений з переліком щаблів ('+STEPS.length+')');
+    O('mood звірений з переліком щаблів ('+STEPS.length+')','Настрій не підказує, з якого етапу почнеться розмова');
   } else {
-    W('config не переданий — mood не звірений з назвами щаблів');
+    W('config не переданий — mood не звірений з назвами щаблів','Налаштування не завантажились — настрій не звірено з етапами розмови');
   }
 
   const moodSeen={};
   for(const s of SCEN){
     const k=moodOf(s).toLowerCase().trim(); if(!k) continue;
-    if(moodSeen[k]!==undefined) ME('#'+s.id+' mood — дослівний дубль #'+moodSeen[k]);
+    if(moodSeen[k]!==undefined) ME('#'+s.id+' mood — дослівний дубль #'+moodSeen[k],'Сценарій #'+s.id+': опис настрою дослівно як у сценарії #'+moodSeen[k]);
     else moodSeen[k]=s.id;
   }
   for(let a=0;a<SCEN.length;a++) for(let b=a+1;b<SCEN.length;b++){
     const wb=mWords(moodOf(SCEN[b]));
     const inter=[...mWords(moodOf(SCEN[a]))].filter(w=>wb.has(w)).sort();
-    if(inter.length>=2) ME('#'+SCEN[a].id+' ~ #'+SCEN[b].id+' mood — спільних слів '+inter.length+': '+inter.join(', '));
+    if(inter.length>=2) ME('#'+SCEN[a].id+' ~ #'+SCEN[b].id+' mood — спільних слів '+inter.length+': '+inter.join(', '),'Сценарії #'+SCEN[a].id+' і #'+SCEN[b].id+': описи настрою надто схожі ('+inter.join(', ')+')');
   }
-  !moodBad && O('рядки mood за правилом (≤'+MOOD_LIMIT+' символів · без лапок, цифр і межі знань · без назв характеру і щабля · без повтору open/who/mode · без дублів)');
+  !moodBad && O('рядки mood за правилом (≤'+MOOD_LIMIT+' символів · без лапок, цифр і межі знань · без назв характеру і щабля · без повтору open/who/mode · без дублів)','Описи настрою короткі, без цифр і цитат, не повторюють одне одного');
 
+  AREA='potential';
   // --- потенціал > 0
   const bonus=cs=>cs.reduce((a,c)=>a+(ALL[c]?ALL[c].b:0),0);
   let zero=[];
@@ -233,21 +258,23 @@ function validate(catalogRaw, scenariosRaw, charactersRaw, configRaw){
     for(const [r,f] of [['ВТМ','bv'],['СТМ','bm']]){
       if(!s[f]||!s[f].length)continue;
       const p=bonus(s[f])-bonus(s.order||[]);
-      if(p<=0)zero.push('#'+s.id+' '+r+': приріст '+p.toFixed(2)+' ₴');
+      if(p<=0)zero.push(['#'+s.id+' '+r+': приріст '+p.toFixed(2)+' ₴','Сценарій #'+s.id+': за правилом '+r+' ідеальний набір не дорожчий за замовлення']);
     }
   }
-  zero.length?zero.forEach(W):O('ідеал завжди дорожчий за замовлення (приріст > 0)');
+  zero.length?zero.forEach(([m,t])=>W(m,t)):O('ідеал завжди дорожчий за замовлення (приріст > 0)','У кожному сценарії є що запропонувати понад замовлення');
 
+  AREA='shift';
   // --- склад зміни: pickShift потребує пулів
   const NET=SCEN.filter(s=>s.no);
   const pools={'пастка/noSale':NET.filter(s=>s.trap||s.noSale),'багатопозиційні':NET.filter(s=>(s.order||[]).length>1),'рецептурні':NET.filter(s=>s.grp==='Рецептурні')};
-  for(const [k,v] of Object.entries(pools)) v.length?O('пул «'+k+'»: '+v.length):E('пул «'+k+'» порожній — зміна не збереться');
-  NET.length>=5?O('інтернет-замовлень для зміни: '+NET.length+' (треба ≥5)'):E('інтернет-замовлень '+NET.length+', зміна потребує 5');
+  const PSAY={'пастка/noSale':'-пасток','багатопозиційні':' на кілька товарів','рецептурні':' за рецептом'};
+  for(const [k,v] of Object.entries(pools)) v.length?O('пул «'+k+'»: '+v.length,'Для зміни вистачає замовлень'+PSAY[k]+' ('+v.length+')'):E('пул «'+k+'» порожній — зміна не збереться','Немає жодного замовлення'+(k==='пастка/noSale'?'-пастки':PSAY[k])+' — зміна не збереться');
+  NET.length>=5?O('інтернет-замовлень для зміни: '+NET.length+' (треба ≥5)','Замовлень достатньо: '+NET.length+', а треба 5'):E('інтернет-замовлень '+NET.length+', зміна потребує 5','Інтернет-замовлень лише '+NET.length+', а для зміни треба 5');
 
   return {out, ok, warn, err};
 }
 
 /* Два виходи, бо споживачі різні: Node бере require, браузер — тег <script>.
    ⚠ Воркер (крок «в») хоче ESM-import і цим хвостом НЕ закривається. */
-if (typeof module !== 'undefined' && module.exports) module.exports = { validate, MOOD_LIMIT, MOOD_SIGNS };
-if (typeof globalThis !== 'undefined') globalThis.AE_RULES = { validate, MOOD_LIMIT, MOOD_SIGNS };
+if (typeof module !== 'undefined' && module.exports) module.exports = { validate, MOOD_LIMIT, MOOD_SIGNS, AREAS };
+if (typeof globalThis !== 'undefined') globalThis.AE_RULES = { validate, MOOD_LIMIT, MOOD_SIGNS, AREAS };
