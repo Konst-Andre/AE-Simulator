@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AE · Х27 ХАРНЕС САЙДБАРА · v2</title>
+<!--
+  AE-Simulator · Х27 «САЙДБАР» · харнес v2
+  живе доки: знято вирок оператора по Х27; далі — експонат, вироку на ньому більше не знімати
+
+  Що змінилось проти v1 (за вироком оператора, device ПК + телефон):
+   Д1 · тултипи в рейці не з'являлись — .sidebar має overflow:auto (продуктове :358),
+        і підказка обрізалась. Тепер тултип малюється окремим шаром у body (position:fixed).
+   Д2 · «скрол біля замочка» — це не скрол (scrollHeight == clientHeight на 1920/1536/1280),
+        а межа дверей. Вона Є в продукті: .v2 .door.door-a { border-top } (:632).
+        У v1 я тримав власний padding — тепер перенесено дослівно (:369 · :370 · :632).
+   Д3 · головна зона порожня — ширину рейки не було з чим судити. Додано заповнювач.
+   Д4 · перемикач власним рядком з'їдав цілий рядок. Тепер це ВІСЬ: у бренді · рядком · у лого.
+   Д5 · додано вісь оболонки: врівень (як зараз у продукті) · острівець.
+
+  ⚠ Геометрія панелі — з продукту (П43), звірка числами друкується вгорі.
+  ⚠ Тон і колір поверхонь тут НЕ судяться — це Х26. Острівець показує ФОРМУ, не тон.
+-->
+<style>
+html,body{margin:0}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#1C1E24;background:#F4F5F7}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #D7D9DE;background:#fff}
+.grp{display:flex;flex-direction:column;gap:4px}
+.grp h4{margin:0;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#6E6E77}
+.grp div{display:flex;gap:4px}
+.grp label{padding:4px 9px;border:1px solid #D7D9DE;border-radius:7px;background:#fff;cursor:pointer;font-size:12.5px}
+.grp input{position:absolute;opacity:0;pointer-events:none}
+.grp label:has(input:checked){border-color:#1C1E24;background:#EEF0F3;font-weight:700}
+.meter{padding:8px 14px;border-bottom:1px solid #D7D9DE;background:#FAFBFC}
+.meter pre{margin:0;font:12px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+.note{padding:10px 14px;color:#4F4F4F;font-size:12px}
+#tip{position:fixed;z-index:99;padding:5px 9px;border-radius:6px;color:#fff;background:#1C1E24;
+     font:12px/1.4 system-ui,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s}
+#tip.on{opacity:1}
+
+/* ── геометрія продукту · перенесено з index.html дослівно ──────────── */
+.v2, .v2 * { box-sizing:border-box; }                                                    /* :349 */
+.v2 { --anc-yellow:#FFE241; --anc-yellow-50:#FFF0A0; --anc-yellow-25:#FFF8D0; --anc-blue:#008ECC;
+      --anc-blue-25:#BFE3F2; --anc-canvas:#FFFEF6; --anc-plate:#FFFCEC; --anc-text:#1C1E24;
+      --anc-text-2:#4F4F4F; --anc-gray:#6E6E77; --anc-gray-light:#9B9CA1; --anc-border:#E7E7E7; } /* :722 */
+.v2 { --ink:var(--anc-text); --muted:var(--anc-gray); --line:var(--anc-border);
+      --canvas:var(--anc-canvas); --green:var(--anc-blue); --radius:14px; }               /* :348 */
+.v2 { background:var(--canvas); color:var(--ink);
+      font:14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; } /* :352 */
+.v2 button, .v2 input { font:inherit; }                                                  /* :353 */
+.v2 b + small, .v2 strong + small { display:block; }                                     /* :354 · В-22 */
+.v2 button { cursor:pointer; }                                                           /* :355 */
+.v2 svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9;
+          stroke-linecap:round; stroke-linejoin:round; }                                 /* :356 */
+.v2 .shell { display:grid; grid-template-columns:220px minmax(0,1fr); height:640px;
+             min-height:0; overflow:hidden; }                                            /* :357, height — стенд */
+.v2 .sidebar { display:flex; min-height:0; flex-direction:column; padding:20px 8px; overflow:auto;
+               border-right:1px solid var(--line); background:var(--anc-canvas); }        /* :358 */
+.v2 .brand { display:flex; gap:11px; align-items:center; padding:0 14px 21px;
+             border-bottom:1px solid var(--line); }                                      /* :359 */
+.v2 .brand-mark { display:grid; place-items:center; flex:0 0 auto; width:38px; height:38px;
+                  border:0; border-radius:50%; color:var(--anc-blue); background:var(--anc-yellow); } /* :360-361 · :723 */
+.v2 .brand-mark svg { width:75%; height:75%; fill:currentColor; stroke:none; }            /* :724 */
+.v2 .brand b { display:block; font-size:17px; letter-spacing:-.03em; }                    /* :363 */
+.v2 .brand small { color:var(--muted); font-size:11px; }                                  /* :364 */
+.v2 .side-links { display:grid; gap:3px; padding-top:18px; }                              /* :365 */
+.v2 .side-link { position:relative; display:flex; align-items:center; gap:14px; width:100%;
+                 min-height:47px; padding:0 18px; color:var(--anc-text-2); text-align:left;
+                 border:0; border-left:3px solid transparent; border-radius:0 8px 8px 0;
+                 background:none; }                                                       /* :366 */
+.v2 .side-link.active { color:var(--anc-text); background:var(--anc-yellow-25);
+                        border-left-color:var(--green); font-weight:700; }                /* :367 */
+.v2 .side-link svg { width:21px; }                                                        /* :368 */
+.v2 .side-bottom { margin-top:auto; display:grid; gap:8px; padding:12px 10px 0; }         /* :369 */
+.v2 .side-bottom button { display:flex; align-items:center; gap:9px; padding:9px; border:0;
+                          color:var(--anc-gray); background:transparent; text-align:left; } /* :370 */
+.v2 .door.door-a { display:block; padding:14px 0 0 6px; border-top:1px solid var(--line); } /* :632 */
+
+/* ── головна зона · заповнювач, щоб рейку було з чим судити ─────────── */
+.v2 main { padding:26px 30px; overflow:auto; background:var(--anc-canvas); }
+.v2 main h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
+.v2 main .sub { margin:0 0 18px; color:var(--muted); }
+.v2 .rowbar { display:flex; gap:12px; margin-bottom:16px; }
+.v2 .rowbar span { height:44px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+.v2 .rowbar span:first-child { flex:1 1 auto; }
+.v2 .rowbar span:last-child { flex:0 0 240px; }
+.v2 .cards { display:grid; gap:10px; }
+.v2 .card { display:flex; gap:14px; align-items:center; padding:14px 16px;
+            border:1px solid var(--line); border-radius:10px; background:#fff; }
+.v2 .card i { flex:0 0 46px; height:46px; border:1px solid var(--line); border-radius:8px;
+              background:var(--anc-plate); }
+.v2 .card u { display:block; height:11px; border-radius:4px; background:#E6E6E9; text-decoration:none; }
+.v2 .card div { flex:1 1 auto; display:grid; gap:7px; }
+.v2 .card u.s { width:38% } .v2 .card u.m { width:62% } .v2 .card u.l { width:80% }
+
+/* ── осі ────────────────────────────────────────────────────────────── */
+.stage { --rail-w:72px; }
+.stage[data-rail="64"]{--rail-w:64px} .stage[data-rail="72"]{--rail-w:72px} .stage[data-rail="96"]{--rail-w:96px}
+.stage[data-mode="rail"] .v2 .shell { grid-template-columns:var(--rail-w) minmax(0,1fr); }
+.stage[data-mode="rail"] .v2 .brand { flex-direction:column; gap:10px; padding:0 0 16px; }
+.stage[data-mode="rail"] .v2 .brand-text { display:none; }
+.stage[data-mode="rail"] .v2 .side-link { justify-content:center; gap:0; padding:0;
+                                          border-left-width:0; border-radius:8px; }
+.stage[data-mode="rail"] .v2 .side-link .lbl { display:none; }
+.stage[data-mode="rail"] .v2 .side-bottom { padding:12px 0 0; }
+.stage[data-mode="rail"] .v2 .side-bottom button { justify-content:center; padding:9px 0; }
+.stage[data-mode="rail"] .v2 .side-bottom .lbl { display:none; }
+.stage[data-mode="rail"] .v2 .door.door-a { padding:14px 0 0; }
+.stage[data-stub="hidden"] .v2 .stub { display:none; }
+
+/* оболонка: врівень (як у продукті) · острівець */
+.stage[data-shell="island"] .v2 .shell { gap:14px; padding:14px; }
+.stage[data-shell="island"] .v2 .sidebar { border-right:0; border:1px solid var(--line); border-radius:14px; }
+.stage[data-shell="island"] .v2 main { border:1px solid var(--line); border-radius:14px; background:#fff; }
+
+/* перемикач · три положення */
+.v2 .side-toggle { display:grid; place-items:center; flex:0 0 auto; width:32px; height:32px;
+                   padding:0; border:1px solid var(--line); border-radius:8px;
+                   color:var(--anc-text-2); background:#fff; }
+.v2 .side-tools { display:flex; justify-content:flex-end; padding:8px 14px 0; }
+.stage[data-mode="rail"] .v2 .side-tools { justify-content:center; padding:8px 0 0; }
+.stage[data-tog="brand"] .v2 .side-tools { display:none; }
+.stage[data-tog="brand"] .v2 .brand .side-toggle { display:grid; margin-left:auto; }
+.stage[data-tog="row"] .v2 .brand .side-toggle,
+.stage[data-tog="logo"] .v2 .brand .side-toggle { display:none; }
+.stage[data-tog="logo"] .v2 .side-tools { display:none; }
+.stage[data-tog="logo"] .v2 .brand-mark { cursor:pointer; }
+.stage[data-tog="logo"] .v2 .brand-mark:hover .lg { display:none; }
+.stage[data-tog="logo"] .v2 .brand-mark:hover .tg { display:block; }
+.stage[data-tog="logo"] .v2 .brand-mark:hover { color:var(--anc-text); }
+.v2 .brand-mark .tg { display:none; width:60%; height:60%; fill:none;
+                      stroke:currentColor; stroke-width:2.2; }
+.stage:not([data-tog="brand"]) .v2 .brand .side-toggle { display:none; }
+.v2 .side-link:focus-visible, .v2 .brand-mark:focus-visible { outline:2px solid var(--anc-blue); outline-offset:-2px; }
+.v2 .side-link.stub { color:var(--anc-gray-light); cursor:default; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/><path d="M9 10h6"/></symbol>
+  <symbol id="i-anc" viewBox="0 0 24 24"><path d="M12 4 6 20h3l1-3h4l1 3h3L12 4Zm-1 10 1-3 1 3h-2Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M10 12h6M10 16h6"/></symbol>
+  <symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20V4"/><path d="M9 20v-6M14 20V9M19 20v-9"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 4v3M14 4v3M10 17v3M14 17v3M4 10h3M4 14h3M17 10h3M17 14h3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.6M12 18.4V21M3 12h2.6M18.4 12H21M5.6 5.6l1.9 1.9M16.5 16.5l1.9 1.9M18.4 5.6l-1.9 1.9M7.5 16.5l-1.9 1.9"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M10 5v14"/></symbol>
+</svg>
+
+<div class="bar">
+  <div class="grp"><h4>Пунктів</h4><div>
+    <label><input type="radio" name="set" value="2"><span>2</span></label>
+    <label><input type="radio" name="set" value="4" checked><span>4</span></label>
+    <label><input type="radio" name="set" value="6"><span>6</span></label>
+  </div></div>
+  <div class="grp"><h4>Режим</h4><div>
+    <label><input type="radio" name="mode" value="expanded" checked><span>розгорнутий</span></label>
+    <label><input type="radio" name="mode" value="rail"><span>рейка</span></label>
+  </div></div>
+  <div class="grp"><h4>Ширина рейки</h4><div>
+    <label><input type="radio" name="rail" value="64"><span>64</span></label>
+    <label><input type="radio" name="rail" value="72" checked><span>72</span></label>
+    <label><input type="radio" name="rail" value="96"><span>96</span></label>
+  </div></div>
+  <div class="grp"><h4>Перемикач</h4><div>
+    <label><input type="radio" name="tog" value="brand"><span>у бренді</span></label>
+    <label><input type="radio" name="tog" value="row" checked><span>рядком</span></label>
+    <label><input type="radio" name="tog" value="logo"><span>у лого</span></label>
+  </div></div>
+  <div class="grp"><h4>Оболонка</h4><div>
+    <label><input type="radio" name="shell" value="flush" checked><span>врівень</span></label>
+    <label><input type="radio" name="shell" value="island"><span>острівець</span></label>
+  </div></div>
+  <div class="grp"><h4>Неготові</h4><div>
+    <label><input type="radio" name="stub" value="shown" checked><span>заглушки</span></label>
+    <label><input type="radio" name="stub" value="hidden"><span>сховані</span></label>
+  </div></div>
+</div>
+
+<div class="meter"><pre id="meter">замір…</pre></div>
+
+<div class="stage" id="stage" data-set="4" data-mode="expanded" data-rail="72"
+     data-tog="row" data-shell="flush" data-stub="shown">
+  <div class="v2">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <button type="button" class="brand-mark" id="logo" aria-label="Згорнути панель навігації">
+            <svg class="lg" aria-hidden="true"><use href="#i-anc"></use></svg>
+            <svg class="tg" aria-hidden="true"><use href="#i-panel"></use></svg></button>
+          <div class="brand-text"><b>Тренажер</b><small>Навчання фармацевтів</small></div>
+          <button type="button" class="side-toggle" data-toggle aria-expanded="true"
+                  aria-controls="nav" aria-label="Згорнути панель навігації">
+            <svg aria-hidden="true"><use href="#i-panel"></use></svg></button>
+        </div>
+        <div class="side-tools">
+          <button type="button" class="side-toggle" data-toggle aria-expanded="true"
+                  aria-controls="nav" aria-label="Згорнути панель навігації">
+            <svg aria-hidden="true"><use href="#i-panel"></use></svg></button>
+        </div>
+        <nav class="side-links" id="nav" aria-label="Звичайний режим"></nav>
+        <div class="side-bottom">
+          <div class="door door-a">
+            <button type="button" data-tip="Кураторський режим">
+              <svg aria-hidden="true"><use href="#i-lock"></use></svg>
+              <span class="lbl">Кураторський режим</span></button>
+          </div>
+        </div>
+      </aside>
+      <main>
+        <h1>Тренування</h1>
+        <p class="sub">Заповнювач головної зони — щоб ширину рейки було з чим міряти. Тон не судиться: це Х26.</p>
+        <div class="rowbar"><span></span><span></span></div>
+        <div class="cards" id="cards"></div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<div id="tip" role="status"></div>
+<p class="note">Активний пункт (заливка · пігулка · язичок) і тон поверхонь тут не розкладаються — предмет Х26.</p>
+
+<script>
+var SETS = {
+  '2': [['i-play','Тренування',0],['i-box','Каталог',0]],
+  '4': [['i-play','Тренування',0],['i-doc','Сценарії',1],['i-box','Каталог',0],['i-bars','Результати',1]],
+  '6': [['i-grid','Дашборд',1],['i-doc','Сценарії',1],['i-box','Каталог',1],
+        ['i-chip','AI / Моделі',1],['i-chat','Промпти',1],['i-gear','Система',1]]
+};
+var stage=document.getElementById('stage'), nav=document.getElementById('nav'),
+    meter=document.getElementById('meter'), tip=document.getElementById('tip'),
+    logo=document.getElementById('logo'), cards=document.getElementById('cards');
+
+cards.replaceChildren.apply(cards, [0,1,2,3,4].map(function(i){
+  var c=document.createElement('div'); c.className='card';
+  var ic=document.createElement('i'); var d=document.createElement('div');
+  ['l','s','m'].slice(0, i%2 ? 2 : 3).forEach(function(w){
+    var u=document.createElement('u'); u.className=w; d.append(u); });
+  c.append(ic,d); return c;
+}));
+
+function build(){
+  var set=SETS[stage.dataset.set], first=true;
+  nav.replaceChildren.apply(nav, set.map(function(row){
+    var b=document.createElement('button');
+    b.type='button';
+    b.className='side-link'+(row[2]?' stub':'')+(!row[2]&&first?' active':'');
+    if(!row[2]&&first){ b.setAttribute('aria-current','page'); first=false; }
+    if(row[2]) b.setAttribute('aria-disabled','true');
+    b.setAttribute('aria-label', row[1]+(row[2]?' — екран ще не готовий':''));
+    b.setAttribute('data-tip', row[1]+(row[2]?' · екран ще не готовий':''));
+    var s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    s.setAttribute('aria-hidden','true');
+    var u=document.createElementNS('http://www.w3.org/2000/svg','use');
+    u.setAttribute('href','#'+row[0]); s.append(u);
+    var t=document.createElement('span'); t.className='lbl'; t.textContent=row[1];
+    b.append(s,t); return b;
+  }));
+  measure();
+}
+
+/* тултип окремим шаром: .sidebar має overflow:auto (:358) і обрізав ::after */
+function showTip(el){
+  var txt=el.getAttribute('data-tip'); if(!txt) return;
+  var rail=stage.dataset.mode==='rail';
+  if(!rail && !el.classList.contains('stub')) return;
+  var r=el.getBoundingClientRect();
+  tip.textContent=txt; tip.classList.add('on');
+  tip.style.left=Math.round(r.right+8)+'px';
+  tip.style.top=Math.round(r.top+r.height/2-tip.offsetHeight/2)+'px';
+}
+function hideTip(){ tip.classList.remove('on'); }
+['mouseover','focusin'].forEach(function(ev){
+  document.addEventListener(ev, function(e){
+    var el=e.target.closest && e.target.closest('[data-tip]');
+    if(el) showTip(el); else hideTip();
+  });
+});
+['mouseout','focusout'].forEach(function(ev){ document.addEventListener(ev, hideTip); });
+
+function setMode(rail){
+  stage.dataset.mode = rail ? 'rail' : 'expanded';
+  var lbl = rail ? 'Розгорнути панель навігації' : 'Згорнути панель навігації';
+  document.querySelectorAll('[data-toggle]').forEach(function(b){
+    b.setAttribute('aria-expanded', String(!rail)); b.setAttribute('aria-label', lbl); });
+  logo.setAttribute('aria-label', lbl);
+  var r=document.querySelector('input[name=mode][value='+(rail?'rail':'expanded')+']');
+  if(r) r.checked=true;
+  measure();
+}
+
+function measure(){
+  var side=document.querySelector('.sidebar'), brand=document.querySelector('.brand'),
+      link=document.querySelector('.side-links .side-link'), shell=document.querySelector('.shell');
+  var box=function(el){ if(!el) return '—'; var r=el.getBoundingClientRect();
+    return Math.round(r.width)+'×'+Math.round(r.height); };
+  meter.textContent =
+    'набір '+stage.dataset.set+' · '+stage.dataset.mode+' · рейка '+stage.dataset.rail+
+    ' · перемикач '+stage.dataset.tog+' · '+stage.dataset.shell+'\n'+
+    'колонка shell '+Math.round(parseFloat(getComputedStyle(shell).gridTemplateColumns.split(' ')[0]))+
+    ' px · .sidebar '+box(side)+' · .brand '+box(brand)+' · .side-link '+box(link)+'\n'+
+    'продукт (Chromium 1600×1000): .sidebar 220 · .brand 203×79 · .side-link 203×47'+
+    ' · скрол панелі: '+(side.scrollHeight>side.clientHeight ? 'Є ('+side.scrollHeight+'>'+side.clientHeight+')' : 'немає');
+}
+
+document.querySelectorAll('.bar input').forEach(function(inp){
+  inp.addEventListener('change', function(){
+    if(inp.name==='mode'){ setMode(inp.value==='rail'); return; }
+    stage.dataset[inp.name]=inp.value;
+    if(inp.name==='set') build(); else measure();
+  });
+});
+document.querySelectorAll('[data-toggle]').forEach(function(b){
+  b.addEventListener('click', function(){ setMode(stage.dataset.mode!=='rail'); b.focus(); }); });
+logo.addEventListener('click', function(){
+  if(stage.dataset.tog!=='logo') return;
+  setMode(stage.dataset.mode!=='rail'); logo.focus(); });
+build();
+window.addEventListener('resize', measure);
+</script>
+</body>
+</html>
