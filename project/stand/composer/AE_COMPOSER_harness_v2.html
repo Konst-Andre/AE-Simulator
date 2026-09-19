@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AE · COMPOSER harness v2</title>
+<!--
+  AE_COMPOSER_harness_v2.html — AE-Simulator · щабель 2 (композер Е2) + щабель 3 (тіні).
+
+  живе доки: композер Е2 і тінь продукту не канонізовані у valuesLOCK
+
+  РІВЕНЬ: harness (stagebench manifest §1) — предмет у вірному лейауті з реальними
+  токенами й сусідами. НЕ stage-bench: девайс-симулятор телефона тут був би ЧУЖИМ
+  девайсом, бо E2 судиться на 1920/1536/1280 (В-24).
+  ІМЕНОВАНИЙ ВАРІАНТ (§4-варіанти, обовʼязок назвати відхилення): desktop-panel-harness
+  — без девайс-рамки, прецедент §4-в icon-compare (предмет судиться в чужому середовищі).
+  Компоновка: ОДИН кадр, база 1920 — слово оператора S69.
+
+  ЧОМУ СУСІДИ В КАДРІ: П96. У S68 фон виграв на стенді і був скасований на живому
+  екрані, бо поруч стояли жовта картка завдання й жовтий чип. Композер має ту саму
+  хворобу: білий острівець на білій панелі. Стенд без сусідів збрехав би знову.
+
+  РЕАЛЬНИЙ МАСШТАБ (§2-п.2): числа зняті з живого E2 на 1920 —
+  панель .dialogue 691.7 · .composer 689.7 · textarea 583.7x74.4 · .send 58x74.4 ·
+  .quick-phrases 62 (на 1280 переноситься в два рядки, 106) · сусід 345.2.
+
+  ТРИ СТАНИ ЧИСЛА (§3-п.13-е): покручено -> залочено в стенді -> канонізовано.
+  Замок у стенді НЕ дає права цитувати число як канон продукту.
+-->
+<style>
+:root{
+  --ui-bg:#F4F4F6; --ui-panel:#FFFFFF; --ui-line:#E2E2E6; --ui-ink:#1C1E24;
+  --ui-mut:#6E6E77; --ui-acc:#008ECC; --ui-lock:#1B9E5A; --ui-warn:#C6821A;
+  --mono:"SFMono-Regular","Consolas",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ui-bg);color:var(--ui-ink);
+  font-family:"Inter","Segoe UI",-apple-system,system-ui,sans-serif;font-size:14px}
+.bench{display:flex;align-items:flex-start;min-height:100vh}
+
+/* ── СТЕЙДЖ ── */
+.stage{flex:1;min-width:0;padding:26px 20px;background:var(--isl-main,#FFFEF6);
+  min-height:100vh;display:flex;justify-content:center;align-items:flex-start}
+.ctx{display:flex;gap:16px;width:1053px;max-width:100%}
+.stage-h1{font-size:26px;font-weight:800;margin:0 0 16px}
+
+/* панель діалогу — реальні числа продукту */
+.panel{min-width:0;border:1px solid #E7E7E7;border-radius:14px;background:#fff;
+  box-shadow:0 6px 22px #1C1E2410;overflow:hidden}
+.dialogue{width:691.7px;display:flex;flex-direction:column;height:820px}
+.panel-head{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:16px 19px;
+  border-bottom:var(--hdLine) solid #E7E7E7;box-shadow:var(--headShadow)}
+.panel-head h2{margin:0;font-size:16px;font-weight:700}
+.icon-chip{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:#008ECC;color:#fff}
+.icon-chip svg{width:18px;height:18px}
+.messages{position:relative;flex:1;padding:25px 20px 16px;overflow:auto;background:#1C1E240A;
+  box-shadow:var(--msgInset)}
+.message{display:flex;gap:11px;margin-bottom:14px}
+.message.pharmacist{flex-direction:row-reverse}
+.avatar{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
+  background:#D9EDF7;color:#1C1E24;font-weight:700;font-size:13px}
+.bubble{max-width:420px;padding:12px 15px;border-radius:12px;background:#E7E7E7;line-height:1.45}
+.pharmacist .bubble{background:#FFE241}
+.message time{display:block;padding-top:5px;color:#6E6E77;font-size:11px}
+.pharmacist time{text-align:right}
+
+/* ── КОМПОЗЕР — предмет тюну ── */
+.composer{padding:14px 19px 16px;background:var(--floor)}
+.comp-isl{padding:var(--islPad);border:var(--islBw) solid var(--islBorder);
+  border-radius:var(--islR);background:var(--islSurface);box-shadow:var(--islShadow)}
+.qa-row{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:var(--qaGap)}
+.qa-row button{flex:0 0 auto;min-height:var(--qaH);padding:0 12px;border:1px solid var(--qaBorder);
+  border-radius:var(--qaR);background:var(--qaBg);color:var(--valL);font-size:12px;font-weight:600;cursor:pointer}
+.well{position:relative;border:var(--wellBw) solid var(--wellBorder);border-radius:var(--wellR);
+  background:var(--wellBg);box-shadow:var(--wellShadow)}
+.well textarea{display:block;width:100%;min-height:var(--wellMinH);max-height:var(--wellMaxH);
+  field-sizing:content;overflow-y:auto;resize:none;border:0;outline:none;background:transparent;
+  color:var(--valL);font:inherit;font-size:16px;line-height:1.45;
+  padding:12px var(--taPadR) 12px 14px;border-radius:var(--wellR)}
+.well textarea::placeholder{color:var(--mutL)}
+.send{position:absolute;right:var(--sendInset);bottom:var(--sendInset);
+  display:grid;place-items:center;width:var(--sendW);height:var(--sendH);
+  border:0;border-radius:var(--sendR);background:var(--sendBg);color:#1C1E24;
+  box-shadow:var(--sendShadow);cursor:pointer}
+.send svg{width:var(--sendIco);height:var(--sendIco);
+  transform:translate(var(--sendIcoX),var(--sendIcoY)) rotate(var(--sendIcoRot))}
+.composer-note{display:flex;justify-content:flex-end;padding-top:9px;color:var(--mutL);font-size:11px}
+
+/* ЕТАЛОН — нинішній продукт у тих самих пікселях (hold-to-compare) */
+.stage[data-ctrl="1"] .comp-isl{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.stage[data-ctrl="1"] .composer{background:#fff;border-top:1px solid #E7E7E7;padding:0 19px 18px}
+.stage[data-ctrl="1"] .qa-row{padding:14px 0 12px}
+.stage[data-ctrl="1"] .qa-row button{min-height:36px;padding:0 11px;border-color:#008ECC;border-radius:7px;background:#fff}
+.stage[data-ctrl="1"] .well{border:0;border-radius:0;background:transparent;box-shadow:none;display:flex;gap:10px}
+.stage[data-ctrl="1"] .well textarea{field-sizing:fixed;min-height:68px;max-height:68px;flex:1;
+  padding:13px 14px;border:1px solid #008ECC;border-radius:8px;background:#fff}
+.stage[data-ctrl="1"] .send{position:static;width:58px;height:74.4px;border-radius:8px;
+  background:#FFE241;box-shadow:none}
+.stage[data-ctrl="1"] .send svg{width:22px;height:22px;transform:none}
+.stage[data-ctrl="1"] .panel-head{box-shadow:none;border-bottom-width:1px}
+.stage[data-ctrl="1"] .messages{box-shadow:none}
+
+/* сусіди — жовта родина, без якої стенд бреше (П96) */
+.neigh{width:345.2px;display:flex;flex-direction:column;gap:16px}
+.neigh .panel{padding:0}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:16px 19px;border-bottom:1px solid #E7E7E7}
+.cart-head span.t{display:flex;align-items:center;gap:9px;font-weight:700;font-size:15px}
+.pill{padding:4px 10px;border-radius:999px;background:#FFE241;font-size:12px;font-weight:700}
+.notice{margin:16px 19px 19px;padding:14px 15px;border-radius:12px;background:#FFF6C9;line-height:1.5}
+.notice strong{display:flex;align-items:center;gap:8px;padding-bottom:7px;font-size:14px}
+.row-item{display:flex;align-items:center;gap:11px;padding:12px 19px;border-bottom:1px solid #F1F1F3}
+.row-item .ic{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:#F4F4F6}
+.row-item b{display:block;font-size:14px}
+.row-item small{color:#6E6E77}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.icon-chip svg,.row-item svg,.cart-head svg,.notice svg{width:18px;height:18px;flex:0 0 auto}
+
+/* ── ІНСТРУМЕНТ ── */
+.tools{flex:0 0 auto;width:430px;max-height:100vh;overflow:auto;padding:18px 16px 40px;
+  background:var(--ui-panel);border-left:1px solid var(--ui-line)}
+.bench[data-tools="off"] .tools{display:none}
+.t-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:12px}
+.t-head h1{margin:0;font-size:15px;font-weight:800;letter-spacing:.2px}
+.btn{padding:7px 12px;border:1px solid var(--ui-line);border-radius:9px;background:#fff;
+  color:var(--ui-ink);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.btn:hover{border-color:var(--ui-acc)}
+.btn.acc{border-color:var(--ui-acc);color:var(--ui-acc)}
+.fabs{position:fixed;right:14px;bottom:14px;display:flex;gap:8px;z-index:9}
+.bench[data-tools="on"] ~ .fabs{display:none}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:12px}
+.tabs button{padding:6px 11px;border:1px solid var(--ui-line);border-radius:999px;background:#fff;
+  font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.tabs button[aria-pressed="true"]{border-color:var(--ui-acc);background:#E9F5FB;color:var(--ui-acc)}
+.lev{display:grid;grid-template-columns:118px 1fr 74px 30px;align-items:center;gap:8px;
+  padding:5px 0;border-bottom:1px solid #F3F3F5}
+.lev label{font-family:var(--mono);font-size:11px;color:var(--ui-mut)}
+.lev input[type=range]{width:100%}
+.lev input[type=color]{width:100%;height:26px;padding:0;border:1px solid var(--ui-line);border-radius:6px;background:#fff}
+.lev select{width:100%;font:inherit;font-size:12px}
+.lev .val{font-family:var(--mono);font-size:11px;text-align:right}
+.lk{width:26px;height:24px;padding:0;border:1px solid var(--ui-line);border-radius:6px;
+  background:#fff;font-size:10px;font-weight:800;cursor:pointer;color:var(--ui-mut)}
+.lk[data-s="eq"]{border-color:var(--ui-lock);color:var(--ui-lock)}
+.lk[data-s="dif"]{border-color:var(--ui-warn);color:var(--ui-warn)}
+.lev[data-diff="1"] label{color:var(--ui-warn)}
+.meter{padding:10px 0;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--ui-mut)}
+.meter b{color:var(--ui-ink)}
+.warn{color:var(--ui-warn)}
+textarea.out{width:100%;height:190px;margin-top:8px;padding:9px;border:1px solid var(--ui-line);
+  border-radius:8px;font-family:var(--mono);font-size:11px;line-height:1.5;resize:vertical}
+.legend{padding:8px 0 0;font-size:11.5px;line-height:1.65;color:var(--ui-mut)}
+.legend code{font-family:var(--mono);color:var(--ui-ink)}
+@supports not (field-sizing:content){ .nofs{display:block} }
+.nofs{display:none;padding:6px 0;color:var(--ui-warn);font-size:11px}
+</style>
+</head>
+<body>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+<symbol id="i-send" viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 3-9-3-9Z"/><path d="M6 12h15"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/><path d="M9 10h6"/></symbol>
+<symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H7"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
+<symbol id="i-box" viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M22 12h-2M12 22v-2M2 12h2"/></symbol>
+</svg>
+
+<div class="bench" id="bench" data-tools="on">
+  <main class="stage" id="stage">
+    <div>
+      <h1 class="stage-h1">Призначення лікаря</h1>
+      <div class="ctx">
+        <section class="panel dialogue">
+          <header class="panel-head"><span class="icon-chip"><svg><use href="#i-chat"/></svg></span><h2>Діалог з клієнтом</h2></header>
+          <div class="messages" id="msgs"></div>
+          <div class="composer">
+            <div class="comp-isl">
+              <div class="qa-row" id="qaRow"></div>
+              <div class="well">
+                <textarea id="ta" placeholder="Введіть відповідь клієнту…"></textarea>
+                <button class="send" type="button" aria-label="Надіслати"><svg><use href="#i-send"/></svg></button>
+              </div>
+            </div>
+            <div class="composer-note">Enter — відправити · Shift + Enter — новий рядок</div>
+          </div>
+        </section>
+        <aside class="neigh">
+          <section class="panel">
+            <div class="cart-head"><span class="t"><svg><use href="#i-cart"/></svg>Поточне замовлення</span><span class="pill">1 позиція</span></div>
+            <div class="row-item"><span class="ic"><svg><use href="#i-box"/></svg></span><span><b>Канефрон Н табл. №60</b><small>Урологія</small></span></div>
+            <div class="notice"><strong><svg><use href="#i-info"/></svg>Це замовлення клієнта</strong>Змінити його можна лише після згоди клієнта в розмові.</div>
+          </section>
+          <section class="panel">
+            <div class="notice" style="margin:19px"><strong><svg><use href="#i-target"/></svg>Ваше завдання</strong>Пояснити, що це та сама рослинна група, дати вибір, не тиснути. Рішення лишається за клієнткою.</div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <aside class="tools" id="tools">
+    <div class="t-head">
+      <h1>COMPOSER harness v2</h1>
+      <div style="display:flex;gap:6px">
+        <button class="btn" id="ctrlBtn" title="Утримуй — показує нинішній продукт у тих самих пікселях">ЕТАЛОН</button>
+        <button class="btn" id="hideBtn">сховати</button>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div id="levs"></div>
+    <div class="nofs">⚠ цей браузер без <code>field-sizing:content</code> — поле не росте, працює фолбек <code>overflow-y:auto</code></div>
+    <div class="meter" id="meter"></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:6px">
+      <button class="btn acc" id="copyBtn">📋 паспорт раунду</button>
+      <button class="btn" id="lockAllBtn">залочити видимі</button>
+      <button class="btn" id="resetBtn">скинути все</button>
+    </div>
+    <textarea class="out" id="out" readonly placeholder="паспорт зʼявиться тут"></textarea>
+    <div class="legend" id="legend"></div>
+  </aside>
+</div>
+<div class="fabs"><button class="btn acc" id="showBtn">показати важелі</button></div>
+
+<script>
+/* ── РЕЄСТР ВАЖЕЛІВ ─────────────────────────────────────────────────────────
+   Добір ВСЮДИ за ознакою (кожен важіль має k), ніде за рукописним списком —
+   stagebench §3-п.13-в і §3-п.13-ж. Паспорт генерує ОБИДВІ секції з цього ж
+   масиву, тож новий важіль підхоплюється сам.
+   lock:null = ЛОКу немає взагалі (третій стан маркера, §3-п.13-а).
+   Числа в def — СТАВКИ (§3-п.10), не канон. 18 — ставка оператора S69.        */
+const L=[
+ /* isl — острівець композера + ПОВНИЙ набір тіньових важелів (щабель 3, П97) */
+ {k:'islR',   f:'isl', t:'range', min:0,max:32,step:1,def:18,u:'px', lock:null, h:'радіус острівця'},
+ {k:'islPad', f:'isl', t:'range', min:0,max:24,step:1,def:12,u:'px', lock:null, h:'внутрішній відступ острівця'},
+ {k:'islBw',  f:'isl', t:'range', min:0,max:3, step:.5,def:1, u:'px', lock:null, h:'товщина рамки'},
+ {k:'islBorder',f:'isl',t:'color',def:'#E7E7E7', lock:'#E7E7E7', h:'колір рамки (= --isl-border)'},
+ {k:'islSurface',f:'isl',t:'color',def:'#FFFFFF', lock:'#FFFFFF', h:'поверхня острівця (= --isl-surface)'},
+ {k:'floorC',  f:'isl', t:'color', def:'#1C1E24', lock:'#1C1E24', h:'підлога зони композера — колір (В-69)'},
+ {k:'floorA',  f:'isl', t:'range', min:0,max:20,step:1,def:4, u:'%', lock:4, h:'підлога — альфа (В-69 = 4%)'},
+ {k:'sh1X',  f:'isl', t:'range', min:-24,max:24,step:1,def:0,  u:'px', lock:null, h:'тінь шар 1 · зсув X'},
+ {k:'sh1Y',  f:'isl', t:'range', min:-24,max:40,step:1,def:1,  u:'px', lock:null, h:'тінь шар 1 · зсув Y'},
+ {k:'sh1B',  f:'isl', t:'range', min:0,max:80,step:1,def:5,   u:'px', lock:null, h:'тінь шар 1 · розмиття'},
+ {k:'sh1S',  f:'isl', t:'range', min:-20,max:30,step:1,def:1,  u:'px', lock:null, h:'тінь шар 1 · розтяг'},
+ {k:'sh1C',  f:'isl', t:'color', def:'#1C1E24', lock:null, h:'тінь шар 1 · колір'},
+ {k:'sh1A',  f:'isl', t:'range', min:0,max:60,step:1,def:18,  u:'%', lock:null, h:'тінь шар 1 · альфа'},
+ {k:'sh2On', f:'isl', t:'toggle', def:0, lock:null, h:'друга шар-тінь — увімкнути'},
+ {k:'sh2X',  f:'isl', t:'range', min:-24,max:24,step:1,def:0,  u:'px', lock:null, h:'тінь шар 2 · зсув X', dep:'sh2On'},
+ {k:'sh2Y',  f:'isl', t:'range', min:-24,max:40,step:1,def:8,  u:'px', lock:null, h:'тінь шар 2 · зсув Y', dep:'sh2On'},
+ {k:'sh2B',  f:'isl', t:'range', min:0,max:90,step:1,def:26,  u:'px', lock:null, h:'тінь шар 2 · розмиття', dep:'sh2On'},
+ {k:'sh2S',  f:'isl', t:'range', min:-20,max:30,step:1,def:0,  u:'px', lock:null, h:'тінь шар 2 · розтяг', dep:'sh2On'},
+ {k:'sh2C',  f:'isl', t:'color', def:'#1C1E24', lock:null, h:'тінь шар 2 · колір', dep:'sh2On'},
+ {k:'sh2A',  f:'isl', t:'range', min:0,max:60,step:1,def:8,   u:'%', lock:null, h:'тінь шар 2 · альфа', dep:'sh2On'},
+ /* well — втоплене поле, cookbook A51/A65 */
+ {k:'wellR', f:'well', t:'range', min:0,max:28,step:1,def:12, u:'px', lock:null, h:'радіус поля'},
+ {k:'wellBw',f:'well', t:'range', min:0,max:3,step:.5,def:1,  u:'px', lock:null, h:'товщина рамки поля'},
+ {k:'wellBorder',f:'well',t:'color',def:'#E7E7E7', lock:null, h:'колір рамки поля (синій #008ECC знято)'},
+ {k:'wellBgC',f:'well', t:'color', def:'#1C1E24', lock:null, h:'фон поля — колір'},
+ {k:'wellBgA',f:'well', t:'range', min:0,max:16,step:1,def:3, u:'%', lock:null, h:'фон поля — альфа'},
+ {k:'wiX',   f:'well', t:'range', min:-12,max:12,step:1,def:0, u:'px', lock:null, h:'inset шар 1 · X'},
+ {k:'wiY',   f:'well', t:'range', min:-12,max:12,step:1,def:2, u:'px', lock:null, h:'inset шар 1 · Y'},
+ {k:'wiB',   f:'well', t:'range', min:0,max:30,step:1,def:4,  u:'px', lock:null, h:'inset шар 1 · розмиття'},
+ {k:'wiS',   f:'well', t:'range', min:-10,max:14,step:1,def:0, u:'px', lock:null, h:'inset шар 1 · розтяг'},
+ {k:'wiC',   f:'well', t:'color', def:'#000000', lock:null, h:'inset шар 1 · колір'},
+ {k:'wiA',   f:'well', t:'range', min:0,max:40,step:1,def:10, u:'%', lock:null, h:'inset шар 1 · альфа'},
+ {k:'wi2On', f:'well', t:'toggle', def:0, lock:null, h:'нижнє світло (другий inset)'},
+ {k:'wi2Y',  f:'well', t:'range', min:-6,max:6,step:1,def:-1, u:'px', lock:null, h:'нижнє світло · Y', dep:'wi2On'},
+ {k:'wi2A',  f:'well', t:'range', min:0,max:100,step:1,def:70,u:'%', lock:null, h:'нижнє світло · альфа', dep:'wi2On'},
+ {k:'wellMinH',f:'well',t:'range', min:44,max:140,step:2,def:72, u:'px', lock:null, h:'мін. висота поля'},
+ {k:'wellMaxH',f:'well',t:'range', min:100,max:420,step:10,def:220,u:'px', lock:null, h:'стеля росту (field-sizing)'},
+ /* send — кнопка ВСЕРЕДИНІ поля */
+ {k:'sendW', f:'send', t:'range', min:26,max:64,step:1,def:36, u:'px', lock:null, h:'ширина кнопки'},
+ {k:'sendH', f:'send', t:'range', min:26,max:64,step:1,def:32, u:'px', lock:null, h:'висота кнопки'},
+ {k:'sendR', f:'send', t:'range', min:0,max:24,step:1,def:8,  u:'px', lock:null, h:'радіус кнопки (8 = підкладка під іконками)'},
+ {k:'sendIco',f:'send',t:'range', min:12,max:26,step:1,def:17, u:'px', lock:null, h:'розмір літачка'},
+ {k:'sendInset',f:'send',t:'range',min:2,max:16,step:1,def:7, u:'px', lock:null, h:'відступ кнопки від краю поля'},
+ {k:'sendIcoRot',f:'send',t:'range',min:-180,max:180,step:15,def:0,u:'deg',lock:null, h:'поворот літачка: 0 = вправо, -45 = вгору-вправо, -90 = строго вгору'},
+ {k:'sendIcoX',f:'send',t:'range',min:-8,max:8,step:.5,def:0, u:'px', lock:null, h:'оптичний зсув іконки по X (літачок важчий зліва)'},
+ {k:'sendIcoY',f:'send',t:'range',min:-8,max:8,step:.5,def:0, u:'px', lock:null, h:'оптичний зсув іконки по Y'},
+ {k:'sendBg',f:'send', t:'color', def:'#FFE241', lock:'#FFE241', h:'фон кнопки (= --anc-yellow)'},
+ {k:'sendLY',f:'send', t:'range', min:0,max:10,step:1,def:1,  u:'px', lock:null, h:'lift кнопки · Y'},
+ {k:'sendLB',f:'send', t:'range', min:0,max:20,step:1,def:2,  u:'px', lock:null, h:'lift кнопки · розмиття'},
+ {k:'sendLA',f:'send', t:'range', min:0,max:50,step:1,def:12, u:'%', lock:null, h:'lift кнопки · альфа'},
+ /* qa — quick actions */
+ {k:'qaMode',f:'qa', t:'select', opts:['chips','one'], def:'chips', lock:null, h:'chips = як зараз · one = одна кнопка-виклик popover'},
+ {k:'qaH',   f:'qa', t:'range', min:26,max:44,step:1,def:32, u:'px', lock:null, h:'висота чипа'},
+ {k:'qaR',   f:'qa', t:'range', min:0,max:22,step:1,def:9,  u:'px', lock:null, h:'радіус чипа'},
+ {k:'qaGap', f:'qa', t:'range', min:0,max:20,step:1,def:10, u:'px', lock:null, h:'відступ quick actions до поля'},
+ {k:'qaBorder',f:'qa',t:'color', def:'#E7E7E7', lock:null, h:'рамка чипа (синій знято)'},
+ {k:'qaBg',  f:'qa', t:'color', def:'#FFFFFF', lock:null, h:'фон чипа'},
+ /* head — стик шапки й полотна розмови: навіс vs recess. Пропозиція оператора S69.
+    ДВІ РІЗНІ МОВИ, не одна з двох сил (cookbook A65): навіс = шапка КИДАЄ тінь на
+    полотно (elevation, шапка зверху); recess = полотно ВТОПЛЕНЕ під шапку (inset).
+    Тому вони окремий режим, а не знак одного числа. */
+ {k:'hdMode',f:'head',t:'select',opts:['none','shade','recess','both'],def:'shade',lock:null,h:'none = як зараз · shade = навіс · recess = втоплена канва · both'},
+ {k:'hdLine',f:'head',t:'range',min:0,max:2,step:1,def:1,u:'px',lock:1,h:'лінія під шапкою: 0 знімає її — з навісом вона часто зайва'},
+ {k:'hdY',   f:'head',t:'range',min:0,max:24,step:1,def:4, u:'px',lock:null,h:'навіс · зсув Y'},
+ {k:'hdB',   f:'head',t:'range',min:0,max:40,step:1,def:8, u:'px',lock:null,h:'навіс · розмиття'},
+ {k:'hdS',   f:'head',t:'range',min:-12,max:12,step:1,def:-2,u:'px',lock:null,h:'навіс · розтяг (мінус підбирає боки)'},
+ {k:'hdC',   f:'head',t:'color',def:'#1C1E24',lock:null,h:'навіс · колір'},
+ {k:'hdA',   f:'head',t:'range',min:0,max:40,step:1,def:10,u:'%',lock:null,h:'навіс · альфа'},
+ {k:'rcY',   f:'head',t:'range',min:0,max:20,step:1,def:3, u:'px',lock:null,h:'recess · глибина inset згори'},
+ {k:'rcB',   f:'head',t:'range',min:0,max:30,step:1,def:5, u:'px',lock:null,h:'recess · розмиття'},
+ {k:'rcC',   f:'head',t:'color',def:'#1C1E24',lock:null,h:'recess · колір'},
+ {k:'rcA',   f:'head',t:'range',min:0,max:40,step:1,def:12,u:'%',lock:null,h:'recess · альфа'},
+ /* txt — ОБОВʼЯЗКОВІ текст-важелі, stagebench §8.5 */
+ {k:'valL',  f:'txt', t:'color', def:'#1C1E24', lock:'#1C1E24', h:'основний текст (val-L)'},
+ {k:'mutL',  f:'txt', t:'color', def:'#6E6E77', lock:'#6E6E77', h:'приглушений текст і плейсхолдер (mut-L)'}
+];
+const FAM=[['isl','острівець + ТІНЬ'],['well','поле (well)'],['send','кнопка'],
+           ['head','шапка ↔ канва'],['qa','quick actions'],['txt','текст']];
+const KEYS=new Set(L.map(x=>x.k));
+const SKEY='ae_composer_harness_locks';       /* переживає версію стенда, §3-п.13-д */
+const VKEY='ae_composer_harness_vals';
+
+let S={}, LK={}, fam='isl';
+L.forEach(x=>S[x.k]=x.def);
+try{ const v=JSON.parse(localStorage.getItem(VKEY)||'{}'); Object.keys(v).forEach(k=>{ if(KEYS.has(k)) S[k]=v[k]; }); }catch(_){}
+try{ LK=JSON.parse(localStorage.getItem(SKEY)||'{}'); }catch(_){ LK={}; }
+
+const hex2=n=>Math.round(n*255/100).toString(16).padStart(2,'0');
+const rgba=(c,a)=>c+hex2(a);
+/* Мертвий важіль не потрапляє ні в паспорт, ні в лічильник (§3-п.13-б).
+   Тут мертвість буває двох родів: за тоглом (dep) і за РЕЖИМОМ (mode). */
+const MODEDEAD={hdY:['shade','both'],hdB:['shade','both'],hdS:['shade','both'],
+  hdC:['shade','both'],hdA:['shade','both'],
+  rcY:['recess','both'],rcB:['recess','both'],rcC:['recess','both'],rcA:['recess','both']};
+const dep=x=>(!x.dep || +S[x.dep]===1) && (!MODEDEAD[x.k] || MODEDEAD[x.k].includes(S.hdMode));
+
+function shadow(){
+  let s=`${S.sh1X}px ${S.sh1Y}px ${S.sh1B}px ${S.sh1S}px ${rgba(S.sh1C,S.sh1A)}`;
+  if(+S.sh2On===1) s+=`, ${S.sh2X}px ${S.sh2Y}px ${S.sh2B}px ${S.sh2S}px ${rgba(S.sh2C,S.sh2A)}`;
+  return s;
+}
+function wellShadow(){
+  let s=`inset ${S.wiX}px ${S.wiY}px ${S.wiB}px ${S.wiS}px ${rgba(S.wiC,S.wiA)}`;
+  if(+S.wi2On===1) s+=`, inset 0 ${S.wi2Y}px 0 0 ${rgba('#FFFFFF',S.wi2A)}`;
+  return s;
+}
+const CSSMAP={
+  '--islR':()=>S.islR+'px', '--islPad':()=>S.islPad+'px', '--islBw':()=>S.islBw+'px',
+  '--islBorder':()=>S.islBorder, '--islSurface':()=>S.islSurface,
+  '--floor':()=>rgba(S.floorC,S.floorA), '--islShadow':shadow,
+  '--wellR':()=>S.wellR+'px', '--wellBw':()=>S.wellBw+'px', '--wellBorder':()=>S.wellBorder,
+  '--wellBg':()=>rgba(S.wellBgC,S.wellBgA), '--wellShadow':wellShadow,
+  '--wellMinH':()=>S.wellMinH+'px', '--wellMaxH':()=>S.wellMaxH+'px',
+  '--sendW':()=>S.sendW+'px', '--sendH':()=>S.sendH+'px', '--sendR':()=>S.sendR+'px',
+  '--sendIco':()=>S.sendIco+'px', '--sendInset':()=>S.sendInset+'px', '--sendBg':()=>S.sendBg,
+  '--sendShadow':()=>`0 ${S.sendLY}px ${S.sendLB}px ${rgba('#1C1E24',S.sendLA)}`,
+  '--taPadR':()=>(+S.sendW + +S.sendInset + 8)+'px',
+  '--qaH':()=>S.qaH+'px', '--qaR':()=>S.qaR+'px', '--qaGap':()=>S.qaGap+'px',
+  '--qaBorder':()=>S.qaBorder, '--qaBg':()=>S.qaBg,
+  '--sendIcoRot':()=>S.sendIcoRot+'deg', '--sendIcoX':()=>S.sendIcoX+'px', '--sendIcoY':()=>S.sendIcoY+'px',
+  '--headShadow':headShadow, '--msgInset':msgInset, '--hdLine':()=>S.hdLine+'px',
+  '--valL':()=>S.valL, '--mutL':()=>S.mutL
+};
+function headShadow(){ return (S.hdMode==='shade'||S.hdMode==='both')
+  ? `0 ${S.hdY}px ${S.hdB}px ${S.hdS}px ${rgba(S.hdC,S.hdA)}` : 'none'; }
+function msgInset(){ return (S.hdMode==='recess'||S.hdMode==='both')
+  ? `inset 0 ${S.rcY}px ${S.rcB}px -1px ${rgba(S.rcC,S.rcA)}` : 'none'; }
+const stage=document.getElementById('stage');
+function apply(){
+  Object.keys(CSSMAP).forEach(v=>stage.style.setProperty(v,CSSMAP[v]()));
+  qa();
+  try{ localStorage.setItem(VKEY,JSON.stringify(S)); }catch(_){}
+  meter();
+}
+const STARTERS=[['Уточнити симптоми'],['Запропонувати супутній засіб'],['Уточнити курс']];
+function qa(){
+  const r=document.getElementById('qaRow'); r.replaceChildren();
+  const mk=t=>{const b=document.createElement('button');b.type='button';b.textContent=t;return b;};
+  if(S.qaMode==='one') r.append(mk('Підказка фрази ▾'));
+  else STARTERS.forEach(([t])=>r.append(mk(t)));
+}
+
+/* ── панель важелів ── */
+function lockState(x){
+  if(x.lock===null||x.lock===undefined) return ['—','none'];
+  const same=String(x.lock)===String(S[x.k]);
+  return same?['=','eq']:['ЛОК '+x.lock,'dif'];
+}
+function draw(){
+  const box=document.getElementById('levs'); box.replaceChildren();
+  L.filter(x=>x.f===fam).forEach(x=>{
+    const row=document.createElement('div'); row.className='lev'; row.dataset.k=x.k;
+    if(!dep(x)) row.style.opacity='.38';
+    const lb=document.createElement('label'); lb.textContent=x.k; lb.title=x.h;
+    let inp;
+    if(x.t==='range'){ inp=document.createElement('input'); inp.type='range';
+      inp.min=x.min; inp.max=x.max; inp.step=x.step; inp.value=S[x.k]; }
+    else if(x.t==='color'){ inp=document.createElement('input'); inp.type='color'; inp.value=S[x.k]; }
+    else if(x.t==='toggle'){ inp=document.createElement('input'); inp.type='checkbox'; inp.checked=+S[x.k]===1; }
+    else { inp=document.createElement('select');
+      x.opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;inp.append(op);});
+      inp.value=S[x.k]; }
+    const val=document.createElement('span'); val.className='val';
+    const show=()=>{ val.textContent = x.t==='toggle' ? (+S[x.k]===1?'on':'off')
+                     : (x.t==='color'? S[x.k] : S[x.k]+(x.u||'')); };
+    show();
+    inp.oninput=()=>{ S[x.k] = x.t==='toggle' ? (inp.checked?1:0) : (x.t==='color'||x.t==='select'? inp.value : +inp.value);
+      show(); apply(); mark(row,x); if(x.t==='toggle'||x.t==='select'){ draw(); meter(); } };
+    const lk=document.createElement('button'); lk.className='lk'; lk.title='зафіксувати вирок у стенді';
+    lk.onclick=()=>{ if(LK[x.k]!==undefined && String(LK[x.k])===String(S[x.k])) delete LK[x.k];
+      else LK[x.k]=S[x.k];
+      try{ localStorage.setItem(SKEY,JSON.stringify(LK)); }catch(_){}
+      mark(row,x); meter(); };
+    row.append(lb,inp,val,lk); box.append(row); mark(row,x);
+  });
+}
+function mark(row,x){
+  const lk=row.querySelector('.lk'), st=lockState(x);
+  const fixed = LK[x.k]!==undefined && String(LK[x.k])===String(S[x.k]);
+  lk.textContent = fixed ? '🔒' : st[0];
+  lk.dataset.s = fixed ? 'eq' : st[1];
+  row.dataset.diff = st[1]==='dif' ? '1' : '0';
+}
+function meter(){
+  const live=L.filter(dep), fixed=live.filter(x=>LK[x.k]!==undefined && String(LK[x.k])===String(S[x.k]));
+  const dead=L.filter(x=>!dep(x) && LK[x.k]!==undefined);
+  const stale=Object.keys(LK).filter(k=>!KEYS.has(k));
+  const drift=live.filter(x=>x.lock!==null&&x.lock!==undefined&&String(x.lock)!==String(S[x.k]));
+  let h=`ЗАФІКСОВАНО <b>${fixed.length}/${live.length}</b> живих важелів`;
+  h+=`<br>розбіжність із каноном продукту: <b>${drift.length}</b>`;
+  if(dead.length) h+=`<br><span class="warn">⚠ ${dead.length} фіксацій на мертвих важелях — у паспорт НЕ підуть (§3-13-б)</span>`;
+  if(stale.length) h+=`<br><span class="warn">⚠ протухлі ключі зі старої версії стенда: ${stale.join(', ')}</span>`;
+  h+=`<br>ЗАМОК У СТЕНДІ ≠ КАНОН. Канон — тільки після живого екрана (П96).`;
+  document.getElementById('meter').innerHTML=h;
+}
+
+/* ── паспорт: ОБИДВІ секції з того самого реєстру (§3-13-ж) ── */
+function passport(){
+  const live=L.filter(dep);
+  const j={}; live.forEach(x=>j[x.k]=S[x.k]);
+  const css=Object.keys(CSSMAP).map(v=>'  '+v+': '+CSSMAP[v]()+';').join('\n');
+  const fixed=live.filter(x=>LK[x.k]!==undefined && String(LK[x.k])===String(S[x.k])).map(x=>x.k);
+  const dead=L.filter(x=>!dep(x) && LK[x.k]!==undefined).map(x=>x.k);
+  return [
+   '/* AE COMPOSER harness v2 — ПАСПОРТ РАУНДУ, не valuesLOCK.',
+   '   Це ЗРІЗ усього живого, разом із нерозсудженим. Вирок числа —',
+   '   третій стан (канонізовано), і він настає ЛИШЕ після живого екрана (П96).',
+   '   ЗАФІКСОВАНО В СТЕНДІ: '+(fixed.length?fixed.join(' '):'нічого'),
+   (dead.length?'   ⚠ фіксації на мертвих важелях (не канон): '+dead.join(' '):'   мертвих фіксацій немає'),
+   '*/',
+   'STATE = '+JSON.stringify(j),
+   '',
+   '.stage {',css,'}'
+  ].join('\n');
+}
+document.getElementById('copyBtn').onclick=()=>{
+  const t=passport(); const o=document.getElementById('out'); o.value=t;
+  /* writeText віддає ПРОМІС: try/catch його не ловить, відмова дозволу летить
+     у pageerror. Ловимо саме проміс — текст-бокс і так є (§2-п.8). */
+  try{ const pr=navigator.clipboard.writeText(t); if(pr&&pr.catch) pr.catch(()=>{}); }catch(_){}
+};
+document.getElementById('lockAllBtn').onclick=()=>{
+  L.filter(x=>x.f===fam&&dep(x)).forEach(x=>LK[x.k]=S[x.k]);
+  try{ localStorage.setItem(SKEY,JSON.stringify(LK)); }catch(_){}
+  draw(); meter();
+};
+document.getElementById('resetBtn').onclick=()=>{
+  L.forEach(x=>S[x.k]=x.def); LK={};
+  try{ localStorage.removeItem(SKEY); localStorage.removeItem(VKEY); }catch(_){}
+  draw(); apply();
+};
+/* згортається ПАНЕЛЬ, а не стейдж (§3-п.8) */
+const bench=document.getElementById('bench');
+document.getElementById('hideBtn').onclick=()=>bench.dataset.tools='off';
+document.getElementById('showBtn').onclick=()=>bench.dataset.tools='on';
+/* hold-to-compare: еталон у ТИХ САМИХ пікселях */
+const cb=document.getElementById('ctrlBtn');
+const on=()=>stage.dataset.ctrl='1', off=()=>stage.dataset.ctrl='0';
+cb.addEventListener('mousedown',on); cb.addEventListener('touchstart',on,{passive:true});
+['mouseup','mouseleave','touchend'].forEach(e=>cb.addEventListener(e,off));
+
+/* вкладки родин */
+const tabs=document.getElementById('tabs');
+FAM.forEach(([f,label])=>{
+  const b=document.createElement('button'); b.type='button'; b.textContent=label;
+  b.setAttribute('aria-pressed',String(f===fam));
+  b.onclick=()=>{ fam=f; [...tabs.children].forEach(c=>c.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); draw(); legend(); };
+  tabs.append(b);
+});
+function legend(){
+  const h=L.filter(x=>x.f===fam).map(x=>'<code>'+x.k+'</code> — '+x.h).join('<br>');
+  document.getElementById('legend').innerHTML=h;
+}
+/* живий контент позаду (§2-п.6) */
+const MSG=[[0,'Добрий день. Мені призначили Канефрон, але він дорогуватий.','23:14'],
+ [1,'Добрий день! Розумію. Є та сама рослинна група дешевше — покажу варіанти, рішення за вами.','23:15'],
+ [0,'А він так само подіє? Не хочу гірше.','23:16']];
+const mb=document.getElementById('msgs');
+MSG.forEach(([me,t,tm])=>{
+  const a=document.createElement('article'); a.className='message'+(me?' pharmacist':'');
+  if(!me){const av=document.createElement('div');av.className='avatar';av.textContent='К';a.append(av);}
+  const w=document.createElement('div');
+  const b=document.createElement('div'); b.className='bubble'; b.textContent=t;
+  const ti=document.createElement('time'); ti.textContent=tm;
+  w.append(b,ti); a.append(w); mb.append(a);
+});
+mb.scrollTop=mb.scrollHeight;
+
+draw(); legend(); apply();
+</script>
+</body>
+</html>

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<!-- ANC · острівець іконок · автономна збірка v1 (S58)
+     живе доки: анімації не перенесені в AE_WORK_index і не описані в SPEC 8.1
+     джерело: github.com/Konst-Andre/Grok_Animation
+       public/island-embed.html - розмітка, вбудований скрипт, 10 inline SVG
+       public/anc-island.css    - усі класи з префіксом anc-, без url() і @import
+     Зовнішніх бібліотек НЕМА. JS - 30 рядків у самому файлі.
+     Manrope знято: підставлено Montserrat (брендбук стор.13) з системним запасом. -->
+
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>АНЦ Island — мікроанімації</title>
+  <style>
+/* anc-island.css, інлайн */
+/* АНЦ island — drop-in micro-animations. Prefix: .anc- */
+
+.anc-island {
+  --anc-w: 56px;
+  --anc-pad: 6px;
+  --anc-btn: 44px;
+  --anc-btn-r: 12px;
+  --anc-r: 28px;
+  --anc-cap: #f6e8a4;
+  --anc-logo-yellow: #f0c400;
+  --anc-logo-blue: #1c4fa0;
+  --anc-icon: #a3a3a3;
+  --anc-icon-hover: #6e6e6e;
+  --anc-icon-active: #5f5c52;
+  --anc-bg: #ffffff;
+  --anc-line: #eceae4;
+  --anc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --anc-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --anc-shadow:
+    0 10px 28px rgba(48, 36, 12, 0.1),
+    0 2px 6px rgba(48, 36, 12, 0.05);
+
+  box-sizing: border-box;
+  width: var(--anc-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--anc-pad);
+  background: var(--anc-bg);
+  border-radius: var(--anc-r);
+  box-shadow: var(--anc-shadow);
+  font-family: Montserrat, "Segoe UI", sans-serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.anc-island *,
+.anc-island *::before,
+.anc-island *::after {
+  box-sizing: border-box;
+}
+
+.anc-island__cap {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  padding: 5px 0 6px;
+  margin-bottom: 4px;
+  background: var(--anc-cap);
+  border-radius: 22px;
+}
+
+.anc-island__logo {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: inherit;
+}
+
+.anc-island__logo:focus-visible,
+.anc-island__btn:focus-visible {
+  outline: 2px solid var(--anc-logo-blue);
+  outline-offset: 2px;
+}
+
+.anc-island__body,
+.anc-island__foot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.anc-island__rule {
+  width: 28px;
+  height: 0;
+  margin: 8px 0 6px;
+  border: 0;
+  border-top: 1px solid var(--anc-line);
+}
+
+.anc-island__btn {
+  width: var(--anc-btn);
+  height: var(--anc-btn);
+  padding: 0;
+  border: 0;
+  border-radius: var(--anc-btn-r);
+  background: transparent;
+  color: var(--anc-icon);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    background-color 180ms var(--anc-ease),
+    color 180ms var(--anc-ease),
+    transform 140ms ease-out;
+}
+
+.anc-island__btn:hover {
+  color: var(--anc-icon-hover);
+}
+
+.anc-island__btn:active {
+  transform: scale(0.96);
+}
+
+.anc-island__btn.is-active {
+  background: var(--anc-cap);
+  color: var(--anc-icon-active);
+}
+
+/* —— SVG stage —— */
+.anc-icon,
+.anc-logo {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+  display: block;
+}
+
+.anc-icon * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anc-logo {
+  width: 40px;
+  height: 40px;
+}
+
+.anc-logo__fill {
+  fill: var(--anc-logo-yellow);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anc-logo__ring {
+  fill: none;
+  stroke: var(--anc-logo-blue);
+  stroke-width: 2.35;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.anc-logo__letter {
+  fill: var(--anc-logo-blue);
+  font-family: Montserrat, "Segoe UI", sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Hidden internals at rest */
+.anc-icon--play .anc-icon__ripple {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0;
+}
+
+.anc-icon--file .anc-icon__line {
+  stroke-dasharray: 8;
+  stroke-dashoffset: 8;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.anc-icon--sparkle .anc-icon__glint {
+  opacity: 0;
+  transform: scale(0.2);
+}
+
+.anc-icon--chat .anc-icon__dot {
+  opacity: 0;
+  transform: translateY(0) scale(0.4);
+}
+
+.anc-icon--sun .anc-icon__crescent {
+  opacity: 0;
+  transform: scale(0.6);
+}
+
+.anc-icon--sun .anc-icon__core,
+.anc-icon--sun .anc-icon__rays {
+  opacity: 1;
+}
+
+.anc-icon--lock .anc-icon__shackle {
+  transform-origin: 7.4px 11.1px;
+  transform-box: view-box;
+}
+
+/* —— Hover (delicate, unique) —— */
+.anc-island__logo:hover .anc-logo__ring {
+  transform: scale(1.035);
+  transition: transform 220ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="grid"]:hover .anc-icon__sq--tl {
+  transform: translate(-1px, -1px);
+}
+.anc-island__btn[data-id="grid"]:hover .anc-icon__sq--tr {
+  transform: translate(1px, -1px);
+}
+.anc-island__btn[data-id="grid"]:hover .anc-icon__sq--bl {
+  transform: translate(-1px, 1px);
+}
+.anc-island__btn[data-id="grid"]:hover .anc-icon__sq--br {
+  transform: translate(1px, 1px);
+}
+.anc-island__btn[data-id="grid"] .anc-icon__sq {
+  transition: transform 220ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="play"]:hover .anc-icon__tri {
+  transform: translateX(1.2px);
+  transition: transform 220ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="file"]:hover .anc-icon__page {
+  transform: translateY(-1px);
+  transition: transform 220ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="cube"]:hover .anc-icon__cube {
+  transform: rotate(8deg);
+  transition: transform 280ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="sparkle"]:hover .anc-icon__star {
+  transform: rotate(18deg) scale(1.06);
+  transition: transform 280ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="chat"]:hover .anc-icon__bubble {
+  transform: translateY(-1.2px);
+  transition: transform 220ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="sun"]:hover .anc-icon__rays {
+  transform: rotate(22deg);
+  transition: transform 400ms var(--anc-ease);
+}
+
+.anc-island__btn[data-id="chart"]:hover .anc-icon__bar {
+  transform: scaleY(1.08);
+  transition: transform 220ms var(--anc-ease);
+}
+.anc-island__btn[data-id="chart"] .anc-icon__bar {
+  transform-origin: center bottom;
+}
+
+.anc-island__btn[data-id="lock"]:hover .anc-icon__shackle {
+  transform: translateY(-1.2px);
+  transition: transform 220ms var(--anc-ease);
+}
+
+/* Don't let hover fight playing animations */
+.anc-island__btn.is-playing:hover .anc-icon__sq,
+.anc-island__btn.is-playing:hover .anc-icon__tri,
+.anc-island__btn.is-playing:hover .anc-icon__page,
+.anc-island__btn.is-playing:hover .anc-icon__cube,
+.anc-island__btn.is-playing:hover .anc-icon__star,
+.anc-island__btn.is-playing:hover .anc-icon__bubble,
+.anc-island__btn.is-playing:hover .anc-icon__rays,
+.anc-island__btn.is-playing:hover .anc-icon__bar,
+.anc-island__btn.is-playing:hover .anc-icon__shackle {
+  transition: none;
+}
+
+/* —— Click animations —— */
+
+/* Logo */
+.anc-island__logo.is-playing .anc-logo__ring {
+  animation: anc-ring-spin 700ms var(--anc-ease) both;
+}
+.anc-island__logo.is-playing .anc-logo__fill {
+  animation: anc-core-pulse 700ms var(--anc-ease) both;
+}
+.anc-island__logo.is-playing .anc-logo__letter--1 {
+  animation: anc-letter-hop 520ms var(--anc-spring) 40ms both;
+}
+.anc-island__logo.is-playing .anc-logo__letter--2 {
+  animation: anc-letter-hop 520ms var(--anc-spring) 110ms both;
+}
+.anc-island__logo.is-playing .anc-logo__letter--3 {
+  animation: anc-letter-hop 520ms var(--anc-spring) 180ms both;
+}
+
+@keyframes anc-ring-spin {
+  0% { transform: rotate(0); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes anc-core-pulse {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(0.92); }
+  65% { transform: scale(1.05); }
+}
+@keyframes anc-letter-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-2.2px) scale(1.08); }
+}
+
+/* Grid */
+.anc-island__btn.is-playing[data-id="grid"] .anc-icon__sq--tl {
+  animation: anc-grid-pop 520ms var(--anc-spring) 0ms both;
+}
+.anc-island__btn.is-playing[data-id="grid"] .anc-icon__sq--tr {
+  animation: anc-grid-pop 520ms var(--anc-spring) 70ms both;
+}
+.anc-island__btn.is-playing[data-id="grid"] .anc-icon__sq--bl {
+  animation: anc-grid-pop 520ms var(--anc-spring) 140ms both;
+}
+.anc-island__btn.is-playing[data-id="grid"] .anc-icon__sq--br {
+  animation: anc-grid-pop 520ms var(--anc-spring) 210ms both;
+}
+@keyframes anc-grid-pop {
+  0% { transform: scale(1); }
+  32% { transform: scale(0.45); }
+  68% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+/* Play */
+.anc-island__btn.is-playing[data-id="play"] .anc-icon__tri {
+  animation: anc-play-nudge 520ms var(--anc-spring) both;
+}
+.anc-island__btn.is-playing[data-id="play"] .anc-icon__ripple {
+  animation: anc-play-ripple 520ms ease-out both;
+}
+@keyframes anc-play-nudge {
+  0% { transform: translateX(0) scale(1); }
+  28% { transform: translateX(-1px) scale(0.82); }
+  58% { transform: translateX(2.4px) scale(1.12); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes anc-play-ripple {
+  0% { opacity: 0.55; transform: scale(0.35); }
+  100% { opacity: 0; transform: scale(2.4); }
+}
+
+/* File */
+.anc-island__btn.is-playing[data-id="file"] .anc-icon__page {
+  animation: anc-file-tilt 580ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="file"] .anc-icon__fold {
+  animation: anc-file-fold 580ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="file"] .anc-icon__line {
+  animation: anc-file-write 480ms ease-out both;
+}
+.anc-island__btn.is-playing[data-id="file"] .anc-icon__line--2 {
+  animation-delay: 80ms;
+}
+.anc-island__btn.is-playing[data-id="file"] .anc-icon__line--3 {
+  animation-delay: 160ms;
+}
+@keyframes anc-file-tilt {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  40% { transform: rotate(-6deg) translateY(-1px); }
+}
+@keyframes anc-file-fold {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.15, 0.85) translate(0.4px, -0.4px); }
+}
+@keyframes anc-file-write {
+  0% { stroke-dashoffset: 8; opacity: 0.2; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+
+/* Cube */
+.anc-island__btn.is-playing[data-id="cube"] .anc-icon {
+  perspective: 80px;
+}
+.anc-island__btn.is-playing[data-id="cube"] .anc-icon__cube {
+  animation: anc-cube-spin 700ms var(--anc-ease) both;
+  transform-style: preserve-3d;
+}
+@keyframes anc-cube-spin {
+  0% { transform: rotateY(0deg) rotateX(0deg); }
+  55% { transform: rotateY(200deg) rotateX(16deg); }
+  100% { transform: rotateY(360deg) rotateX(0deg); }
+}
+
+/* Sparkle */
+.anc-island__btn.is-playing[data-id="sparkle"] .anc-icon__star {
+  animation: anc-spark-spin 640ms var(--anc-spring) both;
+}
+.anc-island__btn.is-playing[data-id="sparkle"] .anc-icon__glint--a {
+  animation: anc-glint-out 640ms ease-out both;
+}
+.anc-island__btn.is-playing[data-id="sparkle"] .anc-icon__glint--b {
+  animation: anc-glint-out 640ms ease-out 50ms both;
+}
+.anc-island__btn.is-playing[data-id="sparkle"] .anc-icon__glint--c {
+  animation: anc-glint-out 640ms ease-out 90ms both;
+}
+@keyframes anc-spark-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  42% { transform: rotate(90deg) scale(1.22); filter: brightness(1.15); }
+  100% { transform: rotate(180deg) scale(1); }
+}
+@keyframes anc-glint-out {
+  0% { opacity: 0; transform: scale(0.15) translate(0, 0); }
+  35% { opacity: 1; transform: scale(1.1) translate(1px, -2px); }
+  100% { opacity: 0; transform: scale(0.4) translate(4px, -6px); }
+}
+
+/* Chat */
+.anc-island__btn.is-playing[data-id="chat"] .anc-icon__bubble {
+  animation: anc-chat-talk 720ms var(--anc-spring) both;
+}
+.anc-island__btn.is-playing[data-id="chat"] .anc-icon__dot--1 {
+  animation: anc-chat-dot 720ms var(--anc-ease) 80ms both;
+}
+.anc-island__btn.is-playing[data-id="chat"] .anc-icon__dot--2 {
+  animation: anc-chat-dot 720ms var(--anc-ease) 180ms both;
+}
+.anc-island__btn.is-playing[data-id="chat"] .anc-icon__dot--3 {
+  animation: anc-chat-dot 720ms var(--anc-ease) 280ms both;
+}
+@keyframes anc-chat-talk {
+  0%, 100% { transform: scale(1); }
+  22% { transform: scale(0.9, 1.06); }
+  48% { transform: scale(1.08, 0.94); }
+  72% { transform: scale(0.98, 1.02); }
+}
+@keyframes anc-chat-dot {
+  0% { opacity: 0; transform: translateY(2px) scale(0.4); }
+  28% { opacity: 1; transform: translateY(-1.4px) scale(1); }
+  55% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(0) scale(0.5); }
+}
+
+/* Sun / moon */
+.anc-island__btn.is-playing[data-id="sun"] .anc-icon__rays {
+  animation: anc-sun-rays 640ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="sun"] .anc-icon__core {
+  animation: anc-sun-core 640ms var(--anc-ease) both;
+}
+
+.anc-island__btn.is-moon .anc-icon__rays {
+  opacity: 0;
+  transform: scale(0.4) rotate(90deg);
+}
+.anc-island__btn.is-moon .anc-icon__core {
+  opacity: 0;
+  transform: scale(0.4);
+}
+.anc-island__btn.is-moon .anc-icon__crescent {
+  opacity: 1;
+  transform: scale(1);
+}
+.anc-island__btn.is-moon:not(.is-playing) .anc-icon__rays,
+.anc-island__btn.is-moon:not(.is-playing) .anc-icon__core,
+.anc-island__btn.is-moon:not(.is-playing) .anc-icon__crescent {
+  transition:
+    opacity 280ms var(--anc-ease),
+    transform 280ms var(--anc-ease);
+}
+
+.anc-island__btn.is-playing[data-id="sun"].is-moon .anc-icon__rays {
+  animation: anc-sun-hide 640ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="sun"].is-moon .anc-icon__core {
+  animation: anc-sun-hide 480ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="sun"].is-moon .anc-icon__crescent {
+  animation: anc-moon-in 640ms var(--anc-spring) both;
+}
+.anc-island__btn.is-playing[data-id="sun"]:not(.is-moon) .anc-icon__crescent {
+  animation: anc-moon-out 400ms ease-in both;
+}
+
+@keyframes anc-sun-rays {
+  0% { transform: rotate(0) scale(1); }
+  100% { transform: rotate(180deg) scale(1); }
+}
+@keyframes anc-sun-core {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.18); }
+}
+@keyframes anc-sun-hide {
+  0% { opacity: 1; transform: rotate(0) scale(1); }
+  100% { opacity: 0; transform: rotate(120deg) scale(0.35); }
+}
+@keyframes anc-moon-in {
+  0% { opacity: 0; transform: rotate(-30deg) scale(0.5); }
+  100% { opacity: 1; transform: rotate(0) scale(1); }
+}
+@keyframes anc-moon-out {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
+/* Chart */
+.anc-island__btn.is-playing[data-id="chart"] .anc-icon__bar--1 {
+  animation: anc-bar-grow 620ms var(--anc-spring) 0ms both;
+}
+.anc-island__btn.is-playing[data-id="chart"] .anc-icon__bar--2 {
+  animation: anc-bar-grow 620ms var(--anc-spring) 90ms both;
+}
+.anc-island__btn.is-playing[data-id="chart"] .anc-icon__bar--3 {
+  animation: anc-bar-grow 620ms var(--anc-spring) 180ms both;
+}
+@keyframes anc-bar-grow {
+  0% { transform: scaleY(1); }
+  32% { transform: scaleY(0.12); }
+  72% { transform: scaleY(1.12); }
+  100% { transform: scaleY(1); }
+}
+
+/* Lock */
+.anc-island__btn.is-playing[data-id="lock"] .anc-icon__body {
+  animation: anc-lock-body 640ms var(--anc-ease) both;
+}
+
+.anc-island__btn.is-unlocked:not(.is-playing) .anc-icon__shackle {
+  transform: translateY(-2.4px) rotate(-42deg);
+  transition: transform 280ms var(--anc-ease);
+}
+
+.anc-island__btn.is-playing[data-id="lock"].is-unlocked .anc-icon__shackle {
+  animation: anc-lock-open 640ms var(--anc-ease) both;
+}
+.anc-island__btn.is-playing[data-id="lock"]:not(.is-unlocked) .anc-icon__shackle {
+  animation: anc-lock-close 640ms var(--anc-ease) both;
+}
+
+@keyframes anc-lock-open {
+  0% { transform: translateY(0) rotate(0deg); }
+  28% { transform: translateY(-2.6px) rotate(0deg); }
+  100% { transform: translateY(-2.4px) rotate(-42deg); }
+}
+@keyframes anc-lock-close {
+  0% { transform: translateY(-2.4px) rotate(-42deg); }
+  45% { transform: translateY(-2.6px) rotate(0deg); }
+  70% { transform: translateY(0.6px) rotate(0deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+@keyframes anc-lock-body {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(0.96, 1.04); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .anc-island__logo.is-playing .anc-logo__ring,
+  .anc-island__logo.is-playing .anc-logo__fill,
+  .anc-island__logo.is-playing .anc-logo__letter,
+  .anc-island__btn.is-playing .anc-icon * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .anc-island__btn,
+  .anc-island__logo {
+    transition: none;
+  }
+}
+
+</style>
+  <style>
+    :root {
+      --page: #fbf6ec;
+      --ink: #2a2a28;
+      --muted: #8a8678;
+      --navy: #1c4fa0;
+    }
+    html[data-theme="dusk"] {
+      --page: #1c1914;
+      --ink: #f4efe3;
+      --muted: #b7b09c;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: Montserrat, "Segoe UI", sans-serif;
+      background: var(--page);
+      color: var(--ink);
+      transition: background-color 400ms ease, color 400ms ease;
+    }
+    .stage {
+      min-height: 100svh;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      padding: 48px 24px;
+    }
+    .stage figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .stage figcaption {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hint {
+      position: fixed;
+      left: 24px;
+      bottom: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 280px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <figure>
+      <nav class="anc-island" data-variant="a" aria-label="Навігація АНЦ A">
+        <div class="anc-island__cap">
+          <button type="button" class="anc-island__logo" aria-label="АНЦ" data-id="logo"></button>
+        </div>
+        <div class="anc-island__body">
+          <button type="button" class="anc-island__btn" data-id="grid" aria-label="Каталог"></button>
+          <button type="button" class="anc-island__btn" data-id="file" aria-label="Документ"></button>
+          <button type="button" class="anc-island__btn" data-id="cube" aria-label="Товар"></button>
+          <button type="button" class="anc-island__btn" data-id="sparkle" aria-label="Акції"></button>
+          <button type="button" class="anc-island__btn" data-id="chat" aria-label="Чат"></button>
+          <button type="button" class="anc-island__btn" data-id="sun" aria-label="Тема"></button>
+        </div>
+        <div class="anc-island__foot">
+          <hr class="anc-island__rule" />
+          <button type="button" class="anc-island__btn" data-id="lock" aria-label="Кабінет"></button>
+        </div>
+      </nav>
+      <figcaption>Варіант A</figcaption>
+    </figure>
+
+    <figure>
+      <nav class="anc-island" data-variant="b" aria-label="Навігація АНЦ B">
+        <div class="anc-island__cap">
+          <button type="button" class="anc-island__logo" aria-label="АНЦ" data-id="logo"></button>
+        </div>
+        <div class="anc-island__body">
+          <button type="button" class="anc-island__btn is-active" data-id="play" aria-label="Відео"></button>
+          <button type="button" class="anc-island__btn" data-id="file" aria-label="Документ"></button>
+          <button type="button" class="anc-island__btn" data-id="cube" aria-label="Товар"></button>
+          <button type="button" class="anc-island__btn" data-id="chart" aria-label="Аналітика"></button>
+        </div>
+        <div class="anc-island__foot">
+          <hr class="anc-island__rule" />
+          <button type="button" class="anc-island__btn" data-id="lock" aria-label="Кабінет"></button>
+        </div>
+      </nav>
+      <figcaption>Варіант B</figcaption>
+    </figure>
+  </div>
+  <p class="hint">Клікніть іконку — програється мікроанімація. Сонце перемикає тему, замок відмикається.</p>
+
+  <script>
+    const ICONS = {
+      logo: `<svg class="anc-logo" viewBox="0 0 40 40" aria-hidden="true">
+        <circle class="anc-logo__fill" cx="20" cy="20" r="18.2"/>
+        <circle class="anc-logo__ring" cx="20" cy="20" r="18.2"/>
+        <text class="anc-logo__letter anc-logo__letter--1" x="8.3" y="24.3">А</text>
+        <text class="anc-logo__letter anc-logo__letter--2" x="16.35" y="24.3">Н</text>
+        <text class="anc-logo__letter anc-logo__letter--3" x="24.55" y="24.3">Ц</text>
+      </svg>`,
+      grid: `<svg class="anc-icon anc-icon--grid" viewBox="0 0 24 24" aria-hidden="true">
+        <rect class="anc-icon__sq anc-icon__sq--tl" x="3.2" y="3.2" width="7.2" height="7.2" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect class="anc-icon__sq anc-icon__sq--tr" x="13.6" y="3.2" width="7.2" height="7.2" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect class="anc-icon__sq anc-icon__sq--bl" x="3.2" y="13.6" width="7.2" height="7.2" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect class="anc-icon__sq anc-icon__sq--br" x="13.6" y="13.6" width="7.2" height="7.2" rx="1.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      play: `<svg class="anc-icon anc-icon--play" viewBox="0 0 24 24" aria-hidden="true">
+        <circle class="anc-icon__ripple" cx="12" cy="12" r="3"/>
+        <path class="anc-icon__tri" d="M9.2 7.1v9.8l8.4-4.9z" fill="currentColor"/>
+      </svg>`,
+      file: `<svg class="anc-icon anc-icon--file" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="anc-icon__page">
+          <path d="M14.2 3.2H7.2A2 2 0 0 0 5.2 5.2v13.6a2 2 0 0 0 2 2h9.6a2 2 0 0 0 2-2V8.4z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="anc-icon__fold" d="M14.2 3.2v5.2h5.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="anc-icon__line anc-icon__line--1" d="M8.4 13.1h7.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path class="anc-icon__line anc-icon__line--2" d="M8.4 16.2h7.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path class="anc-icon__line anc-icon__line--3" d="M8.4 19.2h4.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </g>
+      </svg>`,
+      cube: `<svg class="anc-icon anc-icon--cube" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="anc-icon__cube">
+          <path d="M12 3.2 20.2 7.6v8.8L12 20.8 3.8 16.4V7.6Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.8 7.6 12 12.1l8.2-4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 12.1v8.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </g>
+      </svg>`,
+      sparkle: `<svg class="anc-icon anc-icon--sparkle" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="anc-icon__star" d="M12 2.6 13.35 10.4 21.4 12 13.35 13.6 12 21.4 10.65 13.6 2.6 12 10.65 10.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="anc-icon__glint anc-icon__glint--a" d="M19.2 4.4 19.7 6.2 21.5 6.7 19.7 7.2 19.2 9 18.7 7.2 16.9 6.7 18.7 6.2Z" fill="currentColor"/>
+        <path class="anc-icon__glint anc-icon__glint--b" d="M4.6 16.2 5 17.6 6.4 18 5 18.4 4.6 19.8 4.2 18.4 2.8 18 4.2 17.6Z" fill="currentColor"/>
+        <path class="anc-icon__glint anc-icon__glint--c" d="M19.6 16.6 19.95 17.8 21.15 18.15 19.95 18.5 19.6 19.7 19.25 18.5 18.05 18.15 19.25 17.8Z" fill="currentColor"/>
+      </svg>`,
+      chat: `<svg class="anc-icon anc-icon--chat" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="anc-icon__bubble">
+          <path d="M5.2 5.4h13.6a2 2 0 0 1 2 2v8.1a2 2 0 0 1-2 2H9.1L5 20.6v-3.1h.2a2 2 0 0 1-2-2V7.4a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle class="anc-icon__dot anc-icon__dot--1" cx="8.6" cy="11.3" r="1.05" fill="currentColor"/>
+          <circle class="anc-icon__dot anc-icon__dot--2" cx="12" cy="11.3" r="1.05" fill="currentColor"/>
+          <circle class="anc-icon__dot anc-icon__dot--3" cx="15.4" cy="11.3" r="1.05" fill="currentColor"/>
+        </g>
+      </svg>`,
+      sun: `<svg class="anc-icon anc-icon--sun" viewBox="0 0 24 24" aria-hidden="true">
+        <g class="anc-icon__rays">
+          <path d="M12 2.8v2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M12 18.9v2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M4.86 4.86 6.5 6.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M17.5 17.5l1.64 1.64" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M2.8 12h2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M18.9 12h2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M4.86 19.14 6.5 17.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M17.5 6.5l1.64-1.64" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </g>
+        <circle class="anc-icon__core" cx="12" cy="12" r="4.05" fill="none" stroke="currentColor" stroke-width="1.7"/>
+        <path class="anc-icon__crescent" d="M12.2 8.15a3.9 3.9 0 1 0 3.65 5.55 3.15 3.15 0 0 1-3.65-5.55Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      chart: `<svg class="anc-icon anc-icon--chart" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="anc-icon__bar anc-icon__bar--1" d="M6 18.4V12.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <path class="anc-icon__bar anc-icon__bar--2" d="M12 18.4V6.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <path class="anc-icon__bar anc-icon__bar--3" d="M18 18.4V14.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <path class="anc-icon__base" d="M4.4 18.4h15.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>`,
+      lock: `<svg class="anc-icon anc-icon--lock" viewBox="0 0 24 24" aria-hidden="true">
+        <path class="anc-icon__shackle" d="M7.4 11.1V8.15a4.6 4.6 0 0 1 9.2 0V11.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        <rect class="anc-icon__body" x="5.2" y="11.1" width="13.6" height="9.5" rx="2.1" fill="none" stroke="currentColor" stroke-width="1.7"/>
+      </svg>`,
+    };
+
+    const PLAY_MS = {
+      logo: 720, grid: 580, play: 540, file: 600, cube: 720,
+      sparkle: 660, chat: 740, sun: 660, chart: 640, lock: 660,
+    };
+
+    document.querySelectorAll(".anc-island").forEach((island) => {
+      island.querySelectorAll("[data-id]").forEach((btn) => {
+        const id = btn.getAttribute("data-id");
+        btn.innerHTML = ICONS[id] || "";
+      });
+
+      let unlocked = false;
+      let moon = false;
+
+      island.querySelectorAll("[data-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+
+          if (id === "lock") {
+            unlocked = !unlocked;
+            btn.classList.toggle("is-unlocked", unlocked);
+          } else if (id === "sun") {
+            moon = !moon;
+            btn.classList.toggle("is-moon", moon);
+            document.documentElement.dataset.theme = moon ? "dusk" : "day";
+          } else if (id !== "logo") {
+            island.querySelectorAll(".anc-island__btn").forEach((other) => {
+              if (other.getAttribute("data-id") !== "lock") other.classList.remove("is-active");
+            });
+            btn.classList.add("is-active");
+          } else {
+            island.querySelectorAll(".anc-island__btn").forEach((other) => {
+              if (other.getAttribute("data-id") !== "lock") other.classList.remove("is-active");
+            });
+          }
+
+          btn.classList.remove("is-playing");
+          void btn.offsetWidth;
+          btn.classList.add("is-playing");
+          window.setTimeout(() => btn.classList.remove("is-playing"), PLAY_MS[id] || 700);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
