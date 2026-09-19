@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- AE-Simulator · D1 v3 · мокап A2 v2 (редактор сценаріїв) · живе доки: вирок D1 v3 не перенесено в продукт (D2) -->
+<title>AE · A2 v2 · мокап D1 v3</title>
+<style>
+:root{
+  --radius:14px; --r-md:12px;
+  --anc-yellow:#FFE241; --anc-yellow-50:#FFF0A0; --anc-yellow-25:#FFF8D0;
+  --anc-blue:#008ECC; --anc-blue-25:#BFE3F2; --anc-blue-10:#EEF8FC; --anc-canvas:#FFFEF6; --anc-plate:#FFFCEC;
+  --anc-text:#1C1E24; --anc-text-2:#4F4F4F; --anc-gray:#6E6E77; --anc-gray-light:#9B9CA1;
+  --anc-border:#E7E7E7; --anc-field:#D9D9DC; --anc-positive:#1E815D; --anc-positive-10:#E6F3EC;
+  --loss:#A8402B; --loss-10:#F7E3DE; --loss-5:#FDF4F2; --warn:#86610F; --warn-10:#FBF1DA;
+  --zf:#A0761B; --vtm:#0F6B4A; --bubble:#E7ECE8; --scrim:#1C1E2440;
+  --shadow:0 6px 22px #1C1E2410;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Inter","Segoe UI",-apple-system,system-ui,sans-serif;color:var(--anc-text);background:var(--anc-canvas);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+/* v2.1 · К10: жоден користувацький текст не має права розпирати сторінку */
+.wrap{overflow-wrap:anywhere;word-break:normal}
+
+/* ── рейка (спрощено, лише для масштабу) ── */
+.rail{position:fixed;left:0;top:50%;transform:translateY(-50%);width:210px;background:#fff;border:1px solid var(--anc-border);border-left:0;border-radius:0 18px 18px 0;box-shadow:var(--shadow);padding:18px 10px;z-index:5}
+.rail .brand{display:flex;gap:10px;align-items:center;padding:0 8px 14px;border-bottom:1px solid var(--anc-border)}
+.rail .logo{width:34px;height:34px;border-radius:50%;background:var(--anc-yellow);display:grid;place-items:center;font-weight:800;font-size:11px;color:var(--anc-blue)}
+.rail .brand b{display:block;font-size:14px}.rail .brand small{font-size:11px;color:var(--anc-gray)}
+.rail nav{display:grid;gap:2px;padding:10px 0}
+.rail nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--anc-gray);text-decoration:none;font-size:13px}
+.rail nav a.on{background:var(--anc-yellow-25);color:var(--anc-text);font-weight:700;box-shadow:inset 3px 0 0 var(--anc-blue)}
+
+/* ── сторінка ── */
+.page{padding:20px 20px 40px 234px;display:grid;grid-template-columns:300px minmax(0,1fr) 340px;gap:20px;align-items:start}
+.page>*{min-width:0}
+.panel{background:#fff;border:1px solid var(--anc-border);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+/* ── список ── */
+.scenario-list{position:sticky;top:20px;display:flex;flex-direction:column;max-height:calc(100vh - 40px);overflow:hidden}
+.list-tools{padding:16px;border-bottom:1px solid var(--anc-border);display:grid;gap:10px}
+.list-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.list-head h2{margin:0;font-size:16px}
+.health{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--anc-positive);font-weight:600}
+.health::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.search{width:100%;height:40px;padding:0 12px;border:1px solid var(--anc-field);border-radius:10px;background:#fff}
+.filter-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.icon-btn.grp-btn{display:inline-flex;align-items:center;gap:6px;width:auto;padding:0 12px;font-size:13px;font-weight:600;color:var(--anc-text-2)}
+.grp-btn svg{width:18px;height:18px;flex:none}
+.filter-row select{height:40px;padding:0 10px;border:1px solid var(--anc-field);border-radius:10px;background:#fff;min-width:0}
+/* М7: керування групами — квадратна кнопка-інструмент, не чип-фільтр */
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--anc-field);border-radius:10px;background:var(--anc-plate);font-size:16px;color:var(--anc-text-2)}
+.icon-btn:hover{border-color:var(--anc-blue);background:var(--anc-blue-10)}
+.new-btn{height:40px;border:1px dashed var(--anc-blue);border-radius:10px;background:var(--anc-blue-10);color:var(--anc-blue);font-weight:700}
+.scenario-items{overflow:auto;flex:1}
+.scenario-item{display:grid;grid-template-columns:26px minmax(0,1fr) 10px;align-items:center;gap:10px;width:100%;min-height:58px;padding:9px 15px;border:0;border-bottom:1px solid var(--anc-border);border-left:3px solid transparent;background:#fff;text-align:left}
+.scenario-item:hover,.scenario-item.active{border-left-color:var(--anc-blue);background:var(--anc-yellow-25)}
+/* М8: без колонки номера; назва — до двох рядків */
+.scenario-item b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;line-height:1.3}
+.scenario-item small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:3px;color:var(--anc-gray);font-size:11px;line-height:1.35}
+.sid{align-self:start;margin-top:1px;min-width:26px;height:20px;padding:0 5px;border-radius:10px;background:var(--anc-canvas);border:1px solid var(--anc-border);color:var(--anc-gray);font:600 11px/18px ui-monospace,Menlo,Consolas,monospace;text-align:center}
+.scenario-item.active .sid{border-color:var(--anc-blue);color:var(--anc-blue);background:#fff}
+.olya{font-style:normal;font-weight:700;color:var(--loss)}
+.scenario-item.del b{text-decoration:line-through;color:var(--anc-gray)}
+/* v3.5 · О10: нові — нагорі, синій акцент */
+.scenario-item.new{border-left-color:var(--anc-blue);background:var(--anc-blue-10)}
+.new-tag{font-style:normal;font-weight:700;color:var(--anc-blue)}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot.draft{background:var(--zf)} .dot.err{background:var(--loss)} .dot.warn{box-shadow:inset 0 0 0 2px var(--zf)}
+
+/* ── форма ── */
+.editor{min-width:0;container-type:inline-size}
+/* v3.1 · О6: суцільна плашка, ±8px у проміжок колонок (20px) — не заходить на список і прев'ю */
+.ed-head{position:sticky;top:0;z-index:3;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;margin:0 -8px 4px;padding:12px 8px 10px;background:var(--anc-canvas);box-shadow:0 10px 12px -12px #1C1E2430}
+.ed-meta{white-space:nowrap;display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;color:var(--anc-gray);font-weight:600}
+.grp-sel{height:30px;width:auto;max-width:180px;min-width:0;padding:0 8px;border:1px solid var(--anc-border);border-radius:8px;background:var(--anc-yellow-25);font-size:12px;font-weight:700;color:var(--anc-text-2)}
+.grp-sel.changed{border-color:#E2C36F;box-shadow:inset 3px 0 0 var(--anc-yellow)}
+/* М3/v2.7: назва редагується прямо в шапці */
+.title-in{grid-column:1 / -1;display:block;width:100%;min-width:0;margin-top:2px;padding:5px 10px;border:1px solid transparent;border-bottom:1px dashed var(--anc-field);border-radius:10px 10px 0 0;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 16 16' fill='none' stroke='%236E6E77' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.5 2.5l2 2L6 12l-3 1 1-3z'/%3E%3C/svg%3E") no-repeat left 9px top 13px;padding-left:36px;font-size:24px;line-height:1.3;font-weight:700;letter-spacing:-.01em;field-sizing:content;resize:none;min-height:44px;max-height:76px;overflow-y:auto}
+.title-in:hover{border-color:var(--anc-border);background:#fff}
+.title-in:hover,.title-in:focus{border-radius:10px}
+.title-in:focus{outline:none;border-color:var(--anc-blue);background:#fff;box-shadow:0 0 0 3px var(--anc-blue-25)}
+.title-in.changed{border-color:#E2C36F;background:#fff;box-shadow:inset 3px 0 0 var(--anc-yellow)}
+.title-in.bad{border-color:var(--loss);background:var(--loss-5)}
+.ed-actions{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.head-msg{grid-column:1 / -1;padding-left:10px}
+@container (max-width:760px){ .ed-head{grid-template-columns:1fr} .ed-actions{grid-column:1;grid-row:auto;justify-content:flex-start} }
+/* v3.4 · О4: «Буде видалено» — форма лише для читання, одна дія «Повернути» */
+.del-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 14px;padding:12px 14px;border:1px solid #E9B8AC;border-radius:12px;background:var(--loss-5);color:var(--loss);font-size:13px}
+.del-bar b{font-weight:700}
+.cards.gone,.pv-b.gone{opacity:.45;filter:grayscale(.6);pointer-events:none;user-select:none}
+/* v3.5 · О5: причина блоку публікації — видимий рядок у шапці */
+.pub-why[hidden]{display:none}
+.pub-why{grid-column:1 / -1;display:flex;align-items:center;gap:6px;min-width:0;padding:6px 10px;border-radius:9px;background:var(--loss-5);color:var(--loss);font-size:12.5px;white-space:nowrap;overflow:hidden}
+.pub-why>span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pub-why button{border:0;background:none;padding:0;color:var(--anc-blue);font:inherit;font-weight:700;text-decoration:underline;flex:none}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.ok{background:var(--anc-positive-10);color:var(--anc-positive)} .pill.draft{background:var(--warn-10);color:var(--warn)} .pill.err{background:var(--loss-10);color:var(--loss)} .pill.new{background:var(--anc-blue-10);color:var(--anc-blue)}
+.btn{min-height:40px;padding:0 16px;border-radius:var(--r-md);border:1px solid var(--anc-border);background:#fff;font-weight:600;white-space:nowrap}
+.btn.primary{background:var(--anc-yellow);border-color:#E8C800;color:var(--anc-text)}
+.btn.danger{color:var(--loss);border-color:transparent;background:transparent}
+.btn.danger.solid{background:var(--loss);border-color:var(--loss);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--anc-text-2)}
+/* ≤1600: перемикач «Форма / Як побачить фармацевт» (М1) */
+.seg{display:none;gap:4px;padding:3px;border:1px solid var(--anc-border);border-radius:10px;background:#fff;margin-bottom:12px;width:max-content}
+.seg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--anc-gray)}
+.seg button.on{background:var(--anc-yellow-25);color:var(--anc-text);box-shadow:inset 0 0 0 1px #E8C800}
+
+/* v3.1 · О3: два стоси (Клієнт·Товари / Ситуація·Рекомендації) + «Оцінка розмови» на всю ширину */
+.cards{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.stack{display:contents}
+.card.wide{grid-column:1 / -1}
+.eval{display:grid;grid-template-columns:minmax(0,1fr);gap:12px 24px;align-items:start}
+@container (max-width:699px){ .cards>.stack:first-child>.card:nth-child(2){order:2} .cards>.stack:last-child>.card:first-child{order:1} .cards>.stack:last-child>.card:last-child{order:3} .card.wide{order:4} }
+@container (min-width:700px){ .cards{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .stack{display:flex;flex-direction:column;gap:16px;min-width:0} .eval{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .eval .toggles{margin-top:22px} .eval{align-items:stretch} .eval>.f{margin-bottom:0;grid-template-rows:auto minmax(0,1fr)} .eval #f-goal{height:100%;max-height:none} }
+.card{padding:18px 20px 20px;min-width:0}
+.card h3{margin:0 0 14px;font-size:15px;display:flex;align-items:center;gap:8px}
+.card h3 .info{margin-left:auto}
+.card h3 .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--anc-yellow-25);font-size:14px}
+.f{display:grid;gap:6px;margin-bottom:12px;min-width:0}
+.f:last-child{margin-bottom:0}
+.f>label,.lab{font-size:12px;font-weight:600;color:var(--anc-text-2);display:flex;justify-content:space-between;gap:8px;min-height:18px}
+.lab .cnt{font-weight:500;color:var(--anc-gray-light)}
+.in{width:100%;min-width:0;padding:9px 12px;border:1px solid var(--anc-field);border-radius:10px;background:#fff;transition:border-color .15s,background .15s}
+/* М9: однакова висота для рядка й списку на будь-якій ОС */
+input.in,select.in{height:42px;padding-top:0;padding-bottom:0;-webkit-appearance:none;appearance:none}
+select.in{padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--anc-gray) 50%),linear-gradient(135deg,var(--anc-gray) 50%,transparent 50%);background-position:calc(100% - 16px) 18px,calc(100% - 11px) 18px;background-size:5px 5px;background-repeat:no-repeat}
+.in:focus{outline:none;border-color:var(--anc-blue);background-color:#fff;box-shadow:0 0 0 3px var(--anc-blue-25)}
+/* v3.2 · О9: єдиний м'який фокус замість чорної рамки браузера */
+.search:focus,.filter-row select:focus,.grp-sel:focus,.add-pos:focus,.chip.add:focus,.grow .in:focus{outline:none;border-color:var(--anc-blue);box-shadow:0 0 0 3px var(--anc-blue-25)}
+button:focus{outline:none}
+button:focus-visible,.tg input:focus-visible{outline:3px solid var(--anc-blue-25);outline-offset:2px}
+/* v3.2 · О2: поле росте під текст, після стелі — скрол (правило композера, harness :76) */
+textarea.in{field-sizing:content;resize:none;overflow-y:auto;min-height:70px;max-height:160px}
+textarea.in.line{min-height:42px;max-height:120px;padding-top:10px;padding-bottom:10px}
+.in.changed{border-color:#E2C36F;box-shadow:inset 3px 0 0 var(--anc-yellow)}
+.quote{position:relative}
+.quote .in{padding-left:30px;font-style:italic}
+.quote::before{content:"“";position:absolute;left:11px;top:4px;font-size:26px;color:var(--anc-blue);font-style:normal}
+.msg{font-size:12px;display:flex;gap:6px;align-items:flex-start}
+.msg.e{color:var(--loss)} .msg.w{color:var(--warn)}
+/* v3.3 · рядок номера під фразою: що зчитав рушій */
+.no-line{font-size:12px;color:var(--anc-gray);display:grid;gap:2px}
+.no-line b{color:var(--anc-text-2);font-variant-numeric:tabular-nums}
+.no-line .w{color:var(--warn)}
+.no-line:empty{display:none}
+.f.bad .in{border-color:var(--loss);background-color:var(--loss-5)}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 6px 0 10px;border:1px solid var(--anc-border);border-radius:8px;background:#fff;font-size:12.5px;max-width:100%}
+.chip button{border:0;background:none;width:20px;height:20px;border-radius:6px;color:var(--anc-gray)}
+.chip button:hover{background:var(--anc-border)}
+.chip.add{border-style:dashed;color:var(--anc-gray);padding:0 10px;background:transparent;height:30px}
+
+/* v2.5 · позиції рядками (К1, С4) */
+.rows{display:grid;gap:6px}
+.pos{display:grid;grid-template-columns:minmax(0,1fr) auto auto 26px;gap:8px;align-items:center;min-height:40px;padding:6px 6px 6px 10px;border:1px solid var(--anc-border);border-radius:10px;background:var(--anc-plate);font-size:13px}
+.pos.out{border-color:#E2C36F;background:var(--warn-10)}
+.pos.added{box-shadow:inset 3px 0 0 var(--anc-yellow)}
+.pos .v{color:var(--anc-gray);white-space:nowrap}
+.pos .x{border:0;background:none;width:26px;height:26px;border-radius:7px;color:var(--anc-gray)}
+.pos .x:hover{background:var(--anc-border);color:var(--loss)}
+.mark{font-size:10.5px;font-weight:800;letter-spacing:.05em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.mark.ВТМ{color:var(--vtm);background:var(--anc-positive-10)} .mark.ЗФ{color:var(--zf);background:var(--warn-10)} .mark.none{color:var(--anc-gray-light);background:var(--anc-canvas)}
+.add-pos{height:36px;border:1px dashed var(--anc-field);border-radius:10px;background:transparent;color:var(--anc-blue);font-weight:600;font-size:13px;padding:0 10px;width:100%}
+.sum{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--anc-gray);padding:2px 2px 0}
+.sum b{color:var(--anc-text);font-size:15px}
+.set{border:1px solid var(--anc-border);border-radius:12px;padding:12px;display:grid;gap:8px;margin-bottom:12px}
+.set-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.set-h .k{font-size:12px;font-weight:800;letter-spacing:.04em}
+.set.vtm .set-h .k{color:var(--vtm)} .set.zf .set-h .k{color:var(--zf)}
+.now{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;background:var(--anc-blue-10);color:var(--anc-blue)}
+.sets.muted .set{opacity:.55}
+.toggles{display:grid;gap:10px;margin-top:4px}
+.tg{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:start;font-size:13px}
+.tg input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--anc-blue)}
+.tgw{display:flex;align-items:start;gap:6px}
+.tgw .tg{flex:1;min-width:0}
+.info{flex:none;width:20px;height:20px;padding:0;border:1px solid var(--anc-field);border-radius:50%;background:#fff;color:var(--anc-gray);font:italic 700 12px/18px Georgia,serif;cursor:pointer}
+.info:hover,.info[aria-expanded=true]{border-color:var(--anc-blue);color:var(--anc-blue)}
+.tip{position:fixed;inset:auto;margin:0;max-width:300px;padding:10px 12px;border:1px solid var(--anc-border);border-radius:10px;background:#fff;box-shadow:0 8px 24px #1C1E2429;font-size:12.5px;line-height:1.45;color:var(--anc-text-2)}
+.tip b{display:block;margin-bottom:4px;color:var(--anc-text)}
+
+/* ── прев'ю ── */
+.pv{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;min-width:0}
+.pv-h{padding:14px 16px 10px;border-bottom:1px solid var(--anc-border)}
+.pv-h b{font-size:14px}.pv-h small{display:block;font-size:11.5px;color:var(--anc-gray)}
+.pv-b{padding:14px 16px 16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.pv-b>*{min-width:0}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.badge.grp{display:inline-block;vertical-align:middle;margin-left:6px;background:var(--anc-yellow-25);color:var(--anc-text-2);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv h4{margin:0;font-size:18px;line-height:1.25}
+.who{display:grid;grid-template-columns:40px minmax(0,1fr);gap:10px;align-items:center}
+.ava{width:40px;height:40px;border-radius:50%;background:var(--anc-blue-25);display:grid;place-items:center;font-weight:800;color:var(--anc-blue)}
+.who b{display:block;font-size:13.5px}.who span{font-size:12px;color:var(--anc-gray)}
+.mood{font-size:12.5px;color:var(--anc-text-2);font-style:italic;padding-left:10px;border-left:2px solid var(--anc-border)}
+.sit{font-size:12px;color:var(--anc-gray)}
+.bubble{background:var(--bubble);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:13.5px}
+.sec{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--anc-gray-light);text-transform:uppercase}
+.sep{display:flex;align-items:center;gap:8px;margin-top:4px}
+.sep::after{content:"";flex:1;height:1px;background:var(--anc-border)}
+.pv .pos .cat{color:var(--anc-gray);font-size:11.5px;text-align:right}
+.pv .pos{grid-template-columns:minmax(0,1fr) auto;font-size:12.5px;min-height:34px;padding:6px 10px}
+.pv .hintbox{border:1px dashed var(--anc-positive);border-radius:10px;padding:8px 10px;display:grid;gap:10px;background:#fff}
+.hset{display:grid;gap:4px}
+.hset-h{font-size:12px;color:var(--anc-gray)} .hset-h b{color:var(--vtm)} .hset.zf .hset-h b{color:var(--zf)}
+.pot{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 10px;border-radius:10px;background:var(--anc-positive-10)}
+.pot small{font-size:11.5px;color:var(--anc-gray)} .pot b{font-size:15px;color:var(--anc-positive)}
+.goal{font-size:12.5px;color:var(--anc-text-2)}
+.empty{font-size:12.5px;color:var(--anc-gray-light)}
+
+/* ── діалоги ── */
+dialog{border:0;border-radius:var(--radius);padding:0;width:min(460px,92vw);box-shadow:0 20px 60px var(--scrim)}
+dialog::backdrop{background:var(--scrim)}
+.dg-h{padding:16px 18px;border-bottom:1px solid var(--anc-border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.dg-h b{font-size:16px}.dg-h small{display:block;font-size:12px;color:var(--anc-gray);font-weight:400}
+.dg-b{padding:12px 18px;display:grid;gap:8px;max-height:60vh;overflow:auto}
+.grow{display:grid;grid-template-columns:minmax(0,1fr) 96px 34px;gap:8px;align-items:center}
+.grow small{color:var(--anc-gray);font-size:12px;white-space:nowrap;text-align:right}
+.grow .x{width:34px;height:34px;border:0;border-radius:8px;background:none;color:var(--anc-gray)}
+.grow .x:disabled{opacity:.3;cursor:default}
+.grow .x:not(:disabled):hover{background:var(--loss-10);color:var(--loss)}
+.gmsg{grid-column:1/-1;margin-top:-4px}
+.dg-f{padding:12px 18px 16px;display:flex;gap:8px;justify-content:space-between;border-top:1px solid var(--anc-border)}
+.dg-f .r{display:flex;gap:8px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--anc-text);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9;max-width:80vw}
+.toast.on{opacity:1}
+
+@media (max-width:1600px){
+  .page{grid-template-columns:280px minmax(0,1fr)}
+  .seg{display:flex}
+  .scenario-list{grid-row:1 / span 2}
+  .pv{grid-column:2;grid-row:2;position:static;max-height:none;max-width:420px}
+  .page[data-view=form] .pv{display:none}
+  .page[data-view=pv] .editor .cards{display:none}
+  .page{grid-template-rows:auto 1fr} .page[data-view=pv]{row-gap:0}
+  .pv-h{display:none}
+}
+</style>
+</head>
+<body>
+<aside class="rail" aria-label="Навігація (спрощено для масштабу)">
+  <div class="brand"><div class="logo">АНЦ</div><div><b>Тренажер</b><small>Навчання фармацевтів</small></div></div>
+  <nav><a>Дашборд</a><a class="on">Сценарії</a><a>Каталог</a><a>AI / Моделі</a><a>Промпти</a><a>Система</a></nav>
+</aside>
+
+<main class="page" id="page" data-view="form">
+  <section class="panel scenario-list" aria-label="Сценарії">
+    <div class="list-tools">
+      <div class="list-head"><h2>Сценарії</h2><span class="health" id="health"></span></div>
+      <input class="search" id="q" type="search" placeholder="Пошук за назвою">
+      <div class="filter-row">
+        <select id="gf" aria-label="Фільтр за групою"></select>
+        <button class="icon-btn grp-btn" id="mg" title="Керувати групами: створити, перейменувати, видалити" aria-label="Керувати групами"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>Групи</button>
+      </div>
+      <button class="new-btn" id="newSc">+ Новий сценарій</button>
+    </div>
+    <div class="scenario-items" id="items"></div>
+  </section>
+
+  <section class="editor" id="editor"></section>
+
+  <aside class="panel pv" aria-label="Як побачить фармацевт">
+    <div class="pv-h"><b>Як побачить фармацевт</b><small>Оновлюється, поки ви пишете</small></div>
+    <div class="pv-b" id="pv"></div>
+  </aside>
+</main>
+
+<dialog id="dg" aria-labelledby="dgt">
+  <div class="dg-h"><div><b id="dgt">Групи сценаріїв</b><small>Зміни потраплять у чернетку — їх можна скасувати</small></div><button class="btn ghost" data-dgcancel aria-label="Закрити">✕</button></div>
+  <div class="dg-b" id="dgb"></div>
+  <div class="dg-f"><button class="btn" id="dgAdd">+ Нова група</button><div class="r"><button class="btn ghost" data-dgcancel>Скасувати</button><button class="btn primary" id="dgApply">Застосувати</button></div></div>
+</dialog>
+<dialog id="dc" aria-labelledby="dct">
+  <div class="dg-h"><b id="dct"></b></div>
+  <div class="dg-b"><p id="dcp" style="margin:0" class="wrap"></p></div>
+  <div class="dg-f"><span></span><div class="r"><button class="btn ghost" id="dcNo">Скасувати</button><button class="btn danger solid" id="dcYes"></button></div></div>
+</dialog>
+<div class="toast" id="toast"></div>
+
+<script>
+const D = /*DATA*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = v => (v==null ? '—' : Number(v).toLocaleString('uk-UA',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₴');
+const plural = (n,a,b,c) => n+' '+(n%10===1&&n%100!==11?a:[2,3,4].includes(n%10)&&![12,13,14].includes(n%100)?b:c);
+const ITEM = {}; for (const [k,v] of Object.entries(D.cats)) for (const i of v.items) ITEM[i.c] = {...i, cat:k};
+const bonus = cs => cs.reduce((s,c)=>s+(ITEM[c]?.b||0),0);
+const markOf = c => { const k=ITEM[c]?.k; return k==='ВТМ'||k==='ЗФ' ? k : 'none'; };
+const markLab = c => { const k=ITEM[c]?.k; return k==='ВТМ'||k==='ЗФ' ? k : '—'; };
+const toast = t => { const e=$('#toast'); e.textContent=t; e.classList.add('on'); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove('on'),2400); };
+/* В-95: у коді bm / правило stm; на екрані Олі — «ЗФ» */
+const RULE = D.rule==='stm' ? 'bm' : 'bv';
+const SETS = [{k:'bv', cls:'vtm', lab:'ВТМ', long:'власна марка мережі'}, {k:'bm', cls:'zf', lab:'ЗФ', long:'золота фішка'}];
+const FIELDS = ['title','grp','who','character','mood','mode','open','cats','order','bv','bm','goal','trap','noSale','hint'];
+
+/* ── стан: опубліковане (pub) + чернетка (draft) + нові/видалені ── */
+const st = { pub:{}, draft:{}, del:{}, created:{}, extraGroups:[], sel:null, grp:'', q:'', view:'form' };
+for (const s of D.scenarios) st.pub[s.id] = JSON.parse(JSON.stringify(s));
+st.sel = String(D.scenarios.find(s=>s.no===4417)?.id ?? D.scenarios[0].id);
+
+const ids = () => Object.keys(st.pub).concat(Object.keys(st.created)).filter((v,i,a)=>a.indexOf(v)===i);
+const base = id => st.pub[id] || st.created[id];
+/* v3.3 · В-101: номер замовлення не окреме поле — він живе в першій фразі клієнта.
+   Беремо 4 цифри або 4 слова-цифри через дефіс («Чотири-чотири-один-сім»). На даних S75 — 43/43. */
+const DIG = {'нуль':0,'один':1,'одна':1,'два':2,'дві':2,'три':3,'чотири':4,"п'ять":5,'шість':6,'сім':7,'сьомий':7,'вісім':8,"дев'ять":9};
+function noOf(open){
+  const o = String(open||'').toLowerCase().replace(/[’ʼ]/g,"'"); const f=[];
+  for (const m of o.matchAll(/(?<![\d,.])\d{4}(?!\d)/g)) f.push(+m[0]);
+  for (const m of o.matchAll(/(?:[а-яіїєґ']+-){3}[а-яіїєґ']+/g)){ const p=m[0].split('-'); if(p.every(x=>x in DIG)) f.push(+p.map(x=>DIG[x]).join('')); }
+  return { no: f[0] ?? null, many: new Set(f).size > 1 };
+}
+const cur = id => { const s={...base(id), ...(st.draft[id]||{})}; s.no = noOf(s.open).no; return s; };
+const changes = id => st.created[id] ? ['новий'] : Object.keys(st.draft[id]||{}).filter(k => JSON.stringify(st.draft[id][k]) !== JSON.stringify(base(id)[k] ?? (['trap','noSale','hint'].includes(k)?false:undefined)));
+const dirtyIds = () => ids().filter(id => st.del[id] || changes(id).length);
+/* В-96: main — перша обрана категорія, у формі поля немає */
+const withMain = s => ({...s, main: s.cats[0] || ''});
+const groupsNow = () => { const g=[]; for (const id of ids()) if(!st.del[id]){ const x=cur(id).grp; if(x && !g.includes(x)) g.push(x); } for (const x of st.extraGroups) if(!g.includes(x)) g.push(x);
+  /* В-112 · порядок груп — за абеткою скрізь; локаль uk, інакше Є та І їдуть у хвіст */
+  return g.sort((a,b)=>a.localeCompare(b,'uk')); };
+
+/* v2.6 · перевірки з ae_rules.js біля поля: E — блокує публікацію, W — ні */
+function checks(s){
+  const out=[]; const req={title:'назву сценарію', who:'хто прийшов', mood:'настрій', mode:'обставини', open:'першу фразу клієнта', grp:'групу'};
+  for (const [f,t] of Object.entries(req)) if(!String(s[f]||'').trim()) out.push({f, lvl:'e', m:'Заповніть '+t});
+  if(!s.cats.length) out.push({f:'cats', lvl:'e', m:'Оберіть хоча б одну категорію — з неї береться асортимент'});
+  const pool = new Set(s.cats.flatMap(k=>D.cats[k].items.map(i=>i.c)));
+  for (const f of ['order','bv','bm']) for (const c of s[f]) if(!pool.has(c)) out.push({f, c, lvl:'w', m:'«'+(ITEM[c]?.n||c)+'» не з категорій сценарію — клієнт його не побачить'});
+  if(!s.noSale) for (const set of SETS) if(!s[set.k].length) out.push({f:set.k, lvl:'w', m:'Немає ідеального набору '+set.lab});
+  return out;
+}
+const errs = s => checks(s).filter(x=>x.lvl==='e');
+
+function set(k, v){
+  const id=st.sel; (st.draft[id] ||= {})[k]=v;
+  if(!st.created[id] && JSON.stringify(v)===JSON.stringify(base(id)[k] ?? (['trap','noSale','hint'].includes(k)?false:undefined))) delete st.draft[id][k];
+  if(st.created[id]) { st.created[id][k]=v; delete st.draft[id][k]; }
+  pruneGroups(); paint();
+}
+function pruneGroups(){ const used=new Set(ids().filter(i=>!st.del[i]).map(i=>cur(i).grp)); st.extraGroups = st.extraGroups.filter(g=>!used.has(g) && st._keepEmpty?.includes(g)); }
+
+/* ── список ── */
+function drawList(){
+  const all = ids().filter(id=>!st.del[id] || true);
+  const live = ids().filter(id=>!st.del[id]);
+  $('#health').textContent = plural(live.length,'сценарій','сценарії','сценаріїв');
+  const G = groupsNow();
+  if (st.grp && !G.includes(st.grp)) st.grp='';
+  $('#gf').innerHTML = `<option value="">Усі групи · ${live.length}</option>` + G.map(g=>`<option value="${esc(g)}" ${g===st.grp?'selected':''}>${esc(g)} · ${live.filter(id=>cur(id).grp===g).length}</option>`).join('');
+  const q = st.q.trim().toLowerCase();
+  const rows = all.slice().sort((a,b)=>(!!st.created[b]-!!st.created[a]) || (st.created[a]&&st.created[b] ? b-a : 0)).filter(id => { const s=cur(id); return (!st.grp||s.grp===st.grp) && (!q || s.title.toLowerCase().includes(q) || String(id)===q); });
+  $('#items').innerHTML = rows.map(id => {
+    const s=cur(id), ch=changes(id).length||st.del[id], e=errs(s).length, w=checks(s).length-e;
+    const mark = e ? 'err' : ch ? 'draft' : w ? 'warn' : '';
+    const tip = st.del[id]?'Буде видалено після публікації':e?'Є проблема':ch?'Є неопубліковані зміни':w?'Є попередження':'';
+    return `<button class="scenario-item ${id===st.sel?'active':''} ${st.del[id]?'del':''} ${st.created[id]?'new':''}" data-id="${id}">
+      <span class="sid" title="ID сценарію в коді">${id}</span><span><b class="wrap">${esc(s.title||'Без назви')}</b><small>${st.created[id]?'<em class="new-tag">Новий · не опубліковано</em>':(s.trap?'<em class="olya">пастка</em> · ':'')+(s.noSale?'<em class="olya">не міняти чек</em> · ':'')+esc(s.grp)+' · '+esc(s.character)}</small></span>
+      <span class="dot ${mark}" title="${tip}"></span></button>`;
+  }).join('') || '<p style="padding:16px;color:var(--anc-gray)">Нічого не знайдено</p>';
+}
+
+/* ── форма ── */
+function posRows(s, k, showBonus){
+  const pool = new Set(s.cats.flatMap(c=>D.cats[c].items.map(i=>i.c)));
+  const added = new Set(s[k].filter(c=>!(base(st.sel)[k]||[]).includes(c)));
+  return s[k].map((c,i) => `<div class="pos ${pool.has(c)?'':'out'} ${added.has(c)?'added':''}" title="${pool.has(c)?'':'Не з категорій сценарію'}">
+      <span class="wrap">${esc(ITEM[c]?.n||c)}</span><span class="mark ${markOf(c)}">${markLab(c)}</span>
+      <span class="v num">${showBonus ? '+'+money(ITEM[c]?.b) : money(ITEM[c]?.p)}</span>
+      <button class="x" data-rm="${k}" data-i="${i}" aria-label="Прибрати позицію">✕</button></div>`).join('');
+}
+function addSel(s, k){
+  const opts = s.cats.flatMap(c => D.cats[c].items.filter(i=>!s[k].includes(i.c)).map(i=>`<option value="${i.c}">${esc(i.n)} · ${i.k==='ВТМ'||i.k==='ЗФ'?i.k:'—'} · +${money(i.b)}</option>`));
+  return `<select class="add-pos" data-add="${k}" ${opts.length?'':'disabled'} aria-label="Додати позицію"><option value="" hidden>${s.cats.length ? (opts.length?'+ Додати позицію':'Усі позиції категорій уже додано') : 'Спершу оберіть категорію'}</option>${opts.join('')}</select>`;
+}
+const msgs = (s,f) => checks(s).filter(x=>x.f===f && !x.c).map(x=>`<div class="msg ${x.lvl}">${x.lvl==='e'?'✕':'⚠'} <span>${esc(x.m)}</span></div>`).join('');
+
+function drawEditor(){
+  const id=st.sel, s = cur(id);
+  const catChips = s.cats.map(c => `<span class="chip">${esc(D.cats[c].label)}<button data-rmcat="${c}" aria-label="Прибрати категорію">✕</button></span>`).join('');
+  const catAdd = Object.entries(D.cats).filter(([k])=>!s.cats.includes(k)).map(([k,v])=>`<option value="${k}">${esc(v.label)}</option>`).join('');
+  const G = groupsNow();
+  const setBlock = set => { const sum=bonus(s[set.k]), delta=sum-bonus(s.order);
+    return `<div class="set ${set.cls}" data-set="${set.k}">
+      <div class="set-h"><span class="k">ІДЕАЛЬНИЙ НАБІР · ${set.lab}</span><small style="color:var(--anc-gray)">${set.long}</small>${set.k===RULE?'<span class="now">діє зараз у мережі</span>':''}</div>
+      <div class="rows">${posRows(s,set.k,true)}</div>${addSel(s,set.k)}
+      <div class="sum"><span>Бонус набору <b class="num">${money(sum)}</b></span><span>до замовлення <b class="num" style="color:${delta>0?'var(--anc-positive)':'var(--anc-text)'}">${delta>=0?'+':''}${money(delta)}</b></span></div>
+      ${msgs(s,set.k)}${checks(s).filter(x=>x.f===set.k&&x.c).length?'<div class="msg w">⚠ <span>Позиції з жовтим тлом — не з категорій сценарію</span></div>':''}
+    </div>`; };
+
+  $('#editor').innerHTML = `
+  <div class="ed-head">
+    <div class="ed-meta"><label for="f-grp">Група</label>
+      <select class="grp-sel" id="f-grp">${G.map(g=>`<option ${g===s.grp?'selected':''}>${esc(g)}</option>`).join('')}<option value="__new">+ Нова група…</option></select><span id="state"></span></div>
+    <div class="ed-actions">
+      ${st.del[id] ? '' : `<button class="btn danger" id="delSc">Видалити</button>
+      <button class="btn" id="undo">Скасувати</button>`}
+      <button class="btn primary" id="pub">Опублікувати</button></div>
+    <textarea class="title-in" id="f-title" data-k="title" rows="1" aria-label="Назва сценарію" placeholder="Назва сценарію" ${st.del[id]?'readonly':''}>${esc(s.title)}</textarea>
+    <div class="head-msg" id="m-title"></div>
+    <div class="pub-why" id="m-pub" hidden></div>
+  </div>
+  ${st.del[id] ? `<div class="del-bar" role="status"><span><b>Сценарій буде видалено під час публікації.</b> Ваші правки збережено — «Повернути» відновить і сценарій, і правки.</span><button class="btn" id="delBack">Повернути</button></div>` : ''}
+  <div class="seg" role="tablist"><button data-view="form" class="${st.view==='form'?'on':''}">Форма</button><button data-view="pv" class="${st.view==='pv'?'on':''}">Як побачить фармацевт</button></div>
+  <div class="cards ${st.del[id]?'gone':''}" ${st.del[id]?'inert':''}>
+   <div class="stack">
+    <div class="panel card">
+      <h3><span class="ic">👤</span>Клієнт</h3>
+      <div class="f"><label for="f-who">Хто прийшов</label><textarea class="in line" id="f-who" data-k="who" rows="1">${esc(s.who)}</textarea><span data-m="who"></span></div>
+      <div class="f"><div class="lab"><label for="f-ch">Характер</label><button type="button" class="info" popovertarget="i-char" aria-label="Звідки характери" aria-expanded="false">i</button></div><div class="tip" id="i-char" popover><b>Характер</b>Як клієнт поводиться в розмові: що його відкриває, на що закривається. Обирається з 9 готових. Суддя знає, де з таким клієнтом найчастіше помиляються. Змінити опис — розділ «Промпти».</div><select class="in" id="f-ch" data-k="character">${D.chars.map(c=>`<option ${c===s.character?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+      <div class="f"><div class="lab"><label for="f-mood">Настрій</label><span class="cnt" id="cnt"></span></div><textarea class="in" id="f-mood" data-k="mood" rows="2">${esc(s.mood)}</textarea><span data-m="mood"></span></div>
+    </div>
+    <div class="panel card">
+      <h3><span class="ic">🧾</span>Товари<button type="button" class="info" popovertarget="i-goods" aria-label="Звідки товари" aria-expanded="false">i</button></h3><div class="tip" id="i-goods" popover><b>Товари</b>Категорії й позиції тут не створюються — ви обираєте з готового Каталогу. Нова категорія, позиція чи ціна — розділ «Каталог».</div>
+      <div class="f"><span class="lab" title="Звідси клієнт і фармацевт беруть асортимент">Категорії сценарію</span>
+        <div class="chips">${catChips}<select class="chip add" id="addcat" aria-label="Додати категорію"><option value="" hidden>+ Додати</option>${catAdd}</select></div>${msgs(s,'cats')}</div>
+      <div class="f"><span class="lab">Клієнт просить <span class="cnt num">${s.order.length?'разом '+money(s.order.reduce((a,c)=>a+(ITEM[c]?.p||0),0)):''}</span></span>
+        <div class="rows">${posRows(s,'order',false) || '<span class="empty">Клієнт нічого не називає — вільний вибір</span>'}</div>${addSel(s,'order')}
+        <div class="sum"><span>Бонус замовлення</span><b class="num">${money(bonus(s.order))}</b></div></div>
+    </div>
+   </div>
+   <div class="stack">
+    <div class="panel card">
+      <h3><span class="ic">💬</span>Ситуація</h3>
+      <div class="f"><label for="f-mode">Обставини</label><textarea class="in line" id="f-mode" data-k="mode" rows="1">${esc(s.mode)}</textarea><span data-m="mode"></span></div>
+      <div class="f"><label for="f-open">Перша фраза клієнта</label><div class="quote"><textarea class="in" id="f-open" data-k="open" rows="3">${esc(s.open)}</textarea></div><span data-m="open"></span><div class="no-line" id="m-no"></div></div>
+    </div>
+    <div class="panel card">
+      <h3><span class="ic">⭐</span>Рекомендації<button type="button" class="info" popovertarget="i-recs" aria-label="Звідки рекомендації" aria-expanded="false">i</button></h3><div class="tip" id="i-recs" popover><b>Рекомендації</b>Обираєте з позицій категорій цього сценарію (картка «Товари»). ${RULE==='bv'?'ВТМ':'ЗФ'} — найкращий набір, ${RULE==='bv'?'ЗФ':'ВТМ'} — теж добрий. Орієнтир у гривнях фармацевт бачить за ${RULE==='bv'?'ВТМ':'ЗФ'}. Бракує позиції — додайте її в «Каталозі».</div>
+      <div class="sets ${s.noSale?'muted':''}">${SETS.map(setBlock).join('')}</div>
+    </div>
+   </div>
+    <div class="panel card wide">
+      <h3><span class="ic">🎯</span>Оцінка розмови</h3>
+      <div class="eval">
+      <div class="f"><div class="lab"><label for="f-goal">Мета розмови</label><button type="button" class="info" popovertarget="i-goal" aria-label="Хто бачить мету розмови" aria-expanded="false">i</button></div><div class="tip" id="i-goal" popover><b>Мета розмови</b>Фармацевт бачить це до розмови — не пишіть сюди правильну відповідь.</div><textarea class="in" id="f-goal" data-k="goal" rows="3">${esc(s.goal)}</textarea></div>
+      <div class="toggles">
+        <div class="tgw"><label class="tg"><input type="checkbox" data-k="trap" ${s.trap?'checked':''}><span>Пастка</span></label><button type="button" class="info" popovertarget="i-trap" aria-label="Що таке «Пастка»" aria-expanded="false">i</button><div class="tip" id="i-trap" popover><b>Пастка</b>Сценарій, де найлегше помилитися: клієнт підштовхує до типової помилки свого характеру. У кожну «Зміну» потрапляє один такий або «Не міняти чек». Як зробити: оберіть характер, що провокує, і ситуацію, де очевидна дія хибна. Фармацевт цієї позначки не бачить.</div></div>
+        <div class="tgw"><label class="tg"><input type="checkbox" data-k="noSale" ${s.noSale?'checked':''}><span>Не міняти чек</span></label><button type="button" class="info" popovertarget="i-noSale" aria-label="Що таке «Не міняти чек»" aria-expanded="false">i</button><div class="tip" id="i-noSale" popover><b>Не міняти чек</b>Правильна дія — лишити замовлення як є. Суддя вважає помилкою будь-яку заміну; приріст тут не мета. Фармацевт цієї позначки не бачить.</div></div>
+        <div class="tgw"><label class="tg"><input type="checkbox" data-k="hint" ${s.hint?'checked':''}><span>Підказка фармацевту до розмови</span></label><button type="button" class="info" popovertarget="i-hint" aria-label="Що таке «Підказка фармацевту до розмови»" aria-expanded="false">i</button><div class="tip" id="i-hint" popover><b>Підказка фармацевту до розмови</b>Без підказки фармацевт бачить лише орієнтир у гривнях. З підказкою — ще й обидва набори до першої фрази.</div></div>
+      </div>
+      </div>
+    </div>
+  </div>`;
+  paint();
+}
+
+/* ── живе: стан, позначки, перевірки, прев'ю ── */
+function paint(){
+  const id=st.sel, s=cur(id), ch=changes(id), e=errs(s), dirty=dirtyIds();
+  const blockers = dirty.filter(i=>!st.del[i] && errs(cur(i)).length);
+  $('#state').innerHTML = st.del[id] ? `<span class="pill err">Буде видалено</span>`
+    : e.length ? `<span class="pill err">Є проблема</span>`
+    : st.created[id] ? `<span class="pill new">Новий · не опубліковано</span>`
+    : ch.length ? `<span class="pill draft">Чернетка · ${plural(ch.length,'зміна','зміни','змін')}</span>`
+    : `<span class="pill ok">Опубліковано</span>`;
+  const pub=$('#pub'); pub.disabled = !dirty.length || blockers.length>0;
+  pub.textContent = dirty.length>1 ? `Опублікувати · ${dirty.length}` : 'Опублікувати';
+  pub.title = blockers.length ? 'Спершу виправте проблеми: '+blockers.map(i=>cur(i).title||'Без назви').join(', ') : dirty.length>1 ? 'Опублікує зміни в '+plural(dirty.length,'сценарії','сценаріях','сценаріях') : '';
+  if($('#undo')) $('#undo').disabled = !ch.length;
+  $('#pv').classList.toggle('gone', !!st.del[id]);
+  $('#f-grp').disabled = !!st.del[id];
+  document.querySelectorAll('[data-k]').forEach(el => el.classList.toggle('changed', !st.created[id] && ch.includes(el.dataset.k)));
+  $('#f-grp').classList.toggle('changed', !st.created[id] && ch.includes('grp'));
+  $('#f-title').classList.toggle('bad', !String(s.title).trim());
+  $('#m-title').innerHTML = msgs(s,'title');
+  document.querySelectorAll('[data-m]').forEach(el => { el.innerHTML = msgs(s, el.dataset.m); el.closest('.f').classList.toggle('bad', !!checks(s).find(x=>x.f===el.dataset.m && x.lvl==='e')); });
+  $('#cnt').textContent = (s.mood||'').length+' знаків';
+  const nm = noOf(s.open), twin = s.no ? ids().filter(i=>i!==id && !st.del[i] && cur(i).no===s.no) : [];
+  /* S79 · рядок номера — лише ⚠: підтвердження того, що Оля щойно написала, знято;
+     лишається наслідок (сценарій не потрапляє у «Зміну») і два справжні попередження */
+  $('#m-no').innerHTML = (s.no
+      ? ``
+      : `<span class="w">⚠ Номера у фразі немає — оформлення на касі · у «Зміну» не потрапляє, лише окреме тренування</span>`)
+    + (nm.many ? `<span class="w">⚠ У фразі кілька чисел — номером вважається перше</span>` : '')
+    + (twin.length ? `<span class="w">⚠ Такий самий номер у «${esc(cur(twin[0]).title||'Без назви')}»</span>` : '');
+  paintPub(dirty, blockers);
+  drawPreview(s); drawList();
+}
+
+function paintPub(dirty, blockers){
+  const w=$('#m-pub');
+  if(!blockers.length){ w.hidden=true; w.innerHTML=''; return; }
+  const first = blockers.slice(0,2).map(i=>{ const x=cur(i); const er=errs(x); return `<button data-go="${i}">«${esc(x.title||'Без назви')}»</button><span>— ${esc(er[0].m.replace(/^Заповніть /,'не заповнено: ').replace(/^Оберіть /,'не обрано: '))}${er.length>1?' (і ще '+(er.length-1)+')':''}</span>`; }).join('<span>·</span>');
+  w.innerHTML = `<span style="flex:none">Не опубліковано:</span>${first}${blockers.length>2?`<span style="flex:none">· ще ${blockers.length-2}</span>`:''}`;
+  w.hidden=false;
+}
+
+function drawPreview(s){
+  /* v4.2 · Б3: лише те, що фармацевт бачить у рушії до розмови (X97:1541–1554).
+     Орієнтир = potential() рушія: max(1, round(бонус ідеального − бонус замовлення)) (X97:1973).
+     Набори — тільки з підказкою (В-107: ідеальний за правилом мережі + «теж добре»). */
+  const ALT = RULE==='bv' ? 'bm' : 'bv', LAB = {bv:'ВТМ', bm:'ЗФ'}, CLS = {bv:'vtm', bm:'zf'};
+  const ini=(s.who||'?').trim()[0]||'?';
+  const row = (c, v) => `<div class="pos"><span class="wrap">${esc(ITEM[c]?.n||c)}</span><span class="v num">${v}</span></div>`;
+  const pot = Math.max(1, Math.round(bonus(s[RULE]) - bonus(s.order)));
+  const same = JSON.stringify([...s.bv].sort()) === JSON.stringify([...s.bm].sort());
+  const hset = (k, head, tag) => { const d = bonus(s[k]) - bonus(s.order);
+    return `<div class="hset ${CLS[k]}"><div class="hset-h"><b>${head}</b> · ${tag}</div>
+      <div class="rows">${s[k].map(c=>row(c,'+'+money(ITEM[c]?.b))).join('') || '<span class="empty">Набір не задано</span>'}</div>
+      <div class="sum"><span>до замовлення</span><b class="num">${d>=0?'+':''}${money(d)}</b></div></div>`; };
+  $('#pv').innerHTML = `
+    <h4 class="wrap">${esc(s.title||'Без назви')}<span class="badge grp" title="${esc(s.grp)}">${esc(s.grp)}</span></h4>
+    <div class="who"><div class="ava">${esc(ini)}</div><div><b class="wrap">${esc(s.who)}</b><span class="wrap">${esc(s.character)}</span></div></div>
+    <div class="mood wrap">${esc(s.mood)}</div>
+    <div class="sit wrap">${esc(s.mode)}</div>
+    <div class="sec">Розмова починається з</div>
+    <div class="bubble wrap">${esc(s.open)}</div>
+    <div class="sec">Просить</div>
+    <div class="rows">${s.order.map(c=>`<div class="pos"><span class="wrap">${esc(ITEM[c]?.n||c)}</span><span class="v cat">${esc(D.cats[ITEM[c]?.cat]?.label||'')}</span></div>`).join('') || '<span class="empty">Нічого не називає — вільний вибір</span>'}</div>
+    <div class="sec">Що тренуємо</div>
+    <div class="goal wrap">${esc(s.goal)}</div>
+    <div class="pot"><small>Орієнтир розмови</small><b class="num">${s.noSale ? '—' : 'до +'+pot.toLocaleString('uk-UA')+' ₴'}</b></div>
+    ${s.hint && !s.noSale ? `<div class="hintbox"><div class="sec">Підказка</div>${same
+        ? hset(RULE, 'ВТМ · ЗФ', 'обидва правила')
+        : hset(RULE, LAB[RULE], 'ідеально') + hset(ALT, LAB[ALT], 'теж добре')}</div>` : ''}
+    <div class="sec sep">Після розмови</div>
+    <div class="goal">${s.noSale ? 'Розбір: правильна дія — не міняти' : 'Розбір — приріст з орієнтира'}</div>`;
+}
+
+/* ── «i»: віконце біля кнопки, не посеред екрана (В-106) ── */
+document.addEventListener('toggle', e => { const tip=e.target; if(!tip.classList||!tip.classList.contains('tip')) return;
+  const btn=document.querySelector(`[popovertarget="${tip.id}"]`); if(!btn) return;
+  btn.setAttribute('aria-expanded', e.newState==='open');
+  if(e.newState!=='open') return;
+  const r=btn.getBoundingClientRect(), w=tip.offsetWidth, h=tip.offsetHeight, vw=document.documentElement.clientWidth, vh=innerHeight;
+  let left=Math.min(Math.max(8, r.right-w), vw-w-8), top=r.bottom+6; if(top+h>vh-8) top=Math.max(8, r.top-h-6);
+  tip.style.left=left+'px'; tip.style.top=top+'px'; }, true);
+
+/* ── діалог підтвердження (замість confirm/prompt браузера, К11) ── */
+function ask(title, text, yes, fn){ $('#dct').textContent=title; $('#dcp').textContent=text; $('#dcYes').textContent=yes; const d=$('#dc'); d._fn=fn; d.showModal(); }
+$('#dcNo').onclick = () => $('#dc').close();
+$('#dcYes').onclick = () => { const d=$('#dc'); d.close(); d._fn&&d._fn(); };
+
+/* ── групи: робоча копія в діалозі → «Застосувати» кладе в чернетку (К3 К4 К6 К12) ── */
+let gw = null;
+function openGroups(){ gw = groupsNow().map(g=>({old:g, name:g, gone:false})); drawGroups(); $('#dg').showModal(); }
+function gcount(g){ return ids().filter(id=>!st.del[id] && cur(id).grp===g).length; }
+function drawGroups(){
+  const names = gw.filter(r=>!r.gone).map(r=>r.name.trim());
+  $('#dgb').innerHTML = gw.map((r,i)=> r.gone ? '' : (()=>{ const n=r.old?gcount(r.old):0, nm=r.name.trim();
+    const dup = nm && names.filter(x=>x===nm).length>1, empty=!nm;
+    return `<div class="grow"><input class="in" data-gi="${i}" value="${esc(r.name)}" placeholder="Назва групи" aria-label="Назва групи">
+      <small>${plural(n,'сценарій','сценарії','сценаріїв')}</small>
+      <button class="x" data-gdel="${i}" ${n?'disabled':''} title="${n?'Спершу перенесіть сценарії в іншу групу':'Видалити порожню групу'}" aria-label="Видалити групу">🗑</button>
+      ${dup?`<div class="gmsg msg w">⚠ <span>Така назва вже є — після «Застосувати» групи об'єднаються</span></div>`:''}
+      ${empty?`<div class="gmsg msg e">✕ <span>Назва не може бути порожньою</span></div>`:''}</div>`; })()).join('')
+    + `<p class="hint msg" style="color:var(--anc-gray)">Порожня група живе, доки в ній з'явиться хоч один сценарій. Нову назву отримають усі сценарії групи.</p>`;
+  $('#dgApply').disabled = gw.some(r=>!r.gone && !r.name.trim());
+}
+function applyGroups(){
+  const ren = gw.filter(r=>r.old && !r.gone && r.name.trim()!==r.old);
+  const merges = ren.filter(r=>groupsNow().includes(r.name.trim()) || gw.some(o=>o!==r && !o.gone && o.name.trim()===r.name.trim()));
+  const go = () => {
+    for (const r of ren) for (const id of ids()) if(cur(id).grp===r.old){ const keep=st.sel; st.sel=id; set('grp', r.name.trim()); st.sel=keep; }
+    st._keepEmpty = gw.filter(r=>!r.gone && (!r.old || gcount(r.old)===0)).map(r=>r.name.trim());
+    st.extraGroups = st._keepEmpty.slice();
+    pruneGroups(); $('#dg').close(); drawEditor();
+    toast(ren.length ? 'Групи змінено — у чернетці, публікуйте або скасуйте' : 'Групи оновлено');
+  };
+  if (merges.length) ask('Об’єднати групи?', merges.map(r=>`«${r.old}» → «${r.name.trim()}»`).join(', ')+'. Сценарії опиняться в одній групі.', 'Об’єднати', go); else go();
+}
+
+/* ── події ── */
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && ['f-title','f-who','f-mode'].includes(e.target.id)) e.preventDefault();
+});
+document.addEventListener('input', e => {
+  const t=e.target, k=t.dataset.k;
+  if (t.id==='q'){ st.q=t.value; drawList(); return; }
+  if (t.dataset.gi!==undefined){ gw[+t.dataset.gi].name=t.value; const pos=t.selectionStart; drawGroups(); const n=$(`[data-gi="${t.dataset.gi}"]`); n.focus(); n.setSelectionRange(pos,pos); return; }
+  if(!k || t.type==='checkbox' || t.tagName==='SELECT') return;
+  set(k, ['title','who','mode'].includes(k) ? t.value.replace(/\s*\n\s*/g,' ') : t.value);
+});
+document.addEventListener('change', e => {
+  const t=e.target;
+  if(t.id==='gf'){ st.grp=t.value; drawList(); return; }
+  if(t.type==='checkbox' && t.dataset.k){ set(t.dataset.k, t.checked); drawEditor(); return; }
+  if(t.id==='f-ch'){ set('character', t.value); return; }
+  if(t.id==='f-grp'){
+    if(t.value==='__new'){ t.value=cur(st.sel).grp; openGroups(); gw.push({old:null,name:'',gone:false}); drawGroups(); setTimeout(()=>$(`[data-gi="${gw.length-1}"]`)?.focus(),30); return; }
+    set('grp', t.value); drawEditor(); return;
+  }
+  if(t.id==='addcat' && t.value){ set('cats', [...cur(st.sel).cats, t.value]); drawEditor(); return; }
+  if(t.dataset.add && t.value){ const k=t.dataset.add; set(k, [...cur(st.sel)[k], t.value]); drawEditor(); return; }
+});
+document.addEventListener('click', e => {
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.id){ st.sel=t.dataset.id; drawEditor(); return; }
+  if(t.dataset.view){ st.view=t.dataset.view; $('#page').dataset.view=st.view; document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.view===st.view)); return; }
+  if(t.dataset.rmcat){ set('cats', cur(st.sel).cats.filter(c=>c!==t.dataset.rmcat)); drawEditor(); return; }
+  if(t.dataset.rm){ const k=t.dataset.rm, a=[...cur(st.sel)[k]]; a.splice(+t.dataset.i,1); set(k,a); drawEditor(); return; }
+  if(t.id==='undo'){
+    const id=st.sel;
+    if(st.del[id]){ delete st.del[id]; drawEditor(); toast('Видалення скасовано'); return; }
+    if(st.created[id]){ ask('Скасувати новий сценарій?', 'Сценарій «'+(cur(id).title||'Без назви')+'» ще не опубліковано — він зникне.', 'Прибрати', ()=>{ delete st.created[id]; delete st.draft[id]; st.sel=Object.keys(st.pub)[0]; pruneGroups(); drawEditor(); toast('Новий сценарій прибрано'); }); return; }
+    delete st.draft[id]; const used=new Set(ids().filter(i=>!st.del[i]).map(i=>cur(i).grp)); st._keepEmpty=(st._keepEmpty||[]).filter(g=>used.has(g)); pruneGroups(); drawEditor(); toast('Зміни скасовано'); return;
+  }
+  if(t.id==='delBack'){ delete st.del[st.sel]; drawEditor(); toast('Сценарій повернуто разом із правками'); return; }
+  if(t.dataset && t.dataset.go){ st.sel=t.dataset.go; drawEditor(); return; }
+  if(t.id==='delSc'){
+    const id=st.sel;
+    if(st.del[id]){ delete st.del[id]; drawEditor(); return; }
+    if(st.created[id]){ $('#undo').click(); return; }
+    ask('Видалити сценарій?', '«'+(cur(id).title||'Без назви')+'» зникне з тренажера після публікації. До публікації його можна повернути.', 'Видалити', ()=>{ st.del[id]=true; drawEditor(); toast('Позначено до видалення'); });
+    return;
+  }
+  if(t.id==='pub'){
+    const n=dirtyIds();
+    for (const id of n){
+      if(st.del[id]){ delete st.pub[id]; delete st.created[id]; delete st.draft[id]; delete st.del[id]; continue; }
+      st.pub[id] = withMain(cur(id)); delete st.created[id]; delete st.draft[id];
+    }
+    if(!st.pub[st.sel]) st.sel=Object.keys(st.pub)[0];
+    /* В-113 · порожня група переживає «Опублікувати»: тека, створена в діалозі, живе,
+       доки Оля не видалить її там само. Скидання _keepEmpty/extraGroups тут прибрано. */
+    drawEditor(); toast('Опубліковано '+plural(n.length,'сценарій','сценарії','сценаріїв')+' (у мокапі — без запису)'); return;
+  }
+  if(t.id==='newSc'){
+    const id = String(Math.max(...ids().map(Number))+1);
+    const nNew = Object.keys(st.created).length;
+    st.created[id] = {id:+id, no:null, title: nNew ? 'Новий сценарій '+(nNew+1) : 'Новий сценарій', grp: st.grp || groupsNow()[0], who:'', character:D.chars[0], mood:'', mode:'', open:'', cats:[], order:[], bv:[], bm:[], goal:'', trap:false, noSale:false, hint:false};
+    st.sel=id; drawEditor(); $('#items').scrollTop=0; $('#f-title').select(); return;
+  }
+  if(t.id==='mg'){ openGroups(); return; }
+  if(t.id==='dgAdd'){ gw.push({old:null,name:'',gone:false}); drawGroups(); $(`[data-gi="${gw.length-1}"]`).focus(); return; }
+  if(t.dataset.gdel!==undefined){ const r=gw[+t.dataset.gdel]; if(r.old) r.gone=true; else gw.splice(+t.dataset.gdel,1); drawGroups(); return; }
+  if(t.id==='dgApply'){ applyGroups(); return; }
+  if(t.hasAttribute('data-dgcancel')){ $('#dg').close(); return; }
+});
+
+drawEditor();
+</script>
+</body>
+</html>
