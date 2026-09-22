@@ -29,6 +29,7 @@
 | `stand/a2/s80_freewalk_probe_v2_add.py` | `e9569a4f` | 3 КБ | те саме (домір Н9 · Н12) | щабель 2 |
 | `stand/a2/AE_D1v4_FINDINGS_v4.md` | `59885487` | 26 КБ | вироки не перенесено в SPEC і код (П116) | щабель 2 · D2 |
 | `stand/composer/AE_COMPOSER_harness_v2.html` | `fc20a6b8` | 35 КБ | Е2 «Композер» не закрито | щабель 3 |
+| `stand/composer/x99_composer_island_apply_v1.py` | `600c010c` | 5 КБ | X99 не заступлено наступним index | щабель 3 |
 | `stand/sources/mockup_X21_v1_html.html` | `d779cfc7` | 88 КБ | є непортовані A-екрани | щаблі 5·6·7 |
 | `stand/sources/AE_X27_SIDEBAR_v19.html` | `4609434b` | 160 КБ | є непортовані A-екрани | щаблі 5·6·7 |
 | `stand/sources/ANC_island_animations_standalone_v1.html` | `67da39db` | 28 КБ | рух і шрифти не зроблено | щабель 8 |
