@@ -23,11 +23,8 @@
 | `knowledge/AE_Simulator_DOSIE_COMPOSER_v1.md` | `06d71512` | 11 КБ | щабель 3 не закрито | щабель 3 |
 | `stand/a2/mock_a2v2_tpl_v4_5.html` | `145a9ba0` | 61 КБ | A2 v2 не портовано в продукт (D2) | щабель 2 · D2 |
 | `stand/a2/d1_a2v2_mock_build_v4_5.py` | `b2e655b4` | 2 КБ | шаблон v4.5 живий | щабель 2 · D2 |
-| `stand/a2/s83_v45_touch_v1.py` | `885ba779` | 4 КБ | прохід П115/П117 по v4.5 не видано | щабель 2 |
-| `stand/a2/s78_olya_walk_v3.py` | `a2e45e42` | 15 КБ | стенд A2 живий (45 кроків регресу) | щабель 2 · D2 |
-| `stand/a2/s80_freewalk_probe_v1.py` | `8f52f389` | 7 КБ | знахідки Н9–Н14 не винесені у вироки й не стали кроками | щабель 2 |
-| `stand/a2/s80_freewalk_probe_v2_add.py` | `e9569a4f` | 3 КБ | те саме (домір Н9 · Н12) | щабель 2 |
-| `stand/a2/AE_D1v4_FINDINGS_v4.md` | `59885487` | 26 КБ | вироки не перенесено в SPEC і код (П116) | щабель 2 · D2 |
+| `stand/a2/s83_olya_walk_v4.py` | `230cb324` | 25 КБ | стенд A2 живий (66 вердиктів: v3 цілком + кроки 24–38) | щабель 2 · D2 |
+| `stand/a2/AE_D1v4_FINDINGS_v5.md` | `dc560efa` | 31 КБ | вироки не перенесено в SPEC і код (П116, D2) | щабель 2 · D2 |
 | `stand/composer/AE_COMPOSER_harness_v2.html` | `fc20a6b8` | 35 КБ | Е2 «Композер» не закрито | щабель 3 |
 | `stand/sources/mockup_X21_v1_html.html` | `d779cfc7` | 88 КБ | є непортовані A-екрани | щаблі 5·6·7 |
 | `stand/sources/AE_X27_SIDEBAR_v19.html` | `4609434b` | 160 КБ | є непортовані A-екрани | щаблі 5·6·7 |
@@ -42,6 +39,7 @@
 | `ae_rules_X95_v1.js` | `tools/ae_rules.js` у корені репо | побайтово той самий файл, `e0b99591` |
 | `v42`/`v43`/`v44`/`v45_apply_v1.py` | `archive/apply/` | одноразові, шаблон уже запечено |
 | шаблон і генератор v4.3 · v4.4 (`807bf9ae`) · `s79_v44_probe_v1` / `s79_v44_grp_probe_v1` | `archive/stand/` | мертві версії (П118); v4.4 змерджено в v4.5 (S83) |
+| `s78_olya_walk_v3.py` · `s83_v45_touch_v1.py` · `AE_D1v4_FINDINGS_v4.md` · `s80_freewalk_probe_v1` / `_v2_add` | `archive/stand/` | поглинуті (Н9–Н14 стали кроками 30–36 і замірами) `s83_olya_walk_v4.py` і FINDINGS v5 (S83) |
 | `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
 | самері S73–S78 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
 | робочий білд | корінь репо `index.html` = X100 `72c8cca1` (S82) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 |
