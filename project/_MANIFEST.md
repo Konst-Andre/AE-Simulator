@@ -7,24 +7,24 @@
 носієм **відкритого по продукту** (що робити далі) і живе в `summary/`. Маніфест відповідає
 на питання «що тут лежить і чи воно ще те саме», ЧЕРГА — на питання «що робимо».
 
-Заміряно інструментом (`md5sum`) у сесії S80 · 19.09.2026; рядки S82 — 22.09.2026.
+Заміряно інструментом (`md5sum`) у сесії S80 · 19.09.2026; рядки S82 — 22.09.2026; S83 — 22.09.2026
+(S83 виправив два рядки, що відстали після коміту фіксації S82: черга і досьє).
 Розбіжність md5 із фактичним файлом = подія, яку розбирають до роботи.
 
 | файл | md5 (8) | розмір | живе доки | щабель ЧЕРГИ |
 |---|---|---|---|---|
-| `summary/AE_Simulator_CHERGA.md` | `2e1d0502` | 8 КБ | у черзі є хоч один непройдений щабель | — |
+| `summary/AE_Simulator_CHERGA.md` | `b9337d63` | 8 КБ | у черзі є хоч один непройдений щабель | — |
 | `summary/AE_Simulator_session_summary_S82_KOMPOZER_OSTRIV.md` | `b02f0cd4` | 14 КБ | наступне самері не стало живим | — |
 | `summary/AE_Simulator_session_summary_S80_PROKHID_V44.md` | `3e880faa` | 23 КБ | v4.5 (В-118…В-126) не видана | щабель 2 |
 | `knowledge/AE_Simulator_SPEC_v0_5.md` | `9a345be9` | 87 КБ | назавжди | — |
 | `knowledge/AE_Simulator_BIBLIOTEKA_HARAKTERIV_v1.md` | `b210bef7` | 19 КБ | назавжди | — |
 | `knowledge/AE_Simulator_MOOD_RULE_v1.md` | `b53d54b0` | 16 КБ | назавжди | — |
 | `knowledge/AE_Simulator_PROMPT_JUDGE_SPEC_v1.md` | `0a91ea5c` | 9 КБ | назавжди | — |
-| `knowledge/AE_Simulator_DOSIE_COMPOSER_v1.md` | `82d48dae` | 11 КБ | щабель 3 не закрито | щабель 3 |
-| `stand/a2/mock_a2v2_tpl_v4_4.html` | `98d4ae93` | 57 КБ | A2 v2 не портовано в X97 | щабель 2 · D2 |
-| `stand/a2/d1_a2v2_mock_build_v4_4.py` | `5abac9b9` | 2 КБ | шаблон v4.4 живий | щабель 2 · D2 |
+| `knowledge/AE_Simulator_DOSIE_COMPOSER_v1.md` | `06d71512` | 11 КБ | щабель 3 не закрито | щабель 3 |
+| `stand/a2/mock_a2v2_tpl_v4_5.html` | `145a9ba0` | 61 КБ | A2 v2 не портовано в продукт (D2) | щабель 2 · D2 |
+| `stand/a2/d1_a2v2_mock_build_v4_5.py` | `b2e655b4` | 2 КБ | шаблон v4.5 живий | щабель 2 · D2 |
+| `stand/a2/s83_v45_touch_v1.py` | `885ba779` | 4 КБ | прохід П115/П117 по v4.5 не видано | щабель 2 |
 | `stand/a2/s78_olya_walk_v3.py` | `a2e45e42` | 15 КБ | стенд A2 живий (45 кроків регресу) | щабель 2 · D2 |
-| `stand/a2/s79_v44_probe_v1.py` | `bfc2e419` | 2 КБ | v4.4 не змерджено в наступну версію | щабель 2 · D2 |
-| `stand/a2/s79_v44_grp_probe_v1.py` | `e8bee1bd` | 1 КБ | v4.4 не змерджено в наступну версію | щабель 2 · D2 |
 | `stand/a2/s80_freewalk_probe_v1.py` | `8f52f389` | 7 КБ | знахідки Н9–Н14 не винесені у вироки й не стали кроками | щабель 2 |
 | `stand/a2/s80_freewalk_probe_v2_add.py` | `e9569a4f` | 3 КБ | те саме (домір Н9 · Н12) | щабель 2 |
 | `stand/a2/AE_D1v4_FINDINGS_v4.md` | `59885487` | 26 КБ | вироки не перенесено в SPEC і код (П116) | щабель 2 · D2 |
@@ -38,10 +38,10 @@
 
 | файл | де він | чому |
 |---|---|---|
-| `AE_MOCK_A2v2_D1_v4_4.html` | відтворюється `stand/a2/d1_a2v2_mock_build_v4_4.py` | похідне; md5 `807bf9ae` (П34 · П37) |
+| `AE_MOCK_A2v2_D1_v4_5.html` | відтворюється `stand/a2/d1_a2v2_mock_build_v4_5.py` | похідне; md5 `36a19319` (П34 · П37) |
 | `ae_rules_X95_v1.js` | `tools/ae_rules.js` у корені репо | побайтово той самий файл, `e0b99591` |
-| `v42`/`v43`/`v44_apply_v1.py` | `archive/apply/` | одноразові, шаблон уже запечено |
-| шаблон і генератор v4.3 | `archive/stand/` | мертва версія (П118) |
+| `v42`/`v43`/`v44`/`v45_apply_v1.py` | `archive/apply/` | одноразові, шаблон уже запечено |
+| шаблон і генератор v4.3 · v4.4 (`807bf9ae`) · `s79_v44_probe_v1` / `s79_v44_grp_probe_v1` | `archive/stand/` | мертві версії (П118); v4.4 змерджено в v4.5 (S83) |
 | `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
 | самері S73–S78 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
 | робочий білд | корінь репо `index.html` = X100 `72c8cca1` (S82) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 |
