@@ -13,9 +13,8 @@
 
 | файл | md5 (8) | розмір | живе доки | щабель ЧЕРГИ |
 |---|---|---|---|---|
-| `summary/AE_Simulator_CHERGA.md` | `b9337d63` | 8 КБ | у черзі є хоч один непройдений щабель | — |
-| `summary/AE_Simulator_session_summary_S82_KOMPOZER_OSTRIV.md` | `b02f0cd4` | 14 КБ | наступне самері не стало живим | — |
-| `summary/AE_Simulator_session_summary_S80_PROKHID_V44.md` | `3e880faa` | 23 КБ | v4.5 (В-118…В-126) не видана | щабель 2 |
+| `summary/AE_Simulator_CHERGA.md` | `4a723a07` | 9 КБ | у черзі є хоч один непройдений щабель | — |
+| `summary/AE_Simulator_session_summary_S83_V45_PROKHID.md` | `d4ee244d` | 12 КБ | наступне самері не стало живим | — |
 | `knowledge/AE_Simulator_SPEC_v0_5.md` | `9a345be9` | 87 КБ | назавжди | — |
 | `knowledge/AE_Simulator_BIBLIOTEKA_HARAKTERIV_v1.md` | `b210bef7` | 19 КБ | назавжди | — |
 | `knowledge/AE_Simulator_MOOD_RULE_v1.md` | `b53d54b0` | 16 КБ | назавжди | — |
@@ -41,7 +40,7 @@
 | шаблон і генератор v4.3 · v4.4 (`807bf9ae`) · `s79_v44_probe_v1` / `s79_v44_grp_probe_v1` | `archive/stand/` | мертві версії (П118); v4.4 змерджено в v4.5 (S83) |
 | `s78_olya_walk_v3.py` · `s83_v45_touch_v1.py` · `AE_D1v4_FINDINGS_v4.md` · `s80_freewalk_probe_v1` / `_v2_add` | `archive/stand/` | поглинуті (Н9–Н14 стали кроками 30–36 і замірами) `s83_olya_walk_v4.py` і FINDINGS v5 (S83) |
 | `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
-| самері S73–S78 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
+| самері S73–S82 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
 | робочий білд | корінь репо `index.html` = X100 `72c8cca1` (S82) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 |
 | старий v1 `index.html` (build v30, `410efa15`) | `archive/index/index_v30_2026-09-07.html` | заміщений X100 у корені (S82) |
 | `AE_CHAT_BG_stagebench_v1.html` | ніде | стенд фону чату, заміщений композером (В-116) |
