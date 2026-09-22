@@ -336,600 +336,8 @@ button{font:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipul
 .err{background:#FDF3F1;border:1px solid var(--loss);color:var(--loss);
   border-radius:var(--r-lg);padding:10px 14px;margin-bottom:14px;font-size:13.5px}
 </style>
-<style id="v2-css">
-/* ═══ v2 · ПК-дизайн (SPEC v0.4) — корінь .v2 · Х21 крок 1 · Х22.1 · Х23.1 · Х24.1 ═══
-   Джерело: mockup_X21_v1.html, лише правила, що чіпають DOM оболонки, E6, E1, E2 і E3
-   (відбір — v2_probe_v4.js у jsdom: E6 6 станів, E1 7, E2 8 + тост, E3 3; правило з влученням їде цілим списком).
-   Класи-двійники старого CSS перейменовані: .tag → .v2-tag · .trap → .v2-trap · .back → .v2-back · .tabs → .v2-tabs. Генерується v2css_port_v3.py — руками не править.
-   Кожен селектор починається з .v2 або body.v2-on: старі екрани не зачеплені. */
-.v2 { color-scheme: light; }
-/* міст: .wrap продукту тримає 1180px і падінг — ПК-оболонка йде від краю до краю */
-body.v2-on .wrap { max-width: none; margin: 0; padding: 0; }
-.v2 { --ink:var(--anc-text); --muted:var(--anc-gray); --line:var(--anc-border); --canvas:var(--anc-canvas); --card:#fff; --green:var(--anc-blue); --green-deep:var(--anc-blue); --green-pale:var(--anc-yellow-25); --blue-pale:var(--anc-blue-25); --amber:var(--anc-text); --amber-pale:var(--anc-yellow-50); --danger:#bd2f45; --radius:14px; }
-.v2, .v2 * { box-sizing:border-box; }
-body.v2-on { width:100%; height:100%; overflow:hidden; }
-body.v2-on { margin:0 }
-.v2 { background:var(--canvas); color:var(--ink); font:14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif }
-.v2 button, .v2 input, .v2 textarea { font:inherit; }
-.v2 b + small, .v2 strong + small { display:block; }
-.v2 button { cursor:pointer; }
-.v2 svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
-/* X75-RAIL: ширина панелі — важіль, а не зашите число (стенд :237). Дефолт 220
-   той самий, що стояв тут раніше: перехід на змінну картинку не рухає (1.18). */
-.v2 { --side-w:220px; }
-.v2 .shell { display:grid; grid-template-columns:var(--side-w) minmax(0,1fr); height:100dvh; min-height:0; overflow:hidden; }
-.v2 .sidebar { display:flex; min-height:0; flex-direction:column; padding:20px 8px; overflow:auto; border-right:1px solid var(--line); background:var(--anc-canvas); }
-.v2 .brand { display:flex; gap:11px; align-items:center; padding:0 14px 21px; border-bottom:1px solid var(--line); }
-.v2 .brand-mark, .v2 .icon-chip { display:grid; place-items:center; flex:0 0 auto; color:white; background: var(--anc-blue); border-radius:9px; }
-.v2 .brand-mark { width:38px; height:38px; }
-.v2 .brand-mark svg { width:21px; height:21px; }
-.v2 .brand b { display:block; font-size:17px; letter-spacing:-.03em; }
-.v2 .brand small { color:var(--muted); font-size:11px; }
-.v2 .side-links { display:grid; gap:3px; padding-top:18px; }
-.v2 .side-link { display:flex; align-items:center; gap:14px; width:100%; min-height:47px; padding:0 18px; color:var(--anc-text-2); text-align:left; text-decoration:none; border:0; border-left:3px solid transparent; border-radius:0 8px 8px 0; background:none; }
-.v2 .side-link.active { color:var(--anc-text); background:var(--anc-yellow-25); border-left-color:var(--green); font-weight:700; }
-.v2 .side-link svg { width:21px; }
-.v2 .side-bottom { margin-top:auto; display:grid; gap:8px; padding:12px 10px 0; }
-.v2 .side-bottom button { display:flex; align-items:center; gap:9px; border:0; background:transparent; color:var(--anc-gray); padding:9px; text-align:left; }
-/* ── X82 · ВИХІД З РОЗМОВИ — власний вузол (S68, крок 3 щабля «ШАПКА Е2») ──
-   На Е2 навігації немає. Вихід, одягнений у .side-link, ніс вагу пункта меню і
-   читався як «розділ», а не як дія (S67 §0.2). Геометрію беремо з
-   `.side-bottom button` (:373) — щоб вихід говорив тією самою мовою, що низ
-   панелі на решті екранів. ⚠ Не .side-bottom: той клас у ≤980 ховається. */
-.v2 .side-exit { margin-top:auto; display:grid; padding:12px 10px 0; }
-.v2 .exit-link { display:flex; align-items:center; gap:9px; width:100%; min-height:40px; padding:9px; border:0; border-radius:8px; background:transparent; color:var(--anc-gray); font-size:13px; text-align:left; }
-.v2 .exit-link svg { width:18px; }
-.v2 main { min-width:0; min-height:0; overflow:auto; }
-/* X83 · КРОК 2 · max-width + margin:0 auto + padding-inline рівно як у
-   .workspace (:394): ліві краї шапки й контенту тримає спільний носій
-   ширини, а не підібране число. Вертикаль 16px лишається шапчиною. */
-.v2 .appbar { display:flex; align-items:center; min-height:90px; gap:18px; max-width:1600px; width:100%; margin:0 auto; padding:16px 10px; border-bottom:1px solid var(--line); background:#fff; }
-.v2 .v2-back { display:inline-flex; align-items:center; gap:8px; flex:0 0 auto; padding:9px 0; color:var(--anc-gray); background:none; border:0; font-weight:600; }
-.v2 .v2-back svg { width:18px; }
-/* X84 · бейджі — в рядок із заголовком по baseline, не окремим ярусом: це
-   атрибути сценарію, чиє ім'я стоїть поруч. wrap лишає їм право з'їхати вниз
-   на вузькому, замість того щоб різати заголовок. */
-.v2 .case-title { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px; min-width:0; flex:1; }
-.v2 .case-title h1 { margin:0; font-size:22px; line-height:1.15; letter-spacing:-.035em; }
-.v2 .case-title p { margin:0; color:var(--muted); font-size:13px; }
-.v2 .tags { display:inline-flex; gap:6px; margin-left:8px; }
-.v2 .v2-tag { padding:4px 8px; border-radius:6px; color:var(--anc-text); background:var(--green-pale); font-size:12px; font-weight:700; }
-/* X79 (крок 2 щабля «ШАПКА Е2»): чипи збираються в JS без пробільних вузлів, <p> не розкладка — проміжок дає сусідній селектор, розкладку не чіпає. 6px = число `.tags{gap}`. */
-.v2 .v2-tag + .v2-tag { margin-left:6px; }
-.v2 .finish { display:inline-flex; align-items:center; justify-content:center; min-height:43px; padding:0 19px; border:1px solid #f0dce1; background:#fffafa; color:#a51f37; border-radius:8px; font-weight:700; }
-.v2 .workspace { display:grid; grid-template-columns:minmax(238px,.82fr) minmax(360px,1.45fr) minmax(278px,1fr); min-height:0; gap:10px; max-width:1600px; width:100%; margin:0 auto; padding:10px; }
-.v2 .panel { min-width:0; min-height:0; overflow:hidden; border:1px solid var(--line); border-radius:var(--radius); background:var(--card); box-shadow:0 6px 22px #1C1E2410; }
-.v2 .panel-head { display:flex; align-items:center; gap:11px; min-height:67px; padding:14px 19px; border-bottom:1px solid var(--anc-border); }
-.v2 .panel-head h2 { margin:0; font-size:16px; letter-spacing:-.025em; }
-.v2 .icon-chip { width:30px; height:30px; border-radius:7px; }
-.v2 .icon-chip svg { width:17px; height:17px; }
-.v2 .profile-panel { display:grid; grid-template-rows:auto minmax(0,1fr); }
-.v2 .profile { min-height:0; padding:20px 22px; overflow:auto; }
-.v2 .person { display:flex; align-items:center; gap:13px; margin-bottom:22px; }
-.v2 .avatar { display:grid; place-items:center; width:54px; height:54px; border-radius:50%; color:var(--anc-text); background:var(--anc-border); font-size:20px; font-weight:700; }
-.v2 .person b { font-size:16px; }
-.v2 .fact { margin:0 0 19px; }
-.v2 .fact dt { margin-bottom:3px; color:var(--anc-gray); font-weight:500; }
-.v2 .fact dd { margin:0; color:var(--anc-text); line-height:1.48; }
-.v2 .notice { margin-top:25px; padding:17px; border-radius:9px; background: var(--anc-yellow-25); }
-.v2 .notice strong { display:flex; align-items:center; gap:9px; color:var(--anc-text); font-size:14px; }
-.v2 .notice p { margin:13px 0 0; color:var(--anc-text-2); line-height:1.65; }
-.v2 .hint { display:flex; gap:10px; margin-top:15px; padding:14px 0; color:var(--anc-gray); line-height:1.55; }
-.v2 .hint svg { flex:none; margin-top:2px; }
-.v2 .dialogue { position:relative; display:flex; flex-direction:column; }
-/* X84 · зона розмови стоїть на «плиті» ANC, а не на тоні головної зони:
-   сторінка → розмова → бульбашка мають розходитись усі три. Вирок оператора
-   зі стенда, варіант A. Запасний — #1C1E240A. */
-.v2 .messages { flex:1; padding:25px 20px 16px; overflow:auto; background:#1C1E240A; }
-.v2 .message { display:flex; align-items:flex-end; gap:10px; margin-bottom:17px; }
-.v2 .message.pharmacist { justify-content:flex-end; }
-.v2 .message .avatar { flex:0 0 auto; width:39px; height:39px; background:var(--anc-blue-25); font-size:14px; }
-.v2 .bubble-wrap { max-width:76%; }
-.v2 .bubble { padding:13px 15px; border-radius:11px; border-top-left-radius:3px; color:var(--anc-text); background:var(--anc-border); line-height:1.52; }
-.v2 .pharmacist .bubble { color:var(--anc-text); background:var(--anc-blue-25); border-top-right-radius:3px; }
-.v2 .message time { display:block; margin-top:5px; color:var(--anc-gray); font-size:12px; }
-.v2 .pharmacist time { text-align:right; }
-.v2 .typing { display:flex; width:max-content; gap:5px; padding:14px 16px; border-radius:11px; background:var(--anc-border); }
-.v2 .typing i { width:7px; height:7px; border-radius:50%; background:var(--anc-gray-light); }
-.v2 .typing i:nth-child(2) { background:var(--anc-blue); }
-.v2 .typing i:nth-child(3) { background:var(--anc-gray-light); }
-.v2 .composer { padding:14px 19px 16px; background:#1C1E240A; }
-.v2 .quick-phrases { display:flex; gap:8px; padding:14px 0 12px; overflow:auto; }
-.v2 .quick-phrases button { flex:0 0 auto; min-height:36px; padding:0 11px; color:var(--anc-text); border:1px solid var(--anc-blue); border-radius:7px; background:#fff; font-size:12px; font-weight:600; }
-.v2 textarea { display:block; flex:1; min-height:68px; resize:none; padding:13px 14px; border:1px solid var(--anc-blue); border-radius:8px; outline:none; color:var(--anc-text); }
-.v2 textarea::placeholder { color:var(--anc-gray); }
-.v2 .send { display:grid; place-items:center; width:58px; border:0; border-radius:8px; background: var(--anc-yellow); color:var(--anc-text); }
-.v2 .send:disabled { background:var(--anc-border); color:var(--anc-gray-light); cursor:not-allowed; }
-/* ── X99 · КОМПОЗЕР-ОСТРІВ · досьє композера §7 паспорт + §8 вироки (S81), В-134 (S82) ──
-   живе доки: device-тест 1920·1536·1280 не канонізував числа (тоді досьє видаляється, П123)
-   Селектори навмисно вужчі за спільні `.v2 textarea` / `.v2 .panel-head` / `.v2 .send`. */
-.v2 .comp-isl { --comp-isl-r:28px; padding:14px; border-radius:var(--comp-isl-r); background:#fff; box-shadow:0 12px 82px 28px #008ecc47; }
-.v2 .comp-isl .quick-phrases { gap:8px; padding:0 0 10px; }
-.v2 .comp-isl .quick-phrases button { min-height:28px; padding:0 12px; border:1px solid #d1d1d1; border-radius:12px; background:#fff; color:var(--anc-text); font-size:12px; font-weight:600; }
-.v2 .comp-isl .qa-trig { anchor-name:--e2qa; }
-/* X100 · popover фраз. Тінь — СТАВКА (паспорта нема). --qa-fit: коли праворуч не вміщається (390px:
-   виліт на 11px, заміряно headless) — по центру над якорем на всю ширину; десктоп лишається під кнопкою. */
-@position-try --qa-fit { position-area:top span-all; justify-self:center; }
-.v2 .qa-pop { position-anchor:--e2qa; position-area:top span-right; position-try-fallbacks:flip-block, --qa-fit; inset:auto; margin:0 0 8px; width:max-content; max-width:min(380px, calc(100vw - 24px)); max-height:min(60vh, 420px); overflow:auto; padding:6px; border:1px solid #E7E7E7; border-radius:14px; background:#fff; color:var(--anc-text); box-shadow:0 12px 32px #1C1E2429; }
-.v2 .qa-pop .qa-grp + .qa-grp { margin-top:4px; padding-top:4px; border-top:1px solid #E7E7E7; }
-.v2 .qa-pop .qa-h { padding:6px 10px 2px; color:var(--anc-gray); font-size:11px; font-weight:600; }
-.v2 .qa-pop .qa-item { display:block; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:var(--anc-text); font-size:13px; text-align:left; cursor:pointer; }
-.v2 .qa-pop .qa-item:hover { background:#1C1E240A; }
-.v2 .qa-pop .qa-item:focus-visible { outline:2px solid var(--anc-blue); outline-offset:-2px; }
-.v2 .well { position:relative; border:1px solid #E7E7E7; border-radius:14px; background:#1C1E2408; box-shadow:inset 0 0 4px 0 #0000001A, inset 0 -1px 0 0 #FFFFFFB3; }
-/* В-131 · фокус глибиною, без кольору — СТАВКА */
-.v2 .well:focus-within { border-color:#1C1E244D; box-shadow:inset 0 0 4px 0 #00000029, inset 0 -1px 0 0 #FFFFFFB3; }
-.v2 .well textarea { display:block; width:100%; flex:none; min-height:72px; max-height:220px; field-sizing:content; overflow-y:auto; resize:none; padding:12px 68px 12px 14px; border:0; border-radius:14px; outline:none; background:transparent; line-height:1.45; }
-.v2 .well textarea:disabled { background:transparent; color:var(--anc-gray); }
-.v2 .well .send { position:absolute; right:14px; bottom:14px; width:46px; height:42px; border-radius:12px; background:var(--anc-yellow); box-shadow:0 3px 3px #1C1E243D; }
-.v2 .well .send:disabled { background:var(--anc-border); color:var(--anc-gray-light); box-shadow:none; }
-.v2 .well .send svg { width:23px; height:23px; }
-/* стик шапки: both + hdLine 0 — лише розмова */
-.v2 .dialogue .panel-head { position:relative; z-index:2; border-bottom:0; box-shadow:0 4px 8px -2px #1C1E241A; }
-.v2 .dialogue .messages { padding-bottom:64px; box-shadow:inset 0 3px 5px -1px #1C1E241F; }
-/* ── /X99 ── */
-.v2 .cart-panel { display:grid; min-height:0; align-content:start; gap:10px; overflow:auto; background:transparent; border:0; box-shadow:none; }
-.v2 .cart-panel .panel { min-height:0; }
-.v2 .cart-head { justify-content:space-between; }
-.v2 .cart-head > span { display:flex; align-items:center; gap:11px; }
-.v2 .pill { padding:5px 8px; color:var(--anc-text); background:var(--green-pale); border-radius:6px; font-size:12px; font-weight:700; }
-.v2 .cart-list { padding:13px 18px 17px; }
-.v2 .cart-row { display:flex; gap:11px; align-items:center; padding:10px 0; border-bottom:1px solid var(--anc-border); }
-.v2 .cart-row:last-child { border-bottom:0; }
-.v2 .product-art { display:grid; place-items:center; width:45px; height:45px; flex:none; border:1px solid var(--anc-border); border-radius:8px; color:var(--anc-gray-light); background:var(--anc-plate); }
-.v2 .product-art svg { width:22px; }
-.v2 .cart-name { min-width:0; flex:1; font-weight:700; line-height:1.35; }
-.v2 .cart-name small { display:block; margin-top:2px; color:var(--anc-gray); font-weight:500; }
-.v2 .cart-code { color:var(--anc-gray); font-size:11px; }
-.v2 .quiet-note { display:flex; gap:9px; margin:0 18px 17px; padding:12px; border-radius:8px; color:var(--anc-text-2); background:var(--amber-pale); font-size:12px; line-height:1.5; }
-.v2 .quiet-note svg { flex:none; color:var(--anc-text-2); }
-.v2 .catalog { padding:0 18px 16px; }
-.v2 .search { display:flex; align-items:center; gap:8px; height:43px; margin:14px 0 10px; padding:0 11px; border:1px solid var(--anc-border); border-radius:8px; color:var(--anc-gray); }
-.v2 .search input { min-width:0; width:100%; border:0; outline:0; color:var(--ink); background:transparent; font-size:16px; }
-.v2 input, .v2 select, .v2 textarea { font-size:16px; }
-.v2 .v2-tabs { display:flex; gap:4px; border-bottom:1px solid var(--anc-border); }
-.v2 .tab { flex:1; padding:10px 2px 11px; color:var(--anc-gray); border:0; border-bottom:3px solid transparent; background:none; font-size:11px; white-space:nowrap; }
-.v2 .tab.active { color:var(--anc-text); border-bottom-color:var(--anc-blue); font-weight:700; }
-.v2 .proposal-row { display:grid; grid-template-columns:38px minmax(0,1fr) auto 38px; align-items:center; gap:8px; min-height:68px; border-bottom:1px solid var(--anc-border); }
-.v2 .proposal-row .product-art { width:38px; height:38px; }
-.v2 .proposal-name { overflow:hidden; font-size:12px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
-.v2 .proposal-name small { display:block; overflow:hidden; margin-top:2px; color:var(--anc-gray); font-size:11px; font-weight:500; text-overflow:ellipsis; white-space:nowrap; }
-.v2 .price { min-width:40px; color:var(--anc-text-2); font-size:12px; text-align:right; white-space:nowrap; }
-.v2 .price.blank { color:transparent; }
-.v2 .plus { display:grid; place-items:center; width:35px; height:35px; border:1px solid var(--anc-border); border-radius:7px; color:var(--anc-text); background:#fff; }
-.v2 .plus:hover { border-color:var(--anc-blue); background:var(--anc-yellow-25); color:var(--anc-text); }
-.v2 .catalog-foot { padding-top:13px; }
-.v2 .catalog-foot button { width:100%; min-height:39px; border:1px solid var(--anc-border); border-radius:7px; color:var(--anc-text-2); background:#fff; font-size:12px; font-weight:600; }
-.v2 .toast { position:fixed; right:24px; bottom:24px; z-index:15; max-width:330px; padding:12px 15px; border:1px solid var(--anc-yellow-50); border-radius:9px; color:var(--anc-text); background:var(--anc-yellow-25); box-shadow:0 10px 28px #1C1E2425; font-size:13px; opacity:0; transform:translateY(8px); pointer-events:none; transition:.22s; }
-.v2 .toast.show { opacity:1; transform:none; }
-.v2 .page { max-width:1440px; margin:0 auto; padding:30px; }
-.v2 .page-title { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:24px; }
-.v2 .page-title h1 { margin:0; font-size:29px; line-height:1.15; letter-spacing:-.045em; }
-.v2 .page-title p { margin:5px 0 0; color:var(--muted); }
-/* X89-A7 · A7 «Система» — порт форми з mockup_X21_v1 :39 (скоуп .v2).
-   .error svg і .sys-* — наші: у мокапа не було рядка з помилкою й вибору файлу. */
-.v2 .admin-page { max-width:1500px; }
-.v2 .page-title .sys-stamp { color:#6e8096; white-space:nowrap; }
-.v2 .system-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:15px; }
-.v2 .system-metric { padding:16px; border:1px solid var(--line); border-radius:10px; background:#fff; box-shadow:0 6px 22px #263a5010; }
-.v2 .system-metric strong { display:block; font-size:25px; letter-spacing:-.04em; }
-.v2 .system-metric small { color:#6e8096; }
-.v2 .system-metric.warning strong { color:#a96504; }
-.v2 .system-metric.error strong { color:#b72745; }
-.v2 .system-list { display:grid; gap:10px; }
-.v2 .system-message { display:flex; align-items:flex-start; gap:11px; padding:15px; border:1px solid #e1e8ee; border-radius:9px; background:#fff; }
-.v2 .system-message svg { flex:none; color:#08785d; }
-.v2 .system-message.warning svg { color:#b56e08; }
-.v2 .system-message.error svg { color:#b72745; }
-.v2 .system-message b { display:block; font-size:13px; }
-.v2 .system-message small { display:block; margin-top:3px; color:#71839a; }
-/* X91-A7B · області */
-.v2 .system-message > details { flex:1; min-width:0; }
-.v2 .system-message summary { display:flex; align-items:flex-start; gap:11px; cursor:pointer; list-style:none; }
-.v2 .system-message summary::-webkit-details-marker { display:none; }
-.v2 .system-message summary > div { flex:1; min-width:0; }
-.v2 .system-message summary::after { content:''; flex:none; width:7px; height:7px; margin:5px 4px 0 0; border-right:1.5px solid #8a99ab; border-bottom:1.5px solid #8a99ab; transform:rotate(45deg); transition:transform .15s; }
-.v2 .system-message details[open] summary::after { transform:rotate(-135deg); margin-top:8px; }
-.v2 .system-message summary:focus-visible { outline:2px solid var(--anc-blue, #0060a8); outline-offset:4px; border-radius:4px; }
-.v2 .sys-rules { margin:12px 0 0 29px; padding:0; list-style:none; display:grid; gap:6px; font-size:13px; }
-.v2 .sys-rules li { display:flex; gap:8px; color:#34465c; }
-.v2 .sys-rules li > span:first-child { flex:none; width:14px; font-weight:700; }
-.v2 .sys-rules .ok > span:first-child { color:#08785d; }
-.v2 .sys-rules .warn > span:first-child { color:#b56e08; }
-.v2 .sys-rules .err > span:first-child { color:#b72745; }
-.v2 .system-message small.sys-hint { color:#34465c; }   /* X94-C3 · підказка дії темніша за лічильник */
-/* X97-C1 · A2 три колонки мокапу; ≤1440 — перегляд під формою (замір S73) */
-.v2 .a2 { display:grid; grid-template-columns:300px minmax(0,1fr) 260px; gap:20px; align-items:start; }
-.v2 .a2-col { min-width:0; }
-.v2 .a2-prev { position:sticky; top:16px; background:#fff; border:1px solid #e3e8ee; border-radius:14px; padding:16px; }
-.v2 .a2-h { font-size:16px; margin:0 0 2px; } .v2 .a2-cap { font-size:12.5px; color:#6b7a8c; margin:0 0 12px; }
-.v2 .a2-card { border:1px solid #e3e8ee; border-left:3px solid var(--vtm); border-radius:10px; padding:14px; display:grid; gap:6px; }
-.v2 .a2-card h3 { margin:0; font-size:17px; } .v2 .a2-card p { margin:0; font-size:13px; color:#51606f; }
-.v2 .a2-no { font-size:12.5px; color:#51606f; font-weight:600; }
-.v2 .a2-tag, .v2 .a2-badge { justify-self:start; font-size:12px; font-weight:600; padding:3px 8px; border-radius:6px; background:#e7f4ee; color:#1d6b4f; }
-.v2 .a2-badge { display:inline-block; margin-top:12px; } .v2 .a2-badge.draft { background:#fff3dc; color:#8a5a00; }
-.v2 .a2-list .emood, .v2 .a2-list details.acc { display:none; }
-.v2 .a2-list .ecard[aria-current="true"] { box-shadow:inset 3px 0 0 var(--vtm); }
-.v2 .a2-form .toprow { display:none; }
-@media (max-width:1440px){ .v2 .a2 { grid-template-columns:280px minmax(0,1fr); } .v2 .a2-prev { grid-column:2; position:static; } }
-/* X93-C1: .sys-src · .sys-link · .sys-bad · .sys-h — геть разом зі старим низом A7 (В-82). */
-/* /X89-A7 */
-.v2 .primary { display:inline-flex; align-items:center; justify-content:center; gap:9px; min-height:44px; padding:0 17px; border:0; border-radius:8px; color:var(--anc-text); background: var(--anc-yellow); font-weight:700; box-shadow:0 4px 12px #1C1E2428; }
-.v2 .primary svg { width:18px; }
-.v2 .training-layout { display:grid; grid-template-columns:minmax(330px,.8fr) minmax(450px,1.45fr); gap:16px; align-items:start; }
-.v2 .scenario-list, .v2 .scenario-detail { border:1px solid var(--line); border-radius:var(--radius); background:#fff; box-shadow:0 6px 22px #1C1E2410; }
-.v2 .list-tools { padding:16px; border-bottom:1px solid var(--anc-border); }
-.v2 .group-filters { display:flex; flex-wrap:wrap; gap:7px; row-gap:7px; padding-top:11px; overflow:visible; }
-.v2 .group-filters button { flex:0 0 auto; min-height:32px; padding:0 10px; border:1px solid var(--anc-border); border-radius:7px; color:var(--anc-text-2); background:#fff; font-size:12px; }
-.v2 .group-filters button.active { border-color:var(--anc-blue); color:var(--anc-text); background:var(--anc-yellow-25); font-weight:700; }
-.v2 .scenario-items { max-height:630px; overflow:auto; }
-.v2 .scenario-item { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:11px; width:100%; min-height:73px; padding:11px 15px; border:0; border-bottom:1px solid var(--anc-border); border-left:3px solid transparent; color:inherit; background:#fff; text-align:left; }
-.v2 .scenario-item:hover, .v2 .scenario-item.active { border-left-color:var(--anc-blue); background:var(--anc-yellow-25); }
-.v2 .scenario-no { color:var(--anc-gray); font-size:12px; font-weight:700; white-space:nowrap; }
-.v2 .scenario-item b { display:block; overflow:hidden; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
-.v2 .scenario-item small { display:block; overflow:hidden; margin-top:3px; color:var(--anc-gray); font-size:11px; text-overflow:ellipsis; white-space:nowrap; }
-.v2 .scenario-status { padding:4px 7px; border-radius:5px; color:var(--anc-text-2); background:var(--anc-border); font-size:10px; font-weight:700; white-space:nowrap; }
-.v2 .scenario-status.v2-trap { color:var(--anc-text); background:var(--anc-yellow-50); }
-.v2 .scenario-status.no-sale { color:#9d2542; background:#fff0f3; }
-.v2 .scenario-detail { min-height:560px; padding:28px; }
-.v2 .case-no { color:var(--anc-gray); font-size:15px; font-weight:700; }
-.v2 .detail-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:15px; margin:7px 0 17px; }
-.v2 .detail-heading h2 { margin:0; font-size:30px; line-height:1.1; letter-spacing:-.045em; }
-.v2 .scenario-intro { display:flex; gap:13px; padding:17px; border-radius:10px; color:var(--anc-text-2); background:var(--anc-plate); line-height:1.6; }
-.v2 .scenario-intro svg { flex:none; color:var(--anc-blue); }
-.v2 .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-top:14px; }
-.v2 .detail-card { padding:17px; border:1px solid var(--anc-border); border-radius:10px; }
-.v2 .detail-card h3 { display:flex; align-items:center; gap:9px; margin:0 0 15px; font-size:15px; }
-.v2 .detail-card dl { display:grid; grid-template-columns:95px 1fr; gap:9px; margin:0; }
-.v2 .detail-card dt { color:var(--anc-gray); }
-.v2 .detail-card dd { margin:0; color:var(--anc-text); font-weight:600; }
-.v2 .order-mini { display:flex; gap:9px; align-items:center; border-top:1px solid var(--anc-border); padding:10px 0 0; }
-.v2 .order-mini .product-art { width:38px; height:38px; }
-.v2 .goal-card { margin-top:14px; padding:19px; border:1px solid var(--anc-yellow-50); border-radius:10px; background: var(--anc-yellow-25); }
-.v2 .goal-card h3 { display:flex; align-items:center; gap:9px; margin:0 0 9px; color:var(--anc-text); font-size:15px; }
-.v2 .goal-card p { margin:0; color:var(--anc-text-2); line-height:1.6; }
-.v2 .detail-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:22px; }
-.v2 .potential { color:var(--anc-positive); font-weight:700; }
-.v2 .potential small { display:block; color:var(--anc-gray); font-size:11px; font-weight:500; }
-.v2 .summary-wrap { max-width:1140px; }
-.v2 .summary-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; }
-.v2 .metric { display:flex; flex-direction:column; min-height:100px; padding:20px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 6px 22px #1C1E2410; }
-.v2 .metric small { display:block; color:var(--anc-gray); }
-.v2 .metric strong { display:block; margin-top:10px; font-size:34px; letter-spacing:-.04em; }
-.v2 .metric.accent strong { font-size:44px; }
-.v2 .metric-bar { margin-top:auto; height:7px; border-radius:99px; background:var(--anc-border); overflow:hidden; }
-.v2 .metric-bar i { display:block; height:100%; background:var(--green); }
-.v2 .metric.positive strong { color:var(--anc-positive); }
-.v2 .metric.accent { background:var(--anc-yellow-25); border-color:var(--anc-yellow-50); }
-.v2 .summary-section { margin-top:19px; padding:22px; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 6px 22px #1C1E2410; }
-.v2 .summary-section h2 { display:flex; align-items:center; gap:10px; margin:0 0 17px; font-size:18px; letter-spacing:-.03em; }
-.v2 .summary-section h2 svg { color:var(--anc-blue); }
-.v2 .summary-section > p { margin:-8px 0 17px; color:var(--anc-gray); }
-.v2 .slips { display:grid; gap:9px; }
-.v2 .slip { display:flex; align-items:flex-start; gap:11px; padding:13px; border-radius:8px; background:#fff5f6; width:100%; text-align:left; border:1px solid var(--line); background:#fff; cursor:pointer; }
-.v2 .slip:hover { border-color:var(--anc-blue); background:var(--anc-yellow-25); }
-.v2 .slip em { display:block; margin-top:6px; color:var(--anc-text); font-size:11px; font-style:normal; font-weight:700; }
-.v2 .slip > span { display:grid; place-items:center; width:24px; height:24px; flex:none; border-radius:50%; color:#ab2944; background:#ffe0e6; font-size:12px; font-weight:800; }
-.v2 .slip b { display:block; font-size:13px; }
-.v2 .slip small { display:block; margin-top:2px; color:var(--anc-gray); }
-.v2 .review-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:16px; }
-.v2 .coach-overall { margin:0; color:var(--anc-text-2); line-height:1.65; }
-.v2 .review-list { display:grid; gap:10px; }
-.v2 .review-item { display:flex; gap:10px; padding:12px; border-radius:8px; background:var(--anc-plate); }
-.v2 .review-item svg { flex:none; color:var(--anc-blue); }
-.v2 .review-item strong { display:block; font-size:12px; }
-.v2 .review-item span { display:block; margin-top:2px; color:var(--anc-gray); font-size:12px; line-height:1.45; }
-.v2 .final-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
-.v2 .secondary { min-height:42px; padding:0 15px; border:1px solid var(--anc-border); border-radius:8px; color:var(--anc-text-2); background:#fff; font-weight:700; }
-.v2 .wide-table-card { overflow:hidden; border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 6px 22px #1C1E2410; }
-.v2 .wide-table-card .search-row { display:flex; gap:10px; padding:15px; border-bottom:1px solid var(--anc-border); }
-.v2 .wide-table-card .search-row .search { flex:1; margin:0; }
-.v2 .wide-table-card .search-row select { min-width:150px; border:1px solid var(--anc-border); border-radius:8px; padding:0 10px; color:var(--anc-text-2); background:#fff; }
-.v2 .regular-table { width:100%; border-collapse:collapse; }
-.v2 .regular-table th, .v2 .regular-table td { padding:14px 18px; border-bottom:1px solid var(--anc-border); text-align:left; }
-.v2 .regular-table th { color:var(--anc-gray); background:var(--anc-plate); border-bottom-color:var(--anc-border); font-size:11px; font-weight:600; }
-.v2 .regular-table td { color:var(--anc-text-2); font-size:13px; }
-.v2 .regular-table td b { display:block; color:var(--anc-text); }
-.v2 .table-footer { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; color:var(--anc-gray); font-size:12px; }
-.v2 .pagination { display:flex; align-items:center; gap:5px; }
-.v2 .pagination .page-gap { padding:0 1px; color:var(--anc-gray); }
-.v2 .pagination button { width:31px; height:31px; border:1px solid var(--anc-border); border-radius:6px; color:var(--anc-text-2); background:#fff; }
-.v2 .pagination button.active { border-color:var(--anc-blue); color:var(--anc-text); background:var(--anc-yellow-25); }
-.v2 .e6-filters { padding:12px 15px 0; }
-.v2 .e6-filters { padding-bottom:12px; border-bottom:1px solid var(--anc-border); }
-.v2 .type-chip { display:inline-block; min-width:44px; padding:3px 9px; border:1px solid transparent; border-radius:999px; font-size:11px; font-weight:700; text-align:center; }
-.v2 .type-chip.own { color:var(--anc-text); background:var(--anc-blue-25); }
-.v2 .type-chip.gold { color:var(--anc-text); border-color:var(--anc-blue); background:#fff; }
-.v2 .e6-legend { color:var(--anc-gray); font-size:11px; }
-.v2 .th-sort { display:inline-flex; align-items:center; gap:5px; padding:0; border:0; color:inherit; background:none; font:inherit; font-weight:600; }
-.v2 .th-sort .sort-arrow { color:var(--anc-blue); font-size:10px; }
-.v2 .th-sort .sort-arrow.idle { color:var(--anc-gray-light); }
-@media (max-width:980px) {
-  .v2 .shell { grid-template-columns:1fr; }
-  .v2 .sidebar { position:sticky; top:56px; z-index:8; display:flex; flex-direction:row; align-items:center; gap:12px; padding:0 12px; min-height:59px; border-right:0; border-bottom:1px solid var(--line); overflow:auto; }
-  .v2 .brand { display:none; }
-  .v2 .side-links { display:flex; gap:2px; padding:0; }
-  .v2 .side-link { min-height:38px; padding:0 10px; border-left:0; border-bottom:2px solid transparent; border-radius:0; font-size:12px; }
-  .v2 .side-link.active { border-bottom-color:var(--green); }
-  .v2 .side-link svg { width:17px; }
-  .v2 .side-bottom { display:none; }
-  /* X82 · вихід НЕ ховаємо разом із низом панелі: двері на вузькому не потрібні,
-     а вихід — єдиний шлях назад з Е2. Панель тут горизонтальна, тож auto зайвий. */
-  .v2 .side-exit { margin-top:0; padding:0; }
-  .v2 .exit-link { min-height:38px; padding:0 10px; font-size:12px; }
-  .v2 .workspace { grid-template-columns:minmax(220px,.75fr) minmax(370px,1.25fr); }
-  .v2 .cart-panel { grid-column:1 / -1; grid-template-columns:1fr 1fr; }
-  .v2 .cart-panel .panel { height:auto; }
-}
-@media (max-width:900px) {
-  .v2 .training-layout { grid-template-columns:1fr; }
-  .v2 .scenario-items { max-height:360px; }
-  .v2 .summary-grid { grid-template-columns:repeat(2,1fr); }
-  .v2 .page { padding:20px; }
-}
-@media (max-width:680px) {
-  .v2 .appbar { min-height:72px; padding:11px 8px; gap:9px; }  /* X83 · пара до .workspace padding:8px */
-  .v2 .case-title h1 { font-size:16px; }
-  .v2 .case-title p { display:none; }
-  .v2 .tags { display:none; }
-  .v2 .v2-back { font-size:0; }
-  .v2 .v2-back svg { width:21px; }
-  .v2 .finish { min-height:38px; padding:0 12px; font-size:12px; }
-  .v2 .workspace { display:flex; flex-direction:column; padding:8px; }
-  .v2 .panel { min-height:0; }
-  .v2 .profile-panel { order:2; }
-  .v2 .dialogue { order:1; min-height:560px; }
-  .v2 .cart-panel { order:3; display:flex; flex-direction:column; }
-  .v2 .panel-head { min-height:57px; padding:11px 14px; }
-  .v2 .profile { padding:15px; }
-  .v2 .profile .fact, .v2 .profile .notice, .v2 .profile .hint { display:none; }
-  .v2 .profile .person { margin:0; }
-  .v2 .person .avatar { width:39px; height:39px; font-size:15px; }
-  .v2 .messages { padding:18px 13px 10px; }
-  .v2 .bubble-wrap { max-width:83%; }
-  .v2 .composer { padding:10px 12px 12px; }
-  .v2 .quick-phrases { padding-top:10px; }
-  .v2 .quick-phrases button { min-height:34px; }
-  .v2 .cart-panel .panel { width:100%; }
-  .v2 .cart-row { padding:6px 0; }
-  .v2 .quiet-note { margin:0 14px 12px; }
-  .v2 .catalog { padding:0 14px 13px; }
-  .v2 .proposal-row { min-height:62px; }
-  .v2 .page { padding:16px 10px; }
-  .v2 .page-title { align-items:center; margin-bottom:16px; }
-  .v2 .page-title h1 { font-size:24px; }
-  .v2 .page-title p { display:none; }
-  .v2 .page-title .primary { min-height:39px; padding:0 11px; font-size:12px; }
-  .v2 .detail-card { padding:14px; }
-  .v2 .detail-grid, .v2 .review-grid { grid-template-columns:1fr; }
-  .v2 .detail-heading h2 { font-size:25px; }
-  .v2 .scenario-detail { padding:18px 13px; }
-  .v2 .detail-actions { align-items:stretch; flex-direction:column; }
-  .v2 .summary-grid { grid-template-columns:1fr 1fr; gap:8px; }
-  .v2 .metric { min-height:110px; padding:14px; }
-  .v2 .metric strong { font-size:21px; }
-  .v2 .summary-section { margin-top:11px; padding:16px; }
-  .v2 .final-actions { flex-direction:column-reverse; }
-  .v2 .final-actions button { width:100%; }
-}
-</style>
-<style id="v2-css-own">
-/* ═══ v2-own · правила, яких немає в макеті (Х22.3а) — руками, не генератором ═══
-   id «v2-css-own»: префікс v2-css виводить блок з-під гарда зіткнень порту (він рахує «старим» усе, крім v2-css*)
-   живе доки: макет не отримав селектор групи на E1 (тоді — у порт, П9)
-   В-25: група E1 — нативний селектор під пошуком на всю ширину колонки. Вигляд —
-   той самий орган, що на E6 (.wide-table-card .search-row select), без подвійних полів. */
-.v2 .list-tools select { display:block; width:100%; height:38px; border:1px solid var(--anc-border); border-radius:8px; padding:0 10px; color:var(--anc-text-2); background:#fff; }
-/* ── Х22.4 · двері · CSS — вхід у кураторський режим (варіант А) — макет дверей не малює; вигляд — AE_door_compare ──
-   Х22.4б (device S43): поле — одне кільце фокуса (outline знято, лишилось box-shadow); око праворуч у полі (В-30);
-   рідне око Edge (::-ms-reveal) сховане — інакше два ока в одному полі.
-   живе доки: макет не отримав двері (тоді — у порт, П9/П13)
-   ⚠ специфічність ≥ (0,3,0): .v2 .side-bottom button (0,2,1) з порту макета інакше забирає фон, колір і падінг кнопок дверей.
-   Геометрія — дзеркало .brand: плитка 38 px стоїть на тій самій вертикалі (8 + 6 + 8 = 8 + 14), відступ 11 px. */
-.v2 .door, .v2 .door > *, .v2 .door .door-form, .v2 .door .door-input { min-width:0; }
-.v2 .door.door-a { display:block; padding:14px 0 0 6px; border-top:1px solid var(--line); }
-.v2 .door .door-head { display:flex; gap:11px; align-items:center; width:100%; padding:8px 4px 8px 8px; border:0; border-radius:10px; color:var(--ink); background:transparent; text-align:left; }
-.v2 .door .door-head:hover { background:var(--anc-yellow-25); }
-.v2 .door .door-tile { display:grid; place-items:center; width:38px; height:38px; flex:none; border-radius:9px; color:var(--anc-text-2); background:var(--anc-border); }
-.v2 .door .door-tile svg { width:19px; height:19px; }
-.v2 .door .door-t { min-width:0; flex:1; }
-.v2 .door .door-t b { display:block; font-size:12px; line-height:1.3; }
-.v2 .door .door-t small { color:var(--muted); font-size:11px; }
-.v2 .door.is-open .door-card { border:1px solid var(--line); border-radius:12px; background:#fff; box-shadow:0 6px 22px #1C1E2410; }
-.v2 .door.is-open .door-head { border-radius:11px 11px 0 0; }
-.v2 .door.is-open .door-head:hover { background:transparent; }
-.v2 .door .door-form { display:grid; gap:8px; padding:2px 10px 12px; }
-.v2 .door .door-field { position:relative; }
-.v2 .door .door-input { width:100%; height:38px; padding:0 38px 0 10px; border:1px solid var(--anc-border); border-radius:8px; outline:none; color:var(--ink); background:#fff; font-size:16px; }
-.v2 .door .door-input:focus { border-color:var(--anc-blue); box-shadow:0 0 0 3px #008ECC1A; }
-.v2 .door .door-input[aria-invalid="true"] { border-color:var(--danger); box-shadow:0 0 0 3px #bd2f4514; }
-.v2 .door .door-row { display:flex; gap:6px; }
-.v2 .door .door-go { flex:1; min-height:38px; padding:0 10px; border:0; border-radius:8px; color:var(--anc-text); background: var(--anc-yellow); font-weight:700; }
-.v2 .door .door-go:disabled { color:var(--anc-gray-light); background:var(--anc-border); cursor:not-allowed; }
-.v2 .door .door-x { display:grid; place-items:center; width:38px; flex:none; padding:0; border:1px solid var(--anc-border); border-radius:8px; color:var(--anc-text-2); background:#fff; }
-.v2 .door .door-x svg { width:16px; height:16px; }
-.v2 .door .door-msg { display:flex; gap:6px; align-items:flex-start; margin:0; color:var(--danger); font-size:12px; line-height:1.4; }
-.v2 .door .door-msg svg { width:15px; height:15px; flex:none; margin-top:1px; }
-.v2 .door .door-note { margin:0; color:var(--anc-gray); font-size:11px; }
-.v2 .door :focus-visible { outline:2px solid var(--anc-blue); outline-offset:2px; }
-.v2 .door .door-input:focus-visible { outline:none; }
-.v2 .door .door-input::-ms-reveal { display:none; }
-.v2 .door .door-eye { position:absolute; top:3px; right:3px; display:grid; place-items:center; width:32px; height:32px; padding:0; border:0; border-radius:6px; color:var(--anc-gray); background:transparent; }
-.v2 .door .door-eye:hover { color:var(--ink); background:var(--anc-yellow-25); }
-.v2 .door .door-eye svg { width:18px; height:18px; }
-.v2 .door .door-eye:focus-visible { outline-offset:-2px; }
-/* ── /Х22.4 двері · CSS ── */
-/* ── Х23.2 · E2 · CSS — правила, яких у порті немає (П13) ──
-   живе доки: макет не отримав кінець розмови (тоді — у порт)
-   .talk — висота екрана: у макеті це «#screen-e2 main» (id-правило; порт бере лише класи).
-   Х24.1: .secondary переїхало в порт (probe v4 бере E3, де макет його малює) — декларація та сама, байт-у-байт. */
-.v2 .talk { display:grid; grid-template-rows:auto minmax(0,1fr); height:100%; min-height:0; overflow:hidden; }
-/* кінець розмови (Р3, S44) — макет його не малює */
-.v2 .talk-sys { margin:18px 0 0; color:var(--anc-gray); font-size:12px; text-align:center; }
-.v2 .talk-review { margin-top:12px; }
-.v2 .talk-review .typing { margin-top:12px; background:#fff; }
-.v2 .talk-say { color:var(--anc-text); }
-.v2 .talk-err { margin:12px 0 0; padding:10px 12px; border:1px solid #f0dce1; border-radius:8px; color:#a51f37; background:#fffafa; font-size:13px; }
-.v2 .talk-empty { color:var(--anc-gray); text-align:center; }
-.v2 .quick-phrases button:disabled, .v2 .plus:disabled { opacity:.45; cursor:not-allowed; }
-.v2 textarea:disabled { border-color:var(--anc-border); background:var(--anc-plate); color:var(--anc-gray); }
-/* довгий токен (код, адреса) не розпирає бульбашку — урок старого екрана, його тримав smoke_ui */
-.v2 .bubble { overflow-wrap:anywhere; }
-/* Х23.3а (device S44): на 1280 три заготовки не вміщались і ряд скролився вбік — В-21/В-25: ряд чіпів
-   ніколи не скролиться; переноситься. Таблетка «1 позиція» ламалась на два рядки. */
-.v2 .quick-phrases { flex-wrap:wrap; overflow:visible; }
-.v2 .pill { flex:none; white-space:nowrap; }
-/* ── /Х23.2 E2 · CSS ── */
-/* ── Х23.4 · E2 · скрол лише списку пропозицій (В-37, вирок оператора device S44) ──
-   живе доки: макет не отримав скрол списку (тоді — у порт, П13)
-   Було (заміряно Chromium, S45): сітка колонки стискала ряди, і .panel {overflow:hidden} ОБРІЗАЛА і чек, і список —
-   на 1536×734 чек втрачав ~100 px, список не скролився зовсім. Тепер колонка — flex; чек не стискається; панель
-   пропозицій стискається (0 1 auto: поки все вміщається, вигляд той самий — wsd 1.18), скролиться лише .proposals.
-   Вирок А (S45): панель не нижча за 381 px = «хром» 245 (шапка + пошук + вкладки + низ, заміряно Chromium)
-   + 2 рядки списку 2×68 = 136 — ЧИСЛО ДО DEVICE (1.17). min-content тут не працює: інтринсик-висота
-   скрол-списку = весь його вміст (заміряно: панель росла до 12 514 px). Порожній пошук лишає під
-   «Нічого не знайдено» порожнє місце до мінімуму — назване, не дефект. Коли чек + мінімум
-   пропозицій не вміщаються, колонка скролиться як запасний вихід — сховане = відсутнє, тож нічого не обрізаємо.
-   ≤980 не чіпаємо (§11.8). Третій блок — .mock (?mock, П27): сітка на два ряди тут не годилась.
-   Панель пропозицій — :has(> .catalog): у Talk() власного класу вона не має. */
-@media (min-width:981px) {
-  .v2 .cart-panel { display:flex; flex-direction:column; overflow:auto; }
-  .v2 .cart-panel > * { flex:none; }
-  .v2 .cart-panel > .panel:has(> .catalog) { display:flex; flex-direction:column; flex:0 1 auto; min-height:381px; }
-  .v2 .cart-panel .catalog { display:flex; flex-direction:column; flex:0 1 auto; min-height:0; }
-  .v2 .cart-panel .catalog > * { flex:none; }
-  .v2 .cart-panel .catalog > .proposals { flex:0 1 auto; min-height:0; overflow:auto; }
-  /* службова панель ?mock поступається місцем першою (shrink 10): без цього на висоті ПК вона стискала
-     чек і пропозиції до 2 px — так було й до Х23.4 (заміряно Chromium, S45) */
-  .v2 .cart-panel > .mock { flex:0 10 auto; min-height:0; overflow:auto; }
-}
-/* ── Х25.2а · бейдж у рядку назви + без номера (вирок оператора S48, compare А) ──
-   живе доки: макет не отримав це відхилення (тоді — у порт, П9/П13)
-   C1: номер з рядка списку прибрано (J1) — сітка 3 колонки → 2.
-   C2: назва inline, бейдж їде за останнім словом; display бейджа не задаємо — мобільне display:none лишається.
-   C3: у картці бейдж = status(s) (той самий, що в списку), розмір — як колишній .v2-tag (12 px). */
-.v2 .scenario-item { grid-template-columns:minmax(0,1fr) auto; }
-.v2 .scenario-detail .detail-heading h2 { display:inline; }
-.v2 .scenario-detail .detail-heading .tags { margin-left:12px; vertical-align:4px; }
-.v2 .scenario-detail .detail-heading .scenario-status { padding:4px 8px; border-radius:6px; font-size:12px; }
-/* ── /Х25.2а ── */
-/* ── Х27-П1 · ТОКЕНИ ОСТРІВЦЯ + ОБОЛОНКА «лише панель» ─────────────────────
-   живе доки: макет не отримав острівці (тоді — у порт, П9/П13)
-   Джерело: стенд AE_X27_SIDEBAR_v19.html (:177-183 · :219-224 · :1515-1528),
-   числа — S61 §4 (computed, Chromium), НЕ CSS-дефолти стенда: стартова позиція
-   паспорта оператора перебиває частину дефолтів із JS.
-   ⚠ ВИРОК мають ЛИШЕ: Л-02 shell=bare · Л-03 --isl-main #FFFEF6 · Л-06 форма
-   активного (заливка + смуга 3px) · Л-07 висота 47px. Решта токенів нижче —
-   ЖИВІ ЗНАЧЕННЯ СТЕНДА БЕЗ ВИРОКУ, внесені під device-раунд (12.9). Не канон. */
-.v2 { --isl-main:#FFFEF6;            /* Л-03 · В-49/S59 · = --anc-canvas, тон головної зони */
-      --isl-surface:#FFFFFF;         /* живе, без ЛОКу · поверхня острівця (CSS-дефолт стенда #FFFEF6) */
-      --isl-head:#FFF9D9;            /* живе, без ЛОКу · ужиток — КРОК 2 (шапка E2, В-54/S61) */
-      --isl-foot:transparent;
-      --isl-radius:28px;             /* живе, без ЛОКу */
-      --isl-inset:0px;               /* живе, без ЛОКу · CSS-дефолт стенда 16px */
-      --isl-shadow:0 1px 5px 1px #1C1E242e;
-      --isl-border:#E7E7E7; --isl-border-w:1px;
-      /* кути: сторона до краю екрана рівна, скруглюється лише та, що дивиться
-         в контекст (стенд data-corners=right). Дає заміряні 0 28 28 0. */
-      --isl-r-l:0px; --isl-r-r:var(--isl-radius); }
-
-/* ⚠ Межа 981px — не прикраса: мобільний блок продукту (:551-563) кладе панель
-   горизонтальною смугою. Без обгортки правила ваги (0,3,0) дали б їй радіус,
-   тінь і ліву смугу в режимі рядка. Х27 судиться на ПК (1920 · 1536 · 1280). */
-@media (min-width:981px) {
-  /* В-39: рівнів глибини два — фон + острівці. Проміжна поверхня знята ЦІЛКОМ:
-     фон малює сам .v2 через --isl-main, main лишається прозорим, острівцем
-     лишається тільки панель. ⚠ grid-template-columns НЕ переноситься зі стенда:
-     там рейка var(--side-w)=72px, тут розгорнута панель 220px (:357). */
-  .v2[data-shell="bare"] { background:var(--isl-main); }
-  .v2[data-shell="bare"] .shell { background:transparent; padding:0; gap:var(--isl-inset); }
-  .v2[data-shell="bare"] .sidebar { border:var(--isl-border-w) solid var(--isl-border);
-      border-radius:var(--isl-r-l) var(--isl-r-r) var(--isl-r-r) var(--isl-r-l);
-      background:var(--isl-surface); box-shadow:var(--isl-shadow); }
-  .v2[data-shell="bare"] main { border:0; border-radius:0; background:transparent; box-shadow:none; }
-  /* X83 · КРОК 1 · шапка — не окрема поверхня. В-39: рівнів глибини два, фон
-     малює .v2 через --isl-main. main скинуто рядком вище, .appbar жила поруч і
-     вціліла з часів S56. ⚠ Правимо ПІД АТРИБУТОМ: :384 годує й інші стани. */
-  .v2[data-shell="bare"] .appbar { border-bottom:0; background:transparent; }
-  /* Л-06 · В-46/S59 · заливка --anc-yellow-25 + смуга 3px var(--green) зліва.
-     ⚠ Смуга живе в ::after, а не в border-left: той навмисно скидається в
-     transparent. Замір по border-left дає «прозоро» і БРЕШЕ (пастка S61). */
-  .v2[data-shell="bare"] .side-link { position:relative; }
-  .v2[data-shell="bare"] .side-link.active { border-left-color:transparent; }
-  .v2[data-shell="bare"] .side-link.active::after { content:""; position:absolute;
-      left:0; top:0; bottom:0; width:3px; background:var(--green); border-radius:0 3px 3px 0; }
-}
-/* ── /Х27-П1 ── */
-/* ── Х27-П2 · ПАНЕЛЬ ОДИН-В-ОДИН ЗІ СТЕНДОМ ────────────────────────────────
-   живе доки: макет не отримав цю панель (тоді — у порт, П9/П13)
-   Джерело: AE_X27_SIDEBAR_v19.html :201 · :263-269 · :282 · :275 · :1510.
-   ⚠ ЛОК має тільки hover (Л-05 · В-47/S59). Висота по вмісту, центр і стеля
-   зсуву 160 — живі значення стенда, внесені під device-раунд (12.9). */
-/* заглушка: пункт стоїть і підписаний, але екрана ще нема */
-.v2 .side-link.stub { color:var(--anc-gray-light); cursor:default; }
-/* ── X75-RAIL · ДРУГИЙ СТАН ПАНЕЛІ (порт зі стенда v19 :238-243 · :251) ──
-   живе доки: рейка не дістала власного вироку device (тоді числа — в ЛОК)
-   ⚠ @media — відступ від стенда: стенд тільки ПК, а тут ≤980 панель уже
-   горизонтальна смуга, і схований .lbl знищив би в ній підписи.
-   ⚠ transition НЕМА свідомо: плавність — окремий щабель черги (рух Х27-К3). */
-/* X76-RAIL-FIX · Д-1 · стенд :254. X75 зробив логотип кнопкою і забув оце.
-   Браузерна кнопка приносить власні border і padding: перший малює кант по
-   круглій плитці, другий стискає площу, від якої svg бере свої 75 %.
-   Правило поза @media: кнопкою логотип лишається на будь-якій ширині. */
-.v2 .brand-mark { cursor:pointer; border:0; padding:0; }
-@media (min-width:981px) {
-  .v2[data-mode="rail"] { --side-w:72px; }
-  .v2[data-mode="rail"] .brand { padding:0 0 21px; justify-content:center; }
-  .v2[data-mode="rail"] .brand .brand-text { display:none; }
-  .v2[data-mode="rail"] .side-link { gap:0; padding:0; justify-content:center;
-      border-left-width:0; border-radius:8px; }
-  .v2[data-mode="rail"] .side-link .lbl { display:none; }
-  /* X82 · у рейці 72 підпис ховається, повна форма лишається в data-tip. */
-  .v2[data-mode="rail"] .side-exit { padding:12px 0 0; justify-items:center; }
-  /* X84 · у рейці вихід — плитка, геометрія з `.door .door-tile` (:651): 38×38,
-     radius 9, --anc-border. Іконці бракувало тіла, а не другого шеврона. */
-  .v2[data-mode="rail"] .exit-link { gap:0; width:38px; height:38px; min-height:0; padding:0; justify-content:center; border-radius:9px; color:var(--anc-text-2); background:var(--anc-border); }
-  .v2[data-mode="rail"] .exit-link .lbl { display:none; }
-  /* X76-RAIL-FIX · Д-2 · порт X75 цілив у `.side-bottom`, якого в розмітці
-     продукту не існує (0 входжень у JS). Двері тут: .door > .door-head >
-     .door-t. Підложка .door-tile у рейці лишається — див. шапку файла. */
-  .v2[data-mode="rail"] .door .door-head { justify-content:center; gap:0; padding:8px 0; }
-  .v2[data-mode="rail"] .door .door-t { display:none; }
-}
-/* підказка заглушки — окремим шаром у body */
-#v2-tip { position:fixed; z-index:99; padding:5px 9px; border-radius:6px; color:#fff; background:#1C1E24;
-          font:12px/1.4 system-ui, sans-serif; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity .12s; }
-#v2-tip.on { opacity:1; }
-
-@media (min-width:981px) {
-  /* висота по вмісту: панель у острівці — картка, а картка живе по вмісту.
-     align-self, а не align-items: інакше по вмісту скоротився б і main. */
-  .v2[data-shell="bare"] .sidebar { align-self:start; overflow:visible;
-      transform:translateY(var(--rail-shift, 0px)); }
-  /* margin-top:auto притискав двері до низу — при короткій панелі тримати нічого */
-  .v2[data-shell="bare"] .side-bottom { margin-top:12px; }
-  /* X82 · та сама причина, що рядком вище: панель живе по вмісту (align-self:start),
-     тож margin-top:auto притискати нічого — даємо чесний відступ. */
-  .v2[data-shell="bare"] .side-exit { margin-top:12px; }
-  .v2[data-shell="bare"] .exit-link:hover { background:#1C1E2414; }
-  /* Л-05 · нейтральний 8 % (#1C1E2414), навмисно НЕ жовтий — вирок S53.
-     Активний пункт із hover не змішуємо. Заглушку стенд теж підсвічує. */
-  .v2[data-shell="bare"] .side-link:not(.active):hover { background:#1C1E2414; }
-}
-/* ── /Х27-П2 ── */
-/* ── /Х23.4 ── */
-</style>
-<style id="v2-css-anc">
-/* ── АНЦ токени · x25_apply_v2 (генерується, руками не правити) ── */
-.v2 { --anc-yellow:#FFE241; --anc-yellow-50:#FFF0A0; --anc-yellow-25:#FFF8D0; --anc-blue:#008ECC; --anc-blue-25:#BFE3F2; --anc-canvas:#FFFEF6; --anc-plate:#FFFCEC; --anc-text:#1C1E24; --anc-text-2:#4F4F4F; --anc-gray:#6E6E77; --anc-gray-light:#9B9CA1; --anc-border:#E7E7E7; --anc-positive:#1E815D; }
-.v2 .brand-mark { background:var(--anc-yellow); color:var(--anc-blue); border-radius:50%; }  /* Х25.2: лого на жовтому колі (фавікон брендбука); icon-chip не чіпаємо */
-.v2 .brand-mark svg { width:75%; height:75%; fill:currentColor; stroke:none; }  /* 75 % = безпечна зона ≥12.5 %; .v2 svg дає fill:none + stroke — для лого навпаки */
-</style>
 </head>
 <body>
-<!-- v2 · спрайт іконок ПК-оболонки (Х21). Лише символи, які кличе icon(): смоук X21 S6 звіряє обидва боки. -->
-<svg id="v2-sprite" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></symbol><symbol id="i-box" viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M10 12h6M10 16h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20V4"/><path d="M9 20v-6M14 20V9M19 20v-9"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4V4ZM13 4h7v7h-7V4ZM4 13h7v7H4v-7ZM13 13h7v7h-7v-7Z"/></symbol><symbol id="i-chip" viewBox="0 0 24 24"><path d="M7 7h10v10H7V7Z"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/><path d="M12 3l1.4 2.6 2.9-.5.6 2.9 2.6 1.4-1.5 2.6 1.5 2.6-2.6 1.4-.6 2.9-2.9-.5L12 21l-1.4-2.6-2.9.5-.6-2.9L4.5 14.6 6 12 4.5 9.4l2.6-1.4.6-2.9 2.9.5L12 3Z"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M22 12h-2M12 22v-2M2 12h2"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/><path d="M9 10h6"/></symbol><symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H7"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></symbol><symbol id="i-anc" viewBox="0 0 250.6 229.9"><path fill-rule="evenodd" d="M55.5 134.9L28.1 134.9L23.1 149.7C22.7 151.1 21.4 152.0 20.0 152.0L3.8 152.0C1.6 152.0 0.0 149.8 0.7 147.7L21.8 81.8C22.2 80.4 23.5 79.5 24.9 79.5L58.8 79.5C60.2 79.5 61.5 80.4 61.9 81.8L83.3 147.7C84.0 149.8 82.4 152.0 80.2 152.0L63.3 152.0C61.8 152.0 60.6 151.0 60.1 149.7L55.5 134.9M32.7 119.4L50.5 119.5L41.8 91.0L32.7 119.4Z"/><path fill-rule="evenodd" d="M177.2 148.3L177.2 83.0C177.2 81.2 178.7 79.7 180.5 79.7L197.5 79.7C199.3 79.7 200.8 81.2 200.8 83.0L200.8 133.1L217.8 133.1L217.8 83.0C217.8 81.2 219.2 79.7 221.1 79.7L238.1 79.7C239.9 79.7 241.4 81.2 241.4 83.0L241.4 133.1L247.3 133.1C249.1 133.1 250.6 134.6 250.6 136.4L250.6 161.9C250.6 163.7 249.1 165.2 247.3 165.2L239.9 165.2C238.2 165.2 236.8 163.9 236.6 162.3L235.0 151.6L180.5 151.6C178.7 151.6 177.2 150.2 177.2 148.3Z"/><path fill-rule="evenodd" d="M162.1 82.8L162.1 148.3C162.1 150.2 160.6 151.6 158.8 151.6L140.9 151.6C139.1 151.6 137.6 150.2 137.6 148.3L137.6 125.1L117.5 125.1L117.5 148.3C117.5 150.2 116.0 151.6 114.2 151.6L96.3 151.6C94.5 151.6 93.0 150.2 93.0 148.3L93.0 82.8C93.0 81.0 94.5 79.5 96.3 79.5L114.2 79.5C116.0 79.5 117.5 81.0 117.5 82.8L117.5 106.0L137.6 106.0L137.6 82.8C137.6 81.0 139.1 79.5 140.9 79.5L158.8 79.5C160.6 79.5 162.1 81.0 162.1 82.8Z"/><path fill-rule="nonzero" d="M110.0 27.6C116.2 39.1 129.0 42.9 129.0 42.9C136.9 45.4 165.4 43.1 172.4 44.5C179.4 45.9 185.4 46.3 187.6 44.4C189.8 42.5 187.3 39.5 184.1 38.1C174.4 33.8 152.3 30.1 152.3 30.1C152.3 30.1 184.8 15.3 219.6 61.5C221.9 64.5 230.1 63.8 226.4 56.6C222.3 48.6 193.9 0.0 126.2 0.0C80.2 0.0 43.9 30.2 28.0 61.6C27.4 62.9 29.1 64.0 30.0 62.9C42.4 48.3 73.0 18.5 110.0 27.6Z"/><path fill-rule="nonzero" d="M143.5 202.3C137.4 190.8 124.5 187.0 124.5 187.0C116.6 184.5 88.1 186.8 81.1 185.4C74.1 183.9 68.1 183.6 65.9 185.5C63.7 187.4 66.2 190.3 69.4 191.7C79.1 196.0 101.2 199.7 101.2 199.7C101.2 199.7 68.7 214.5 33.9 168.4C31.6 165.3 23.4 166.1 27.1 173.3C31.2 181.3 59.6 229.9 127.3 229.9C173.3 229.9 209.7 199.6 225.5 168.3C226.1 167.0 224.4 165.8 223.5 166.9C211.1 181.5 180.5 211.4 143.5 202.3Z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol></svg>
-<!-- /v2 -->
 <div class="wrap" id="app">
   <p class="sub">Завантаження…</p>
 </div>
@@ -1041,865 +449,11 @@ function foldRows(dl, labels){
   }
 }
 
-/* ── v2 · ПК-оболонка (Х21 крок 2) ─────────────────────────────────
-   Новий дизайн (SPEC v0.4) заходить екран за екраном. Екран нового дизайну
-   живе в мапі V2 і малюється всередині normalShell(); решта — старий
-   перемикач у render(). Поки V2 має екран, body несе клас v2-on (CSS під
-   коренем .v2, стильовий блок v2-css) — старі екрани його не бачать.
-   У боковій панелі тільки пункти з живим екраном (§11.11): інші з'являться
-   разом зі своїми екранами. Будується через el(): жодного innerHTML. */
-const V2 = {};               // {назва_екрана: функція(main)} — наповнюють кроки 4+
-/* ── Х27-П3 · НАБОРИ ПУНКТІВ (порт зі стенда AE_X27_SIDEBAR_v19 :1196, Д-В2) ──
-   [екран, іконка, підпис]. Прапорця «заглушка» тут НЕМА свідомо: живість
-   рахується з V2 — мертвий підпис не може розійтися з живим кодом, і
-   детектор мертвих важелів (борг 0.3-Б) не отримає нової здобичі.
-     '2' — те, що продукт мав до Х27
-     '4' — SPEC §8.1, звичайний режим фармацевта
-     '6' — SPEC §8.2, кураторський режим (для Олі)
-   Перемикається ОДНИМ рядком нижче. Ніяких зашитих списків у sidebar(). */
-const V2_SETS = {
-  '2': [['picker','i-play','Тренування'], ['catalog','i-box','Каталог']],
-  '4': [['picker','i-play','Тренування'], ['scenarios','i-doc','Сценарії'],
-        ['catalog','i-box','Каталог'],    ['results','i-bars','Результати']],
-  '6': [['dash','i-grid','Дашборд'],      ['ascen','i-doc','Сценарії'],
-        ['acatalog','i-box','Каталог'],   ['models','i-chip','AI / Моделі'],
-        ['prompts','i-chat','Промпти'],   ['settings','i-gear','Система']]
-};
-/* ⚠ SPEC §8: ДВА РЕЖИМИ, СПІЛЬНОЇ НАВІГАЦІЇ В НИХ НЕМА.
-   Набір обирає РЕЖИМ, а не константа. «Тренування» належить лише звичайному
-   режиму; у куратора його бути не може — і навпаки.
-   Вирок оператора S62 виправляє попередню редакцію, де живі екрани
-   підмішувались у кураторський набір: такого правила не існує. */
-/* X72: 'ascen' — кураторський «Сценарії» (правка, A2 мокапу). Ключ окремий від
-   звичайного 'scenarios' (E4, список): підпис спільний, екрани різні.
-   X74-ACATALOG: те саме для «Каталогу». 'catalog' — E6, вітрина фармацевта
-   тільки для читання; у куратора за SPEC A3 (правка позицій), ключ 'acatalog'.
-   Обидва кураторські пункти — заглушки, поки немає екранів (живість з V2, П80).
-   X93-C1: 'ascen' живий тимчасово — старий Editor до порту A2. */
-const V2_CUR = new Set(['dash','models','prompts','settings','escen','ascen','acatalog']);
-function v2Nav(active){
-  return V2_SETS[V2_CUR.has(active) ? '6' : '4'];
-}
-/* --- X71 - ДІМ КУРАТОРА (X71-DIM-KURATORA) --------------------------------
-   Набір '6' мав механізм і не мав де показатись: кураторські екрани малювались
-   старим шляхом, поза normalShell. Тепер дім є — але БЕЗ переписування самих
-   екранів: старий екран приймає root і малює в нього, v2-екран повертає тіло.
-   Адаптер зшиває дві форми, продукт екранів не знає.
-   ⚠ Старий екран має право сам себе перенаправити (замок зачинено, запису
-   немає): тоді він УЖЕ викликав render() і намалював інше. Його тіло віддавати
-   не можна — воно лягло б поверх намальованого. Звіряємо S.screen до і після;
-   розбіжність = null, і render() мовчки виходить.
-   Підпис під пункт і зворотний бік дверей «Тренажер» — окремі кроки черги. */
-function v2Adapt(fn){
-  return function(){
-    const want = S.screen;
-    const box = el('div', {});
-    fn(box);
-    if(S.screen !== want) return null;
-    return box;
-  };
-}
-/* X97-C1 · A2 «Сценарії» = композиція мокапу X21 навколо чинного рушія (П101). */
-function A2Scen(root){
-  if(!CURATOR.open){ S.screen='settings'; render(); return; }
-  const ids = S.SCEN.map(x=>String(x.id));
-  /* Обраний запис зник (дані перезавантажились) — беремо перший, а не петлю через ScenCard. */
-  if(S.escen===null || !ids.includes(String(S.escen))) S.escen = ids.length ? ids[0] : null;
-  const listCol = el('div',{class:'a2-col a2-list'});
-  const formCol = el('div',{class:'a2-col a2-form'});
-  const prevCol = el('aside',{class:'a2-col a2-prev'});
-  Editor(listCol);                 if(S.screen!=='ascen') return;
-  if(S.escen!==null){ ScenCard(formCol); if(S.screen!=='ascen') return; }
-  const id = S.escen===null ? null : String(S.escen);
-  const rec = id===null ? null : recOf(id);
-  if(rec){
-    const dr = draftFields(id);
-    prevCol.append(
-      el('h2',{class:'a2-h',text:'Попередній перегляд'}),
-      el('p',{class:'a2-cap',text:'Так картка виглядатиме в E1'}),
-      el('article',{class:'a2-card'},[
-        el('span',{class:'a2-no',text: rec.no ? '#'+rec.no : 'Оформлення на місці'}),
-        el('h3',{text:rec.title||'без назви'}),
-        el('span',{class:'a2-tag',text:rec.grp||'—'}),
-        el('p',{text:(rec.who||'—')+' · '+(rec.order||[]).length+' поз.'}),
-        rec.noSale ? el('p',{text:'Правильна дія — нічого не пропонувати.'}) : null]),
-      /* Поля status у даних немає: «чернетка» = є незбережені правки цього запису. */
-      el('span',{class:'a2-badge'+(dr.length?' draft':''),text: dr.length?'чернетка':'опубліковано'}));
-  }
-  root.append(el('div',{class:'a2'},[listCol, formCol, prevCol]));
-}
-V2.settings = v2Adapt(Settings);
-V2.escen    = v2Adapt(ScenCard);
-V2.models   = v2Adapt(Models);   /* X93-C1 · тимчасово · живе доки: порт A6 */
-V2.ascen    = v2Adapt(A2Scen);   /* X97-C1 · A2 · В-83 знято для ascen */
-/* --- /X71 --- */
-function icon(id){
-  const NS='http://www.w3.org/2000/svg';
-  const s=document.createElementNS(NS,'svg'); s.setAttribute('aria-hidden','true');
-  const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id);
-  s.append(u); return s;
-}
-/* ── Х22.4 · двері · JS — (v2: око, Х22.4б) вхід у кураторський режим (варіант А, вирок оператора S42) ──
-   Одні двері, один код: AE_EDIT_CODE, секрет воркера (SPEC «Замок», В-28). Сторінка коду
-   не знає, тому питає воркер: POST editEndpoint, заголовок x-ae-edit-code (відсоткове
-   кодування — кирилиця в заголовку інакше падає), тіло {}. ae-edit.js перевіряє код ДО
-   читання тіла: 403 = не той код; 400 «немає catalog/scenarios» = код прийнято, нічого не
-   записано. Будь-яка інша відповідь або мережа — «не вдалося перевірити», двері зачинені.
-   Превʼю (fetch підмінений прокладкою ae_bundle — fetch.__aeShim): будь-який непорожній код
-   і напис про це під полем — макет не рахує (§7.1).
-   Стан дверей — памʼять модуля, як EDITKEY: код не лягає ні в S, ні в localStorage.
-   Розкриття — на місці, без модалки (SPEC: «лишається де був»).
-   Х22.4б (device S43, вирок оператора В-30): око в полі — показати/сховати введений код. Перемикає
-   type на місці, без render(): курсор і фокус лишаються в полі. Скидається на «сховано» разом із
-   дверима (× · Escape · відмикання) — відкритий код не переживає закриття.
-   живе доки: прийдуть A-екрани v2 (тоді двері ведуть у A1, а не в старий Settings). */
-const DOOR = { open:false, val:'', msg:'', bad:false, busy:false, show:false };
-const DOOR_MSG = {
-  bad:'Код не підходить.',
-  net:'Не вдалося перевірити код. Перевірте зʼєднання й спробуйте ще раз.',
-  noend:'Вхід недоступний: у config.json не оголошено editEndpoint.' };
-const doorPreview = () => !!(window.fetch && window.fetch.__aeShim);
-function doorReset(){ Object.assign(DOOR, {open:false, val:'', msg:'', bad:false, busy:false, show:false}); }
-function doorFocus(){ const i = document.querySelector('.v2 .door-input'); if(i) i.focus(); }
-async function doorCheck(code){
-  if(doorPreview()) return 'ok';
-  const url = S.cfg && S.cfg.editEndpoint;
-  if(!url) return 'noend';
-  try{
-    const r = await fetch(url, {method:'POST', body:'{}',
-      headers:{'Content-Type':'application/json', 'x-ae-edit-code':encodeURIComponent(code)}});
-    if(r.status === 403) return 'bad';
-    return (r.status === 400 || r.ok) ? 'ok' : 'net';
-  }catch(_){ return 'net'; }
-}
-async function doorGo(){
-  const code = DOOR.val.trim();
-  if(!code || DOOR.busy) return;
-  DOOR.busy = true; DOOR.msg = ''; DOOR.bad = false; render();
-  const v = await doorCheck(code);
-  DOOR.busy = false;
-  if(v === 'ok'){ CURATOR.grant(); EDITKEY.code = code; doorReset(); S.screen = 'settings'; render(); return; }
-  DOOR.msg = DOOR_MSG[v]; DOOR.bad = v === 'bad'; render(); doorFocus();
-}
-function door(active){
-  const unlocked = CURATOR.open, open = DOOR.open && !unlocked;
-  /* ── X77-DOOR2 · ЗВОРОТНИЙ БІК (черга, щабель 1 · S65 §0.1) ──────────
-     Три стани однієї кнопки, нового вузла немає. Сторона рахується з
-     РЕЖИМУ, а режим береться з `active` — того самого аргументу, яким
-     судить v2Nav. Другий дім одного судження (S.screen тут) сьогодні дав
-     би те саме значення і розійшовся б мовчки рівно тоді, коли аргументи
-     зміняться. Мікроскоп S66, вісь 4.
-     живе доки: кураторський режим має вхід через ці двері. */
-  const exit = unlocked && V2_CUR.has(active);
-  const cap  = exit ? 'Тренажер' : 'Куратор';
-  const head = el('button', {type:'button', class:'door-head', 'data-v2-door':'head',
-      'aria-expanded':unlocked ? null : String(open),
-      /* У рейці 72 підпис схований, а іконка несе aria-hidden — без цього
-         імені кнопка безіменна для читача екрана. Чинне було й до X77. */
-      'aria-label':cap,
-      onclick:()=>{
-        if(exit){ S.screen = 'picker'; render(); return; }
-        if(unlocked){ S.screen = 'settings'; render(); return; }
-        /* X86-RAILDOOR · щабель 1 черги (S68 §0.1) ───────────────────
-           У рейці 72 форма коду розрахована на 220 і вилазить за межі
-           панелі: гілки .door-form у [data-mode="rail"] немає взагалі.
-           Вирок оператора: клік по замку в рейці СПЕРШУ розгортає рейку.
-           Розгортання і відкриття — один клік, бо на 220 замок
-           відкривається з одного; два кліки тут були б регресом.
-           Дім важеля — V2_RAIL (X75-RAIL, нижче), другого не заводимо.
-           Зачинення (× · Escape) рейку НЕ згортає назад: згортання —
-           рішення оператора, важіль його власний (логотип).
-           живе доки: форма коду не має власної розкладки під 72. */
-        if(DOOR.open) doorReset(); else { if(V2_RAIL) V2_RAIL = false; DOOR.open = true; }
-        render(); if(DOOR.open) doorFocus(); }},
-    [el('span', {class:'door-tile'}, [icon(exit ? 'i-play' : 'i-lock')]),
-     /* SPEC §8.2 · стенд :1366: «режим» — службове слово, воно нічого не несе.
-        Пара «Куратор ↔ Тренажер» — два боки однієї кнопки. Зворотний бік
-        живий з X77: сторона обчислена вище. */
-     /* Х27-П5 · двері: один рядок. Стан «відімкнено/кодом» і так видно —
-        замок відкривається полем коду просто під кнопкою. */
-     el('span', {class:'door-t'}, [el('b', {text:cap})])]);
-  const card = el('div', {class:'door-card'}, [head]);
-  if(open){
-    const go = el('button', {type:'button', class:'door-go', 'data-v2-door':'go',
-      disabled:!DOOR.val.trim() || DOOR.busy, text:DOOR.busy ? 'Перевіряю…' : 'Відімкнути', onclick:doorGo});
-    const inp = el('input', {class:'door-input', type:DOOR.show ? 'text' : 'password', autocomplete:'off',
-      spellcheck:'false', autocapitalize:'off', placeholder:'Код',
-      'aria-label':'Код кураторського режиму', 'aria-invalid':DOOR.bad ? 'true' : null,
-      readonly:DOOR.busy ? '' : null, value:DOOR.val,
-      oninput:e=>{ DOOR.val = e.target.value; go.disabled = !DOOR.val.trim();
-        if(DOOR.msg){ DOOR.msg = ''; DOOR.bad = false; e.target.removeAttribute('aria-invalid');
-          const m = card.querySelector('.door-msg'); if(m) m.remove(); } },
-      onkeydown:e=>{ if(e.key === 'Enter'){ e.preventDefault(); doorGo(); }
-        else if(e.key === 'Escape'){ doorReset(); render(); } }});
-    const eyeSet = b=>{ b.setAttribute('aria-pressed', String(DOOR.show));
-      b.setAttribute('aria-label', DOOR.show ? 'Сховати код' : 'Показати код');
-      b.replaceChildren(DOOR.show ? icon('i-eyeoff') : icon('i-eye')); }; /* обидва літералами, імена без другого дефіса: S6 smoke_X21_v10 бачить лише i- + літери */
-    const eye = el('button', {type:'button', class:'door-eye', 'data-v2-door':'eye',
-      onmousedown:e=>e.preventDefault(),
-      onclick:()=>{ DOOR.show = !DOOR.show; inp.type = DOOR.show ? 'text' : 'password'; eyeSet(eye);
-        inp.focus(); const n = inp.value.length; try{ inp.setSelectionRange(n, n); }catch(_){} }});
-    eyeSet(eye);
-    card.append(el('div', {class:'door-form'}, [el('div', {class:'door-field'}, [inp, eye]),
-      el('div', {class:'door-row'}, [go,
-        el('button', {type:'button', class:'door-x', 'aria-label':'Скасувати',
-          onclick:()=>{ doorReset(); render(); }}, [icon('i-x')])]),
-      DOOR.msg ? el('p', {class:'door-msg', role:'alert'}, [icon('i-alert'), DOOR.msg]) : null,
-      doorPreview() ? el('p', {class:'door-note', text:'Превʼю: код не перевіряється'}) : null]));
-  }
-  return el('div', {class:'side-bottom door door-a' + (open ? ' is-open' : '')}, [card]);
-}
-/* ── /Х22.4 двері · JS ── */
-/* ── X75-RAIL · дім важеля стану панелі (12.11) ────────────────────────
-   Пам'ять модуля, як DOOR: стан панелі не лягає ні в S, ні в localStorage —
-   це поза́ даними сесії. Атрибут data-mode на .v2 ставить normalShell(),
-   рівно як data-shell (стенд :1219).
-   Важіль — САМ ЛОГОТИП (стенд :408 · :1406), нового елемента не додаємо:
-   стенд уже оголосив логотип кнопкою, а продукт лишив його простим блоком —
-   це і є той борг, що закривається тут.
-   ⚠ Кутових дужок у цьому коментарі нема свідомо: H2 рахує імена тегів
-   текстом і дав би хибне ⚠ на балансі через сам коментар (12.12). */
-let V2_RAIL = false;
-/* X81 · дім каналу виходу E2 (12.11): Talk() виставляє, normalShell() гасить
-   одразу після побудови дерева — змінна живе рівно один рендер, на E3 не тече. */
-let V2_EXIT = null;
-/* X87-RAILCLOSE · зворотний бік X86 (device-вирок S69) ─────────────────
-   У стан «рейка 72 + відкрита форма коду» ведуть ДВА входи, не один:
-   замок (полагоджено X86) і логотип при вже відкритій формі. Інваріант
-   «форми коду при ширині 72 не існує» ставиться тут — у місці, де
-   народжується стан рейки, — а не біля кожного входу окремо.
-   Скидання цілим doorReset(), бо відкритий код не переживає закриття
-   дверей з X22.4б: × · Escape · відмикання вже поводяться так само.
-   живе доки: форма коду не має власної розкладки під 72. */
-function railToggle(){ V2_RAIL = !V2_RAIL; if(V2_RAIL && DOOR.open) doorReset(); render(); }
-function sidebar(active){
-  /* Х24.3 · В-43: панель несе ЛИШЕ бренд на E2 (game) і E3 (result). На обох екранах
-     вихід живе в шапці; на E3 другі двері збоку знищили б незбережений підсумок. */
-  const bare = active==='game' || active==='result';
-  /* Х27-П2 · заглушки малюються дослівно як у стенді (build(), Д-В2):
-     клас .stub · aria-disabled · доступне ім'я з причиною · без onclick.
-     Підпис у span.lbl — той самий вузол, який рейка Х27-К3 ховатиме. */
-  const links = v2Nav(active).map(([screen,iconId,label])=>{
-    const live = screen==='picker' || !!V2[screen];
-    const a = { type:'button',
-      class:'side-link'+(active===screen?' active':'')+(live?'':' stub'),
-      'aria-current':(live && active===screen)?'page':null,
-      'data-v2-nav':screen };
-    if(live){ a.onclick = ()=>{ S.screen = screen; render(); };
-              /* X75-RAIL: у рейці підпису не видно — він мусить жити в підказці
-                 (стенд :1344). У розгорнутій панелі showTip() її не покаже. */
-              a['data-tip'] = label; }
-    else { a['aria-disabled'] = 'true';
-           a['aria-label'] = label + ' — екран ще не готовий';
-           a['data-tip']   = label + ' · екран ще не готовий'; }
-    return el('button', a, [icon(iconId), el('span',{class:'lbl',text:label})]);
-  });
-  return el('aside',{class:'sidebar'},[
-    el('div',{class:'brand'},[
-      /* X75-RAIL: логотип — важіль стану панелі (стенд :408). type=button, бо
-         в <aside> без type кнопка не сабмітить, але лишається неоднозначною. */
-      el('button',{type:'button', class:'brand-mark', onclick:railToggle,
-        'aria-expanded':String(!V2_RAIL),
-        'aria-label':V2_RAIL ? 'Розгорнути панель' : 'Згорнути панель'},[icon('i-anc')]),
-      el('div',{class:'brand-text'},[el('b',{text:'Тренажер'}), el('small',{text:'Навчання фармацевтів'})])]),
-    /* Х23.3 · Х24.3 → X81: на E2 (game) панель несе бренд і ВИХІД; на E3 — лише бренд. */
-    bare ? null : el('nav',{class:'side-links','aria-label':'Звичайний режим'},links),
-    /* X81 → X82 · вихід з розмови: власний вузол унизу панелі, НЕ пункт навігації
-       (S67 §0.2, маршрут б+в). У рейці 72 підпис не видно — повна форма живе в
-       data-tip і в aria-label, як у решти пунктів (X75-RAIL). */
-    (bare && V2_EXIT) ? el('div',{class:'side-exit'},[
-      el('button',{type:'button', class:'exit-link', 'data-e2-exit':'rail',
-        'data-tip':V2_EXIT.tip, 'aria-label':V2_EXIT.tip, onclick:V2_EXIT.go},
-        [icon('i-arrow'), el('span',{class:'lbl', text:V2_EXIT.label})])]) : null,
-    /* низ панелі — двері Х22.4 (§8.1: вхід у кураторський режим під замком) */ bare ? null : door(active)]);
-}
-/* ── Х27-П2 · ВЕРТИКАЛЬ ПАНЕЛІ (порт зі стенда AE_X27_SIDEBAR_v19 :1631) ──
-   Панель живе по своєму вмісту (align-self:start) і зсувається до центра
-   вікна. Зсув РАХУЄТЬСЯ, не задається: вільне місце навпіл, обрізане стелею.
-   Стеля — щоб панель не відірвалась від контексту; побічний зиск: вона
-   перестає їздити при зміні кількості пунктів.
-   ⚠ Стеля 160 і сам центр ЛОКу не мають — живі значення стенда під device.
-   transform, а не margin: розкладка не рухається, заміри зазорів чинні. */
-const RAIL_CAP = 160;
-function railShift(){
-  const v2 = document.querySelector('.v2');
-  if(!v2) return 0;
-  const sh = v2.querySelector('.shell'), sd = v2.querySelector('.sidebar');
-  if(!sh || !sd) return 0;
-  /* ≤980 панель — горизонтальна смуга, зсувати нічого. matchMedia у jsdom
-     буває заглушкою: її відсутність не має права вимикати ПК-гілку. */
-  const mm = window.matchMedia && window.matchMedia('(min-width:981px)');
-  if(mm && !mm.matches){ v2.style.setProperty('--rail-shift','0px'); return 0; }
-  const cs = getComputedStyle(sh);
-  const free = sh.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0) - sd.offsetHeight;
-  const shift = Math.max(0, Math.min(free/2, RAIL_CAP));
-  v2.style.setProperty('--rail-shift', shift + 'px');
-  return Math.round(shift);
-}
-window.addEventListener('resize', railShift);
-
-/* Підказка заглушок. У розгорнутій панелі підпис видно, тому підказка
-   вмикається САМЕ для заглушок і несе причину (стенд :1349). Окремим шаром
-   у body, не ::after: панель має власний overflow і обрізала б псевдоелемент.
-   Ім'я вузла з префіксом v2- : голий id у продукті з чужим CSS — колізія. */
-function v2Tip(){
-  let t = document.getElementById('v2-tip');
-  if(!t){ t = document.createElement('div'); t.id = 'v2-tip'; document.body.append(t); }
-  return t;
-}
-function showTip(node){
-  const txt = node.getAttribute('data-tip');
-  /* X75-RAIL (стенд :1349): у розгорнутій панелі підказку має лише заглушка —
-     підпис і так видно. У рейці підпису немає в жодного пункту, тож підказку
-     дістають усі. Умова читається зі стану, не з прапорця на вузлі. */
-  if(!txt) return;
-  if(!V2_RAIL && !node.classList.contains('stub')) return;
-  const r = node.getBoundingClientRect(), t = v2Tip();
-  t.textContent = txt; t.classList.add('on');
-  t.style.left = Math.round(r.right + 8) + 'px';
-  t.style.top  = Math.round(r.top + r.height/2 - t.offsetHeight/2) + 'px';
-}
-function hideTip(){ const t = document.getElementById('v2-tip'); if(t) t.classList.remove('on'); }
-['mouseover','focusin'].forEach(ev=>document.addEventListener(ev, e=>{
-  const n = e.target.closest && e.target.closest('.v2 .side-link[data-tip], .v2 .exit-link[data-tip]');
-  if(n) showTip(n); else hideTip();
-}));
-['mouseout','focusout'].forEach(ev=>document.addEventListener(ev, hideTip));
-
-function normalShell(active, body){
-  /* Х27-П1 · дім важеля оболонки (12.11): state shell=bare живе атрибутом на .v2,
-     як у стенді AE_X27_SIDEBAR_v19. Л-02 · В-49/S59. */
-  const tree = el('div',{class:'v2','data-shell':'bare','data-mode':V2_RAIL?'rail':'expanded'},
-    [el('div',{class:'shell'},[sidebar(active), el('main',{},[body])])]);
-  V2_EXIT = null;  /* X81: канал згорає в тому ж рендері, що й запалився */
-  return tree;
-}
-/* ── /v2 ── */
-
-/* ── v2 · E6 Каталог — вітрина (Х21 крок 4) ──────────────────────────
-   SPEC v0.4 §9 E6 з вироками S38 §0.2: ряд типу — одна вісь, без «З бонусом»
-   (В-17); категорія — нативний селектор з лічильниками поруч із пошуком
-   (В-20/21); лічильники фасетні: кожен ряд рахує в межах ІНШОГО. Порожня ціна
-   чи бонус — «—»; сорт за ціною/бонусом числовий, порожні завжди в кінці.
-   Тільки читання: екран нічого не пише. Дані — S.ALL/S.LABEL, текстом через el().
-   Стан живе в S.e6: повернення на екран не скидає фільтри (урок fold/efilter).
-   ⚠ el() ставить class ДО перевірки на null: class:null дає клас «null». Тут — ''. */
-const E6_PAGE = 20;
-const E6_TYPES = ['Усі', 'ВТМ', 'ЗФ'];
-const E6_COLS = [['n','Назва',true], ['cat','Категорія',false], ['p','Ціна',true], ['k','Тип',false], ['b','Бонус',true]];
-const v2money = v => (v===null || v===undefined || v==='' || Number(v)===0) ? '' : Number(v).toFixed(2).replace('.', ',') + ' ₴';
-function pageWindow(page, pages){ const out=[]; for(let i=1;i<=pages;i++){
-  if(i===1 || i===pages || Math.abs(i-page)<=1) out.push(i); else if(out[out.length-1]!=='…') out.push('…'); } return out; }
-function Catalog(){
-  const st = S.e6 || (S.e6 = {type:'Усі', cat:'', term:'', sort:{field:'n', dir:'asc'}, page:1});
-  const items = Object.values(S.ALL);
-  const found = () => { const t = st.term.trim().toLowerCase(); return items.filter(it => it.n.toLowerCase().includes(t)); };
-  const typeOk = (it, type) => type==='Усі' || it.k===type;
-  const catOk = (it, cat) => !cat || it.cat===cat;
-  const rows = () => { const dir = st.sort.dir==='asc' ? 1 : -1, f = st.sort.field, num = f==='p' || f==='b';
-    const val = it => { const x = Number(it[f]); return it[f]===null || !x ? null : x; };
-    return found().filter(it => typeOk(it, st.type) && catOk(it, st.cat)).sort((a, b) => {
-      if(num){ const x = val(a), y = val(b);
-        if(x===null && y===null) return a.n.localeCompare(b.n, 'uk');
-        if(x===null) return 1; if(y===null) return -1; return (x - y) * dir; }
-      return a.n.localeCompare(b.n, 'uk') * dir; }); };
-  const redraw = () => { fill(); };
-  const search = el('input', {id:'e6-search', type:'search', placeholder:'Пошук товару…', value:st.term,
-    oninput:e => { st.term = e.target.value; st.page = 1; redraw(); }});
-  const cats = el('select', {id:'e6-cat', 'aria-label':'Фільтр за категорією',
-    onchange:e => { st.cat = e.target.value; st.page = 1; redraw(); }});
-  const types = el('div', {id:'e6-filters', class:'group-filters e6-filters', 'aria-label':'Фільтр за типом'});
-  const head = el('thead', {id:'e6-head'}), body = el('tbody', {id:'e6-body'}), foot = el('footer', {class:'table-footer', id:'e6-foot'});
-  const pageBtn = (value, label, active, disabled) => el('button', {type:'button', class:active ? 'active' : '',
-    'data-e6-page':value, disabled:disabled || null, onclick:() => { st.page = value; redraw(); }}, [String(label)]);
-  function fill(){
-    const all = rows(), pages = Math.max(1, Math.ceil(all.length / E6_PAGE));
-    st.page = Math.min(Math.max(1, st.page), pages);
-    const from = (st.page - 1) * E6_PAGE, part = all.slice(from, from + E6_PAGE), base = found();
-    types.replaceChildren(...E6_TYPES.map(t => el('button', {type:'button', class:t===st.type ? 'active' : '', 'data-e6-filter':t,
-      onclick:() => { st.type = t; st.page = 1; redraw(); }},
-      [t + ' (' + base.filter(it => catOk(it, st.cat) && typeOk(it, t)).length + ')'])));
-    cats.replaceChildren(...[['', 'Усі категорії'], ...Object.keys(S.LABEL).map(k => [k, S.LABEL[k]])].map(([k, label]) =>
-      el('option', {value:k, text:label + ' (' + base.filter(it => typeOk(it, st.type) && catOk(it, k)).length + ')'})));
-    cats.value = st.cat;
-    head.replaceChildren(el('tr', {}, E6_COLS.map(([f, label, sortable]) => el('th', {}, [sortable
-      ? el('button', {type:'button', class:'th-sort', 'data-e6-sort':f,
-          onclick:() => { st.sort = {field:f, dir:st.sort.field===f && st.sort.dir==='asc' ? 'desc' : 'asc'}; st.page = 1; redraw(); }},
-          [label, el('span', {class:'sort-arrow' + (st.sort.field===f ? '' : ' idle'), text:st.sort.field===f && st.sort.dir==='desc' ? '↓' : '↑'})])
-      : label]))));
-    body.replaceChildren(...(part.length ? part.map(it => el('tr', {}, E6_COLS.map(([f]) => el('td', {'data-e6-cell':f},
-        f==='n' ? [el('b', {text:it.n})]
-      : f==='cat' ? [S.LABEL[it.cat] || it.cat]
-      : f==='k' ? [it.k==='ВТМ' || it.k==='ЗФ' ? el('span', {class:'type-chip ' + (it.k==='ВТМ' ? 'own' : 'gold'), text:it.k}) : '—']
-      : [v2money(it[f]) || '—']))))
-      : [el('tr', {}, [el('td', {colspan:'5', style:'padding:22px;color:var(--anc-gray);text-align:center', text:'Позицій не знайдено'})])]));
-    foot.replaceChildren(
-      el('span', {class:'e6-legend', text:'ВТМ — власна торгова марка · ЗФ — золота фішка'}),
-      el('span', {text:all.length ? 'Показано ' + (from + 1) + '–' + (from + part.length) + ' з ' + all.length : 'Нічого не знайдено'}),
-      el('div', {class:'pagination'}, [pageBtn(st.page - 1, '‹', false, st.page===1),
-        ...pageWindow(st.page, pages).map(t => t==='…' ? el('span', {class:'page-gap', text:'…'}) : pageBtn(t, t, t===st.page, false)),
-        pageBtn(st.page + 1, '›', false, st.page===pages)]));
-  }
-  fill();
-  return el('div', {class:'page'}, [
-    /* Х27-П5 · шапка E6: лише назва (вирок оператора S62) */
-    el('header', {class:'page-title'}, [el('div', {}, [el('h1', {text:'Каталог'})])]),
-    el('section', {class:'wide-table-card'}, [
-      el('div', {class:'search-row'}, [el('label', {class:'search'}, [icon('i-search'), search]), cats]),
-      types,
-      el('table', {class:'regular-table'}, [head, body]),
-      foot])]);
-}
-V2.catalog = Catalog;
-
-/* ── v2 · E4 Сценарії — вітрина (X72-SCENARIOS) ──────────────────────
-   Порт екрана E4 з мокапу mockup_X21_v1 (renderE4) під наш API: el()
-   замість innerHTML, дані з S.SCEN, стан у S.e4.
-   ⚠ ТІЛЬКИ ЧИТАННЯ, і рядок-посилання в розмову свідомо НЕ портовано:
-   у мокапі `.row-link` веде в E2, а наш вихід із E2 жорстко йде в
-   'picker' — двері були б однобічні (зайшов зі «Сценаріїв», вийшов у
-   «Тренування»). Вхід у розмову з E4 — окремий крок черги разом із
-   маршрутом повернення.
-   Колонки — title, who, grp. Колонки «Номер» тут НЕМА (В-64, X73): номер
-   замовлення живе у першій фразі клієнта і в картці розмови.
-   Пагінація і вікно сторінок — СПІЛЬНІ з E6 (E6_PAGE, pageWindow):
-   другого механізму сторінок у продукті не заводимо.
-   Лічильники в селекторі групи — як на E1/E6: фасетні, у межах пошуку.
-   Шапка несе лише назву — Х27-П5, вирок оператора S62.
-   живе доки: не портовано кураторський екран правки сценаріїв ('ascen'). */
-/* X73-NO-NUMBER · В-64: номер замовлення — реквізит розмови, не вітрини.
-   Колонки лишаються ті, що справді розрізняють сценарії між собою. */
-const E4_COLS = [['title','Назва'], ['who','Клієнт'], ['grp','Група']];
-function Scenarios(){
-  const st = S.e4 || (S.e4 = {term:'', grp:'', page:1});
-  const all = () => S.SCEN || [];
-  const byTerm = () => { const t = st.term.trim().toLowerCase();
-    return all().filter(s => (s.title + ' ' + s.who).toLowerCase().includes(t)); };
-  const rows = () => byTerm().filter(s => !st.grp || s.grp===st.grp);
-  const redraw = () => fill();
-  const search = el('input', {id:'e4-search', type:'search', placeholder:'Пошук сценарію…', value:st.term,
-    oninput:e => { st.term = e.target.value; st.page = 1; redraw(); }});
-  const grps = el('select', {id:'e4-group', 'aria-label':'Фільтр за групою',
-    onchange:e => { st.grp = e.target.value; st.page = 1; redraw(); }});
-  const head = el('thead', {id:'e4-head'}, [el('tr', {}, E4_COLS.map(([, label]) => el('th', {text:label})))]);
-  const body = el('tbody', {id:'e4-body'});
-  const foot = el('footer', {class:'table-footer', id:'e4-foot'});
-  const pageBtn = (value, label, active, disabled) => el('button', {type:'button', class:active ? 'active' : '',
-    'data-e4-page':value, disabled:disabled || null, onclick:() => { st.page = value; redraw(); }}, [String(label)]);
-  function fill(){
-    const list = rows(), pages = Math.max(1, Math.ceil(list.length / E6_PAGE));
-    st.page = Math.min(Math.max(1, st.page), pages);
-    const from = (st.page - 1) * E6_PAGE, part = list.slice(from, from + E6_PAGE), base = byTerm();
-    grps.replaceChildren(...[['', 'Усі групи'], ...[...new Set(all().map(s => s.grp))].sort((a, b) => a.localeCompare(b, 'uk')).map(g => [g, g])]
-      .map(([value, label]) => el('option', {value:value,
-        text:label + ' (' + (value ? base.filter(s => s.grp===value).length : base.length) + ')'})));
-    grps.value = st.grp;
-    body.replaceChildren(...(part.length ? part.map(s => el('tr', {'data-e4-row':String(s.id)}, E4_COLS.map(([f]) => el('td', {'data-e4-cell':f},
-        f==='title' ? [el('b', {text:s.title})]
-      : [String(s[f] || '—')]))))
-      : [el('tr', {}, [el('td', {colspan:String(E4_COLS.length),
-          style:'padding:22px;color:var(--anc-gray);text-align:center', text:'Сценаріїв не знайдено'})])]));
-    foot.replaceChildren(
-      el('span', {text:list.length ? 'Показано ' + (from + 1) + '–' + (from + part.length) + ' з ' + list.length : 'Нічого не знайдено'}),
-      el('div', {class:'pagination'}, [pageBtn(st.page - 1, '‹', false, st.page===1),
-        ...pageWindow(st.page, pages).map(t => t==='…' ? el('span', {class:'page-gap', text:'…'}) : pageBtn(t, t, t===st.page, false)),
-        pageBtn(st.page + 1, '›', false, st.page===pages)]));
-  }
-  fill();
-  return el('div', {class:'page'}, [
-    el('header', {class:'page-title'}, [el('div', {}, [el('h1', {text:'Сценарії'})])]),
-    el('section', {class:'wide-table-card'}, [
-      el('div', {class:'search-row'}, [el('label', {class:'search'}, [icon('i-search'), search]), grps]),
-      el('table', {class:'regular-table'}, [head, body]),
-      foot])]);
-}
-V2.scenarios = Scenarios;
-/* ── /X72 ── */
-
-/* ── v2 · E1 Тренування — вітрина (Х22.2) ────────────────────────────
-   SPEC v0.4 §8.1 · §9 E1. Список замовлень ліворуч, довідка праворуч; дві
-   різні дії: «Почати тренування» = одна названа розмова (S.shift=null),
-   «Почати зміну» = pickShift(S.cfg.shiftSize) — вибір робить не людина.
-   Логіки не пише (§11.1): орієнтир — наявний potential(), без пропозиції
-   для noSale — лише підпис. Група — наявне S.group; пошук і вибір — у S.e1,
-   повернення з розмови нічого не скидає. Класи .v2-tag/.v2-trap — двійники
-   старого CSS, перейменовані портом (Х22.1, П10).
-   Група — нативний селектор під пошуком, не чіп-ряд (В-25, Х22.3а): на 1280 чіпи
-   давали три ряди й п'ять видимих карток. Лічильники фасетні — в межах пошуку.
-   Підключено Х22.3г: V2.picker = Training. Старий Picker — запасний до кроку 8 (render бере його, коли V2.picker немає). */
-const E1_GEN = {2:'двох',3:'трьох',4:'чотирьох',5:'п’яти',6:'шести',7:'семи',8:'восьми',9:'дев’яти',10:'десяти'};
-const e1Talks = n => n + ' ' + (n%10===1 && n%100!==11 ? 'розмова' : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 'розмови' : 'розмов');
-const e1Cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : '—';
-const e1Pot = sc => sc.noSale ? null : 'до +' + uah(potential(sc)) + ' ₴';
-function Training(){
-  const st = S.e1 || (S.e1 = {term:'', sel:S.SCEN.length ? S.SCEN[0].id : null});
-  const n = S.cfg.shiftSize;
-  const groups = ['Усі', ...new Set(S.SCEN.map(s => s.grp))];
-  const byTerm = () => { const t = st.term.trim().toLowerCase();
-    return S.SCEN.filter(s => (s.title + ' ' + s.who + ' ' + s.mode).toLowerCase().includes(t)); };
-  const match = () => byTerm().filter(s => S.group==='Усі' || s.grp===S.group);
-  const status = s => s.noSale ? el('span', {class:'scenario-status no-sale', text:'Не міняти'})
-    : s.trap ? el('span', {class:'scenario-status v2-trap', text:'Пастка'})
-    : el('span', {class:'scenario-status', text:s.grp});
-  const sel = el('select', {id:'e1-group', 'aria-label':'Фільтр за групою', onchange:e => { S.group = e.target.value; fillItems(); }});
-  const items = el('div', {id:'scenario-items', class:'scenario-items'});
-  const detail = el('section', {id:'scenario-detail', class:'scenario-detail'});
-  function fillGroups(){ const base = byTerm();
-    sel.replaceChildren(...groups.map(g => el('option', {value:g,
-      text:(g==='Усі' ? 'Усі групи' : g) + ' (' + (g==='Усі' ? base.length : base.filter(s => s.grp===g).length) + ')'})));
-    sel.value = S.group; }
-  function fillItems(){
-    const list = match();
-    items.replaceChildren(...(list.length ? list.map(s => el('button', {type:'button',
-      class:'scenario-item' + (s.id===st.sel ? ' active' : ''), 'data-scenario':String(s.id),
-      onclick:() => { st.sel = s.id; fillItems(); fillDetail(); }}, [
-        el('span', {}, [el('b', {text:s.title}),
-          el('small', {text:s.who + ' · ' + s.order.length + ' поз. · ' + (e1Pot(s) || 'без пропозиції')})]),
-        status(s)]))
-      : [el('p', {style:'padding:22px;color:var(--anc-gray);text-align:center', text:'Замовлень не знайдено'})]));
-  }
-  function fillDetail(){
-    const s = S.SCEN.find(x => x.id===st.sel);
-    if(!s){ detail.replaceChildren(); return; }
-    const head3 = (id, label) => el('h3', {}, [icon(id), ' ' + label]);
-    detail.replaceChildren(
-      el('div', {class:'detail-heading'}, [el('div', {}, [el('h2', {text:s.title}),
-        el('div', {class:'tags'}, [status(s)])])]),
-      el('div', {class:'scenario-intro'}, [icon('i-target'), el('span', {text:s.mode})]),
-      el('div', {class:'detail-grid'}, [
-        el('section', {class:'detail-card'}, [head3('i-chat', 'Клієнт'), el('dl', {}, [
-          el('dt', {text:'Хто'}), el('dd', {text:s.who}),
-          el('dt', {text:'Настрій'}), el('dd', {text:s.mood}),
-          el('dt', {text:'Характер'}), el('dd', {text:e1Cap(s.character)})])]),
-        el('section', {class:'detail-card'}, [head3('i-cart', 'У замовленні'), ...s.order.map(c => { const it = S.ALL[c];
-          return el('div', {class:'order-mini'}, [el('span', {class:'product-art'}, [icon('i-box')]),
-            el('span', {}, [el('b', {text:it ? it.n : c}), el('small', {text:it ? (S.LABEL[it.cat] || '') : ''})])]); })])]),
-      el('section', {class:'goal-card'}, [head3('i-target', 'Що тренуємо'), el('p', {text:s.goal})]),
-      el('div', {class:'detail-actions'}, [
-        el('div', {class:'potential'}, [el('small', {text:'Орієнтир розмови'}), e1Pot(s) || '—']),
-        el('button', {type:'button', class:'primary', 'data-start-one':String(s.id),
-          onclick:() => { S.shift = null; openScenario(s); }}, [icon('i-play'), 'Почати тренування'])]));
-  }
-  const search = el('input', {id:'scenario-search', type:'search', placeholder:'Пошук замовлення…', value:st.term,
-    oninput:e => { st.term = e.target.value; fillGroups(); fillItems(); }});
-  fillGroups(); fillItems(); fillDetail();
-  return el('div', {class:'page'}, [
-    el('header', {class:'page-title'}, [
-      /* Х27-П5 · шапка E1: екран несе ЛИШЕ свою назву (вирок оператора S62).
-         Пояснювальний підпис знято — екран називає себе сам. */
-      el('div', {}, [el('h1', {text:'Тренування'})]),
-      el('button', {id:'start-shift', class:'primary', type:'button', onclick:() => {
-        S.shift = {queue:pickShift(n), i:0, rows:[]}; openScenario(S.shift.queue[0]); }},
-        [icon('i-play'), 'Почати зміну · ' + e1Talks(n)])]),
-    el('div', {class:'training-layout'}, [
-      el('section', {class:'scenario-list'}, [
-        el('div', {class:'list-tools'}, [el('label', {class:'search'}, [icon('i-search'), search]), sel]),
-        items]),
-      detail])]);
-}
-V2.picker = Training;
-
-/* ── Х23.2 · E2 Розмова · JS — v2 (SPEC v0.4 §3.2 · §9 E2 · макет «Тренування_in») ──────────
-   Три колонки: про клієнта · діалог · замовлення + запропонувати позицію. Логіки не пише (§11.1):
-   хід — engine.turn, розбір — engine.judge, кінець ухвалює клієнт (S.ended). Стан розмови — наявні
-   S.history · S.cart · S.ended · S.feedback · S.phrase · S.judging · S.attempt · S.shift. Стан екрана —
-   S.e2 (вкладка, пошук, «більше», чернетка, помилка), привʼязаний до ОБʼЄКТА S.history: openScenario і
-   «Пройти ще раз» дають новий масив — екран скидається сам; render() з дверей чернетку не губить.
-   Вироки S44: Р1 — у чеку грошей немає, приріст лише в шапці розбору (§9 E2); Р2 — вкладки «Для цієї
-   ситуації» = poolOf(sc) (НЕ bv/bm — це ключ відповіді) · «Усі товари»; Р3 — вихід у шапці лише після
-   кінця, поруч «Пройти ще раз». «+» не кладе в чек (§6.4): дописує назву в поле. Порожня ціна — порожня.
-   Час репліки — штамп t у момент push: у модель ідуть лише role/content (buildJudge, turn).
-   Відповідь, що прийшла після виходу з розмови (інший S.history), відкидається — Game писав її в чужу.
-   ⚠ Тексти цілей html.replace інʼєкцій гейта тут не повторюються (Talk стоїть раніше за Game).
-   Підключено Х23.3: V2.game = Talk (у кінці блоку). Старий Game — запасний до кроку 8: render() бере
-   його, коли V2.game немає. */
-const E2_LIMIT = 6;
-/* X100 · фрази для popover композера. WWHAM: для кого · що турбує · як довго · що вже пробували ·
-   інші ліки. Зачини, не готові відповіді — інакше тренажер розвʼязує задачу за фармацевта.
-   «…» в кінці = фармацевт дописує сам. Дім у даних — окремим кроком (досьє композера, крок 4). */
-const E2_PHRASES = [
-  ['Розпитати', ['Підкажіть, для кого препарат?', 'Що саме турбує?', 'Як давно це триває?',
-                 'Чи вже щось приймали від цього?', 'Чи приймаєте зараз інші ліки?']],
-  ['Порадити',  ['Можу запропонувати до цього…', 'Щодо курсу прийому: …']],
-  ['Завершити', ['Якщо за кілька днів не покращиться — зверніться до лікаря.']]];
-const e2Now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
-const e2Pos = n => n + ' ' + (n%10===1 && n%100!==11 ? 'позиція' : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 'позиції' : 'позицій');
-function e2State(){
-  if(!S.e2 || S.e2.hist !== S.history)
-    S.e2 = {hist:S.history, tab:'case', term:'', more:false, draft:'', err:'', t0:e2Now(), focus:''};
-  return S.e2;
-}
-function e2Toast(text){
-  const t = document.querySelector('.v2 .toast'); if(!t) return;
-  t.textContent = text; t.classList.add('show');
-  clearTimeout(e2Toast.timer); e2Toast.timer = setTimeout(() => t.classList.remove('show'), 2600);
-}
-function Talk(){
-  const sc = S.sc, st = e2State(), hist = S.history, pot = potential(sc);
-  /* Х24.4: розмова, відкрита з промаху в підсумку зміни. Підсумок заморожений —
-     ця спроба не пишеться в shift.rows і не рухає shift.i; вихід веде назад на E3. */
-  const fromE3 = S.e2from === 'e3';
-  const mine = () => S.screen === 'game' && S.history === hist;
-  /* Повний render() — лише на зміну розмови. Фокус живе в полі з data-e2-focus і повертається туди ж. */
-  const again = () => { if(!mine()) return;
-    const a = document.activeElement; if(!st.focus && a && a.dataset && a.dataset.e2Focus) st.focus = a.dataset.e2Focus;
-    render(); };
-  const say = async () => {
-    const line = st.draft.trim(); if(!line || S.ended || S.waiting) return;
-    hist.push({role:'user', content:line, t:e2Now()});
-    st.draft = ''; st.err = ''; st.focus = 'answer'; S.waiting = true; again();
-    try{
-      const r = await engine.turn(sc, hist);
-      if(S.history !== hist) return;
-      hist.push({role:'assistant', content:r.reply, step:r.step || '', t:e2Now()});
-      S.cart = r.cart; S.ended = r.ended; S.feedback = r.feedback || ''; S.phrase = '';
-      S.waiting = false; again();
-      if(S.ended && typeof engine.judge === 'function'){
-        S.judging = true; again();
-        try{
-          const j = await engine.judge(sc, hist, S.cart);
-          if(S.history === hist){ S.feedback = j.feedback || S.feedback; S.phrase = j.phrase || ''; }
-        }catch(e){ if(S.history === hist && !S.feedback) S.feedback = 'Розбір не вдався: ' + e.message; }
-        finally{ if(S.history === hist){ S.judging = false; again(); } }
-      }
-    }catch(e){ if(S.history === hist) st.err = 'Двигун відповів помилкою: ' + e.message; }
-    finally{ if(S.history === hist && S.waiting){ S.waiting = false; again(); } }
-  };
-  const exit = () => {
-    if(fromE3){ S.screen = 'result'; render(); return; }   /* Х24.4: підсумок заморожений */
-    if(S.shift){
-      S.shift.rows.push({sc, delta:bonusOf(S.cart) - bonusOf(sc.order), pot, fb:S.feedback, tries:S.attempt});
-      S.shift.i++;
-      if(S.shift.i < S.shift.queue.length) openScenario(S.shift.queue[S.shift.i]);
-      else { S.screen = 'result'; render(); }
-    } else { S.screen = 'picker'; render(); }
-  };
-  const retry = () => {
-    S.history = []; S.cart = sc.order.slice(); S.ended = false; S.feedback = '';
-    S.waiting = false; S.attempt++; S.phrase = ''; S.judging = false; render();
-  };
-
-  /* ── шапка ── */
-  const tags = [el('span', {class:'v2-tag', text:sc.grp})];
-  const mainCat = sc.main || sc.cats[0];
-  if(mainCat) tags.push(el('span', {class:'v2-tag', text:S.LABEL[mainCat] || mainCat}));
-  /* Х24.4: після зміни shift.i === queue.length, тож тег надрукував би «Замовлення 4 з 3» — глушимо. */
-  if(S.shift && !fromE3) tags.push(el('span', {class:'v2-tag', text:'Замовлення ' + (S.shift.i + 1) + ' з ' + S.shift.queue.length}));
-  const exitLabel = fromE3 ? 'Повернутися до підсумку'
-    : !S.shift ? 'До списку' : S.shift.i + 1 < S.shift.queue.length ? 'Наступне замовлення' : 'До підсумку зміни';
-  /* Х24.4: напис «назад» іде за входом — макет E2_BACK.e3. Обидві двері ведуть на E3:
-     старий обробник робив S.shift = null і знищив би підсумок, до якого ми повертаємось. */
-  const backLabel = fromE3 ? 'Повернутися до підсумку' : 'Повернутися до списку';
-  const backGo = () => { if(fromE3){ S.screen = 'result'; render(); return; }
-    S.shift = null; S.screen = 'picker'; render(); };
-  /* X81: вихід переїхав у панель. Коротка форма — пара до `exitLabel`; повна
-     лишається підказкою. П87: кнопки в шапці немає — немає й aria-label при ній. */
-  V2_EXIT = { label: fromE3 ? 'До підсумку' : 'До списку', tip: backLabel, go: backGo };
-  const appbar = el('header', {class:'appbar'}, [
-    el('div', {class:'case-title'}, [
-      el('h1', {text:sc.title}),
-      el('p', {}, tags)]),
-    S.ended ? el('button', {type:'button', class:'secondary', 'data-e2-end':'retry', onclick:retry}, ['Пройти ще раз']) : null,
-    S.ended ? el('button', {type:'button', class:'primary', 'data-e2-end':'exit', onclick:exit}, [exitLabel]) : null]);
-
-  /* ── про клієнта ── */
-  const profile = el('section', {class:'panel profile-panel'}, [
-    el('header', {class:'panel-head'}, [el('span', {class:'icon-chip'}, [icon('i-target')]), el('h2', {text:'Про клієнта'})]),
-    el('div', {class:'profile'}, [
-      el('div', {class:'person'}, [el('div', {class:'avatar', text:(sc.who || 'К').charAt(0).toUpperCase()}), el('b', {text:sc.who})]),
-      el('dl', {}, [['Контекст', sc.mode], ['Характер', e1Cap(sc.character)], ['Настрій', sc.mood]].map(([k, v]) =>
-        el('div', {class:'fact'}, [el('dt', {text:k}), el('dd', {text:v || '—'})]))),
-      el('div', {class:'notice'}, [el('strong', {}, [icon('i-target'), 'Ваше завдання']),
-        el('p', {text:sc.goal || 'Коректно опрацювати запит клієнта.'})]),
-      el('div', {class:'hint'}, [icon('i-info'),
-        el('span', {text:'Клієнт може не одразу озвучити додаткові потреби. Використовуйте професійні запитання.'})])])]);
-
-  /* ── діалог ── */
-  const bubble = (me, text, meta) => el('article', {class:'message' + (me ? ' pharmacist' : '')}, [
-    me ? null : el('div', {class:'avatar', text:'К'}),
-    el('div', {class:'bubble-wrap'}, [el('div', {class:'bubble', text}), meta ? el('time', {text:meta}) : null])]);
-  const dots = label => el('div', {class:'typing', 'aria-label':label}, [el('i'), el('i'), el('i')]);
-  const msgs = el('div', {class:'messages', 'aria-live':'polite'}, [bubble(false, sc.open, st.t0)]);
-  for(const m of S.history)
-    msgs.append(bubble(m.role === 'user', m.content, [m.t || '', STEP && m.step ? m.step : ''].filter(Boolean).join(' · ')));
-  if(S.waiting) msgs.append(el('article', {class:'message'}, [el('div', {class:'avatar', text:'К'}), dots('Клієнт друкує')]));
-  if(S.ended){
-    const d0 = bonusOf(S.cart) - bonusOf(sc.order);
-    msgs.append(el('p', {class:'talk-sys', text:'Розмову завершено'}),
-      el('section', {class:'notice talk-review'}, [
-        el('strong', {}, [icon('i-target'), sc.noSale ? 'РОЗБІР · правильна дія — не міняти' : 'РОЗБІР · приріст ' + uah(d0) + ' з ' + pot + ' ₴']),
-        S.judging ? dots('Суддя пише розбір') : S.feedback ? el('p', {text:S.feedback}) : null,
-        !S.judging && S.phrase ? el('p', {class:'talk-say'}, [el('b', {text:'Варто було сказати: '}), '«' + S.phrase + '»']) : null]));
-  }
-  if(st.err) msgs.append(el('p', {class:'talk-err', text:st.err}));
-  const ta = el('textarea', {'aria-label':'Відповідь клієнту', 'data-e2-focus':'answer',
-    placeholder:S.ended ? 'Розмову завершено' : 'Введіть відповідь клієнту…',
-    oninput:e => { st.draft = e.target.value; },
-    onkeydown:e => {
-      if(e.key !== 'Enter' || e.isComposing || e.shiftKey) return;
-      if(e.ctrlKey || e.metaKey || POINTER_FINE){ e.preventDefault(); say(); } }});
-  ta.value = st.draft; ta.disabled = S.ended;
-  const send = el('button', {type:'button', class:'send', 'aria-label':'Надіслати відповідь', onclick:say}, [icon('i-send')]);
-  send.disabled = S.ended || S.waiting;
-  /* X100 · фрази — одна кнопка і popover над нею (досьє композера, крок 3) */
-  const putPhrase = t => {
-    const cont = t.endsWith('…'), add = cont ? t.slice(0, -1).trimEnd() + ' ' : t + ' ';
-    const v = ta.value, a = ta.selectionStart ?? v.length, b = ta.selectionEnd ?? a;
-    const pre = v.slice(0, a), glue = pre && !/\s$/.test(pre) ? ' ' : '';
-    ta.value = pre + glue + add + v.slice(b); st.draft = ta.value;
-    const pos = (pre + glue + add).length;
-    pop.hidePopover(); ta.focus(); ta.setSelectionRange(pos, pos); };
-  const pop = el('div', {id:'e2-qa', popover:'auto', class:'qa-pop', ontoggle:e => {
-      if(e.newState !== 'open' || CSS.supports('anchor-name', '--a')) return;
-      const r = trig.getBoundingClientRect();   /* фолбек без anchor positioning */
-      pop.style.left = r.left + 'px'; pop.style.top = Math.max(8, r.top - pop.offsetHeight - 8) + 'px'; }},
-    E2_PHRASES.map(([title, list]) => el('div', {class:'qa-grp', role:'group', 'aria-label':title}, [
-      el('div', {class:'qa-h', 'aria-hidden':'true', text:title}),
-      ...list.map(t => el('button', {type:'button', class:'qa-item', onclick:() => putPhrase(t)}, [t]))])));
-  const trig = el('button', {type:'button', class:'qa-trig', popovertarget:'e2-qa', disabled:S.ended || S.waiting},
-    ['Підказка фрази ', el('span', {'aria-hidden':'true', text:'▾'})]);
-  const dialogue = el('section', {class:'panel dialogue'}, [
-    el('header', {class:'panel-head'}, [el('span', {class:'icon-chip'}, [icon('i-chat')]), el('h2', {text:'Діалог з клієнтом'})]),
-    msgs,
-    el('div', {class:'composer'}, [
-      el('div', {class:'comp-isl'}, [
-        el('div', {class:'quick-phrases'}, [trig]), pop,
-        el('div', {class:'well'}, [ta, send])])])]);
-
-  /* ── замовлення: без грошей (Р1) ── */
-  const inCart = S.cart.map(c => S.ALL[c]).filter(Boolean);
-  const cart = el('section', {class:'panel'}, [
-    el('header', {class:'panel-head cart-head'}, [el('span', {}, [icon('i-cart'), el('h2', {text:'Поточне замовлення'})]),
-      el('span', {class:'pill', text:e2Pos(inCart.length)})]),
-    el('div', {class:'cart-list'}, inCart.map(it => el('div', {class:'cart-row'}, [
-      el('span', {class:'product-art'}, [icon('i-box')]),
-      el('div', {class:'cart-name'}, [it.n, el('small', {text:S.LABEL[it.cat] || ''}), el('span', {class:'cart-code', text:it.c})])]))),
-    el('div', {class:'quiet-note'}, [icon('i-info'),
-      el('span', {text:'Це замовлення клієнта. Змінити його можна лише після згоди клієнта в розмові.'})])]);
-
-  /* ── запропонувати позицію: дві вкладки (Р2); список перемальовується сам, без render() ── */
-  const list = el('div', {class:'proposals'});
-  const more = el('button', {type:'button', onclick:() => { st.more = true; fill(); }}, ['Показати більше товарів']);
-  const propose = it => {
-    if(S.ended) return;
-    const add = 'Можу запропонувати ' + it.n + '. ';
-    ta.value = st.draft.trim() ? st.draft.replace(/\s*$/, ' ') + add : add;
-    st.draft = ta.value; ta.focus();
-    e2Toast('Назву підставлено в поле відповіді. Чек змінить лише згода клієнта.');
-  };
-  function fill(){
-    const base = st.tab === 'case' ? poolOf(sc).map(i => S.ALL[i.c] || i) : Object.values(S.ALL);
-    const t = st.term.trim().toLowerCase(), found = base.filter(it => it.n.toLowerCase().includes(t));
-    const shown = st.more ? found : found.slice(0, E2_LIMIT);
-    list.replaceChildren(...(shown.length ? shown.map(it => {
-      const plus = el('button', {type:'button', class:'plus', 'data-code':it.c, 'aria-label':'Запропонувати ' + it.n, onclick:() => propose(it)}, ['+']);
-      plus.disabled = S.ended;
-      return el('div', {class:'proposal-row'}, [el('span', {class:'product-art'}, [icon('i-box')]),
-        el('div', {class:'proposal-name'}, [it.n, el('small', {text:S.LABEL[it.cat] || ''})]),
-        el('span', {class:'price', text:v2money(it.p)}), plus]); })
-      : [el('p', {class:'talk-empty', text:'Нічого не знайдено'})]));
-    more.hidden = st.more || found.length <= E2_LIMIT;
-  }
-  const tabs = [['case', 'Для цієї ситуації'], ['all', 'Усі товари']].map(([key, label]) => el('button', {type:'button',
-    class:'tab' + (st.tab === key ? ' active' : ''), role:'tab', 'aria-selected':String(st.tab === key), 'data-pool':key,
-    onclick:e => { st.tab = key; st.more = false;
-      tabs.forEach(b => { const on = b === e.currentTarget; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
-      fill(); }}, [label]));
-  const search = el('input', {type:'search', placeholder:'Пошук товару…', 'aria-label':'Пошук товару', 'data-e2-focus':'search',
-    oninput:e => { st.term = e.target.value; st.more = false; fill(); }});
-  search.value = st.term;
-  fill();
-  const offer = el('section', {class:'panel'}, [
-    el('header', {class:'panel-head'}, [el('span', {class:'icon-chip'}, [icon('i-bag')]), el('h2', {text:'Запропонувати позицію'})]),
-    el('div', {class:'catalog'}, [el('label', {class:'search'}, [icon('i-search'), search]),
-      el('div', {class:'v2-tabs', role:'tablist'}, tabs), list, el('div', {class:'catalog-foot'}, [more])])]);
-
-  /* ── службовий канал ?mock (панель перевірки кроку 1) — міст: клас .mock старого CSS ── */
-  const mock = !MOCK ? null : el('div', {class:'mock'}, [
-    el('h4', {text:'Панель перевірки · крок 1'}),
-    el('p', {text:'Живої моделі немає. Тут чек складається руками так, ніби клієнт погодився.'}),
-    el('div', {class:'mockcols'}, poolOf(sc).map(it => { const id = 'm_' + it.c;
-      return el('label', {for:id}, [
-        el('input', {type:'checkbox', id, ...(S.cart.includes(it.c) ? {checked:'checked'} : {}),
-          onchange:e => { S.cart = e.target.checked ? [...S.cart, it.c] : S.cart.filter(x => x !== it.c); again(); }}),
-        el('span', {text:' ' + it.n + ' · ' + uah(it.b) + ' ₴ · ' + (it.k || '—')})]); }))]);
-
-  const wrap = el('div', {class:'talk'}, [appbar,
-    el('div', {class:'workspace'}, [profile, dialogue, el('aside', {class:'cart-panel'}, [cart, offer, mock])]),
-    el('div', {class:'toast', role:'status'})]);
-  queueMicrotask(() => {
-    msgs.scrollTop = msgs.scrollHeight;
-    if(st.focus){ const n = wrap.querySelector('[data-e2-focus="' + st.focus + '"]'); st.focus = ''; if(n && !n.disabled) n.focus(); }
-  });
-  return wrap;
-}
-V2.game = Talk;
-
-/* ── Х24.2 · E3 «Підсумок зміни» — Summary(). Підключено Х24.3: V2.result = Summary (у кінці блоку) ──
-   DOM — renderSummary макета (П28). Арифметика — старого Result дослівно: got/pot/pct/slips/retries,
-   «не міняти» — поза відсотком. Розбір — РАЗ на зміну в S.shift.debrief (старий Result кликав
-   debrief на кожен рендер — повторний платний запит); пізня відповідь чужої зміни відкидається.
-   Повторні спроби — форма макета (inline-стиль, кольори — токени). Промах: b — назва · small — причина · em — тип замовлення (номер знято, Х25.2а). Дія .slip — Х24.4. */
-function Summary(){
-  const sh = S.shift, rows = sh.rows, scored = rows.filter(r=>!r.sc.noSale);
-  const got = scored.reduce((a,r)=>a+r.delta,0);
-  const pot = scored.reduce((a,r)=>a+r.pot,0)||1;
-  const pct = Math.max(0,Math.min(100,Math.round(got/pot*100)));
-  const slips = rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
-  const retries = rows.reduce((a,r)=>a+((r.tries||1)-1),0);
-  const kind = sc => sc.noSale ? 'Не міняти' : sc.trap ? 'Пастка' : sc.grp;
-  const why = r => r.sc.noSale && r.delta>0 ? 'продаж там, де «не міняти»' : 'стало гірше: −' + uah(-r.delta) + ' ₴';
-  const toE1 = () => { S.shift = null; S.screen = 'picker'; render(); };
-  if(!MOCK && !sh.debrief){
-    sh.debrief = {st:'wait'};
-    engineLive.debrief(rows).then(d => { if(S.shift !== sh) return;
-      sh.debrief = {st:'ok', d}; sh.curatorNote = d.curator; if(S.screen === 'result') render(); })
-    .catch(e => { if(S.shift !== sh) return;
-      sh.debrief = {st:'err', msg:e.message}; if(S.screen === 'result') render(); });
-  }
-  const metric = (cls, label, value, bar) => el('article', {class:'metric' + (cls ? ' ' + cls : '')},
-    [el('small', {text:label}), el('strong', {text:value}),
-     bar == null ? null : el('div', {class:'metric-bar'}, [el('i', {style:'width:' + bar + '%'})])]);
-  const item = (ic, head, text) => el('div', {class:'review-item'}, [icon(ic), el('div', {}, [el('strong', {text:head}), el('span', {text})])]);
-  const db = sh.debrief;
-  const review = MOCK ? [el('p', {class:'coach-overall', text:'Заглушка: у робочому режимі тут зʼявиться розбір від наставника.'})]
-    : !db || db.st === 'wait' ? [el('p', {class:'coach-overall', text:'Наставник читає вашу зміну…'})]
-    : db.st === 'err' ? [el('p', {class:'coach-overall', text:'Розбір не вдався: ' + db.msg + ' Результат зміни збережено — його видно вище.'})]
-    : [el('div', {class:'review-grid'}, [el('p', {class:'coach-overall', text:db.d.overall}),
-        el('div', {class:'review-list'}, [...(db.d.mistakes||[]).map(t=>item('i-info', 'Повторюється', t)),
-                                          ...(db.d.strengths||[]).map(t=>item('i-check', 'Виходить стабільно', t))])]),
-       el('div', {class:'review-list', style:'margin-top:15px'}, (db.d.rules||[]).map(t=>item('i-check', 'Наступного разу', t)))];
-  return el('div', {class:'page summary-wrap'}, [
-    el('header', {class:'page-title'}, [
-      el('div', {}, [el('h1', {text:'Підсумок зміни'}),
-        el('p', {text:'Завершено розмов: ' + rows.length + '. Ось що повторюється у вашій практиці.'})]),
-      el('button', {type:'button', class:'secondary', onclick:toE1}, ['До тренувань'])]),
-    el('div', {id:'summary'}, [
-      el('div', {class:'summary-grid'}, [
-        metric('accent', 'Виконано від орієнтиру', pct + '%', pct),
-        metric('positive', 'Додано за зміну', (got>0 ? '+' : '') + uah(got) + ' ₴'),
-        metric('', 'Орієнтир зміни', uah(pot) + ' ₴'),
-        metric('', 'Завершено розмов', String(rows.length))]),
-      el('section', {class:'summary-section'}, [
-        el('h2', {}, [icon('i-info'), ' На що звернути увагу']),
-        el('p', {text:'Промахи — це розмови, де результат став гіршим або де пропозиція була недоречною.'}),
-        slips.length ? el('div', {class:'slips'}, slips.map((r,i) => el('button', {type:'button', class:'slip', 'data-slip':String(r.sc.id), onclick:() => openScenario(r.sc, 'e3')}, [
-            el('span', {text:String(i+1)}), el('div', {}, [el('b', {text:r.sc.title}), el('small', {text:why(r)}), el('em', {text:kind(r.sc)})])])))
-          : el('p', {text:'Промахів у цій зміні немає'})]),
-      el('section', {class:'summary-section'}, [el('h2', {}, [icon('i-target'), ' Розбір наставника']), ...review]),
-      retries ? el('div', {class:'final-actions'}, [
-        el('span', {style:'margin-right:auto;align-self:center;color:var(--anc-gray);font-size:13px'}, ['Повторні спроби: ', el('b', {style:'color:var(--anc-text)', text:String(retries)})])]) : null])]);
-}
-V2.result = Summary;
-/* ── /Х24.2 ── */
-/* ── /Х23.2 E2 · JS ── */
-/* ── /v2 E1 ── */
-/* ── /v2 ── */
-
 /* ── СТАН ────────────────────────────────────────────────────────── */
 const S = {
   cfg:null, CAT:null, ALL:{}, SCEN:[], LABEL:{},
-  screen:'picker',
+  me:null,            // {name, pharmacy}
+  screen:'gate',
   group:'Усі',
   sc:null,            // поточний сценарій
   history:[],         // [{role:'user'|'assistant', content}]
@@ -1914,11 +468,6 @@ const S = {
   phrase:'',          // репліка, яку варто було сказати — від судді
   judging:false,      // суддя ще думає
   shift:null,         // {queue:[…], i:0, rows:[…]}
-  e2from:'e1',        // Х24.4: звідки зайшли в E2. 'e1' — зі списку або по ходу зміни,
-                      // 'e3' — з промаху в підсумку зміни. Керує написом «назад», написом
-                      // виходу, тегом «Замовлення X з N» і тим, чи пише вихід рядок у
-                      // shift.rows. Живе в S, а не локальною змінною в Talk(): вхід з
-                      // промаху робить render(), і локальна змінна не пережила б його.
 
   /* ── РЕДАКТОР ДАНИХ ──────────────────────────────────────────────
      efilter — фільтр списку. Живе тут, а не локальною змінною в Editor():
@@ -1930,10 +479,6 @@ const S = {
      escen — ключ відкритого запису. Саме КЛЮЧ, а не індекс у SCEN: ключ
      може вказувати на запис, якого в SCEN ще немає (створення, Р-1д). */
   efilter:'all', edraft:{}, escen:null,
-
-  /* X72 · стан вітрини E4 «Сценарії»: пошук, група, сторінка. Живе в S, як
-     S.e6 — повернення на екран не скидає фільтри (той самий урок fold/efilter). */
-  e4:null,
 
   /* ── ПУБЛІКАЦІЯ (Р-1в) ───────────────────────────────────────────
      RAW — сирі обʼєкти файлів, як вони лежать на диску, разом з
@@ -1998,7 +543,8 @@ async function boot(){
        бо причина інша: тут винен носій, а не дані сценарію. */
     const noRisk = [...new Set(S.SCEN.map(s=>s.character))].filter(c=>S.P.chars[c] && !S.P.risks[c]);
     if(noRisk.length) throw new Error('У prompts/characters.md немає блоку «### ризик» для характеру: '+noRisk.join(', '));
-    S.screen = 'picker';
+    S.me = JSON.parse(localStorage.getItem('ae_me')||'null');
+    S.screen = S.me ? 'picker' : 'gate';
     render();
   }catch(e){
     $('#app').innerHTML='';
@@ -2363,40 +909,12 @@ function render(){
      щойно знищено, і його елементи більше нікому не показувати. Без цього
      рядка кожен перехід додавав би ще одну функцію на мертвий DOM. */
   CURATOR.watch.length = 0;
-  /* v2: екран нового дизайну — в оболонці, з класом v2-on на body (Х21) */
-  const v2 = V2[S.screen];
-  document.body.classList.toggle('v2-on', !!v2);
-  if(v2){ const body = v2();
-    /* X71-DIM-KURATORA: null = екран перенаправив сам себе, вкладений render() уже намалював */
-    if(body === null) return;
-    app.append(normalShell(S.screen, body)); railShift(); window.scrollTo(0,0); return; }
-  ({picker:Picker, game:Game, result:Result, settings:Settings,
+  ({gate:Gate, picker:Picker, game:Game, result:Result, settings:Settings,
     edit:Editor, escen:ScenCard}[S.screen])(app);
   window.scrollTo(0,0);
 }
 
 function Settings(root){
-  /* X93-C1 · A7 «Система» = композиція мокапу: шапка · метрики · області. Під списком
-     НІЧОГО (П101). Старий низ роз'їхався по своїх ключах: сходинка, ключ і технічні
-     дані → Models (`models`), редактор → Editor (`ascen`). Вибору файлу немає (В-82). */
-  if(!CURATOR.open){ S.screen='picker'; render(); return; }
-  /* Час прогону пише dataCheck — у шапку сторінки. */
-  const stamp = el('small',{class:'sys-stamp'});
-  put(root, el('div',{class:'page admin-page'},[
-    el('header',{class:'page-title'},[
-      el('div',{},[el('h1',{text:'Система'}), el('p',{text:'Стан автоматичних перевірок'})]),
-      stamp
-    ]),
-    dataCheck(stamp)
-  ]));
-}
-
-function Models(root){
-  /* X93-C1 · ТИМЧАСОВИЙ дім сходинки драбини, ключа Groq і технічних даних — тіло
-     старого Settings дослівно, разом із замиканнями (keyInput · test · drawRungs).
-     живе доки: порт A6 «AI / Моделі» (ЧЕРГА щабель 4, В-78).
-     Х22.4: ключ і модель — кураторські (В-27), тож лише за дверима. */
-  if(!CURATOR.open){ S.screen='picker'; render(); return; }
   /* Кодового слова мережі тут більше немає: змінної AE_CODE у Cloudflare
      не заведено, тож поле нічого не вмикало. Константа NET у коді ЛИШАЄТЬСЯ —
      воркер уміє її читати, якщо колись повернемо стіну перед дверима. */
@@ -2455,11 +973,12 @@ function Models(root){
     }
   };
 
-  put(root, el('div',{class:'page admin-page'},[
-    el('header',{class:'page-title'},[
-      el('div',{},[el('h1',{text:'AI / Моделі'}),
-        el('p',{text:'Тимчасово тут: сходинка драбини, ключ Groq і технічні дані'})])
+  put(root,
+    el('div',{class:'top'},[
+      el('div',{class:'toprow'},[backBtn('назад',()=>{S.screen=S.me?'picker':'gate';render()})]),
+      el('h2',{class:'toptitle',text:'Налаштування'})
     ]),
+    el('h1',{class:'lede',text:'Технічне'}),
     /* До першої відповіді назвати модель нічим: config.model.name — це
        профіль ПРЯМОГО режиму, і через воркер він казав би не те, що на
        дроті. Мовчимо чесно замість того, щоб показувати намір як факт. */
@@ -2518,6 +1037,8 @@ function Models(root){
       }})
     ]),
     status,
+    dataCheck(),
+    editEntry(),
     el('details',{class:'acc',style:'margin-top:24px'},[
       el('summary',{text:'Технічні дані'}),
       el('div',{class:'accbody'},[
@@ -2530,7 +1051,7 @@ function Models(root){
         el('div',{class:'tapeline'},[el('span',{text:'Збірка'}),el('span',{class:'num',text:S.cfg.build||'—'})])
       ])
     ])
-  ]));
+  );
 }
 
 /* ── ПАНЕЛЬ ПЕРЕВІРКИ ДАНИХ (6а) ──────────────────────────────────
@@ -2559,8 +1080,6 @@ function Models(root){
 
 /* Тип визначається ФОРМОЮ, не імʼям файлу: у Files на iPhone файл
    перейменовується одним дотиком, тож «catalog.json» нічого не гарантує. */
-/* X93-C1: продукт більше не кличе classifyJson · jsonErrorText · readFileText (вибір файлу A7
-   геть, В-82). живе доки: виселення смоуків — smoke_ui_v1 :372–386 кличе їх напряму (щабель 11). */
 function classifyJson(v){
   if(Array.isArray(v)) return 'scen';
   if(!v || typeof v!=='object') return null;
@@ -2599,56 +1118,34 @@ function readFileText(f){
 }
 
 /* ── КУРАТОР: одні двері, які на кроці Д переїдуть уперед екрана ───
-   X78-TERM (В-66): замок має ТЕРМІН, а не прапорець. До X78 стан жив
-   у пам'яті модуля — помирав із вкладкою і водночас тривав вічно, доки
-   вкладка відкрита; обидві половини вироку були порушені. Тепер стан —
-   мітка «відімкнено до», і `open` її ОБЧИСЛЮЄ.
-   Це стіна від випадковості, а не безпека — код лежить у відкритому
-   config.json і видимий кожному, хто його відкриє. Право ПИСАТИ в
-   репозиторій дає інший код (секрет воркера), і змішувати їх не можна:
-   тоді запис у дані отримав би кожен, хто прочитав config.
+   Прапорець живе В ПАМʼЯТІ, не в localStorage: закритий застосунок =
+   зачинені двері. Це стіна від випадковості, а не безпека — код лежить
+   у відкритому config.json і видимий кожному, хто його відкриє. Право
+   ПИСАТИ в репозиторій дає інший код (секрет воркера), і змішувати їх
+   не можна: тоді запис у дані отримав би кожен, хто прочитав config.
 
-   ⚠ Перевірка ЛІНИВА, на читанні. Таймера немає свідомо: перемальовування
-   посеред роботи змело б вердикт, який людина щойно отримала — тому
-   підписники, а не render(). Замок стуляється на найближчому дотику до
-   кураторського екрана; сторожі вже стоять у Settings, Editor і ScenCard.
-
-   ⚠ Мітка пишеться РІВНО у grant() і ніколи ліниво: смоук правки рахує
-   довжину сховища у своєму вікні заміру, а повторний запис наявного
-   ключа довжини не міняє (мікроскоп S66, Д-3).
-
-   ⚠ Ключ запису (EDITKEY) на диск НЕ їде. Наслідок: після перезавантаження
-   в межах терміну навігація відкрита, а публікація попросить ключ у
-   власному полі. Це межа В-66, не дефект.
-
-   ⚠ A85: прев'ю має інший origin, отже й інше сховище. Витіснення сховища
-   під тиском місця дає ранній замок — відмова в безпечний бік.
-   живе доки: В-66 не дістав іншого терміну. */
-const CURATOR_TERM_MS = 4 * 60 * 60 * 1000;   /* 4 год — ЖИВЕ число під device, вироку не має (12.9) */
-const CURATOR_KEY = 'ae_curator_until';
-let   CURATOR_MEM = 0;                        /* запасний дім: сховище може бути недоступним */
+   ⚠ Дім цього прапорця не міняється кроком Д. Міняється лише місце,
+   де його питають: сьогодні — всередині екрана Налаштувань, після Д —
+   перед ним. Тому підписники, а не render(): відімкнення посеред
+   роботи не сміє змести вердикт, який людина щойно отримала. */
 const CURATOR = {
+  open:false,
   watch:[],                       // очищається на кожному render()
-  /* Х22.4: код перевіряє ВОРКЕР (двері в панелі v2, doorCheck) — тут лише «відчинено».
-     curatorCode знято разом із полем config.json: одні двері, один код (SPEC «Замок»). */
-  until(){
-    try{ const v = localStorage.getItem(CURATOR_KEY); if(v !== null) return +v || 0; }catch(_){}
-    return CURATOR_MEM;
-  },
-  get open(){ return Date.now() < this.until(); },
-  grant(){
-    const till = Date.now() + CURATOR_TERM_MS;
-    CURATOR_MEM = till;
-    try{ localStorage.setItem(CURATOR_KEY, String(till)); }catch(_){}
+  unlock(code){
+    if(String(code).trim() !== String(S.cfg.curatorCode||'')) return false;
+    this.open = true;
     for(const fn of this.watch) try{ fn(); }catch(_){}
+    return true;
   }
 };
 
 /* ── КЛЮЧ ДО ВОРКЕРА (Р-1в-2) ─────────────────────────────────────
-   ОДИН КЛЮЧ (Х22.4): AE_EDIT_CODE — секрет воркера, ніде в репозиторії
-   його немає, і сторінка його не знає, доки людина не надрукує. Він же
-   відмикає двері кураторського режиму (doorCheck питає воркер) — і двері
-   кладуть його сюди, щоб публікація не питала вдруге.
+   ДВА РІЗНІ КЛЮЧІ, і плутати їх не можна ні в коді, ні на екрані:
+     curatorCode  — відмикає ЕКРАН редактора. Лежить у config.json,
+                    тобто видимий кожному, хто відкриє файл.
+     AE_EDIT_CODE — відмикає ЗАПИС. Секрет воркера, ніде в репозиторії
+                    його немає, і сторінка його не знає, доки людина не
+                    надрукує (worker/ae-edit.js:225–228).
    ⚠ ДІМ — ПАМʼЯТЬ МОДУЛЯ, не localStorage і не S. Код запису на диску
    телефона переживає власника: телефон лишають розблокованим на столі,
    передають, здають у сервіс. Памʼять гине з вкладкою, і це єдина
@@ -2799,7 +1296,7 @@ async function publish(){
      із 60 запитів на годину — той самий бюджет, з якого живе замок. */
   if(!EDITKEY.code.trim()){
     S.epub = {state:'code', text:'Введіть код редактора — без нього воркер '+
-      'запису не приймає. Це той самий код, яким відімкнено двері.'};
+      'запису не приймає. Це інший ключ, ніж код куратора.'};
     return render();
   }
   S.epub = {state:'busy', text:'Перечитуємо файл перед записом…'};
@@ -2890,81 +1387,134 @@ function spreadVerdict(out, ids){
   return {byId, general};
 }
 
-function dataCheck(stamp){
-  /* X91-A7B · dataCheck областей */
-  /* Логіка панелі 6а: runRules() на даних застосунку. Вибору файлу немає (В-82, X93-C1).
-     В-76: прогін при відкритті. Групування — ЛИШЕ за полем area з правил (x90);
-     підписи й порядок — AE_RULES.AREAS. За текстом рядків не групуємо: це була б
-     друга копія знання правил. */
-  const sum  = el('div',{class:'system-summary'});
-  const list = el('section',{class:'system-list'});
-
-  const metric = (n, label, tone)=> el('article',{class:'system-metric'+(tone?' '+tone:'')},[
-    el('strong',{text:String(n)}), el('small',{text:label})]);
-  const RANK = {err:0, warn:1, ok:2};
-  /* X94-C3 · підказка дії лише в шапці області (S72); для ✓ — нічого, як у рядку без зауважень. */
-  const HINT = {err:'Виправте перед публікацією.', warn:'Перевірте перед публікацією.'};
-  const SIGN = {ok:'✓', warn:'⚠', err:'✗'};
-  /* Іконки літералами: спрайт несе лише символи, які кличе icon() (смоук X21 S6). */
-  const ico = lvl => lvl==='err' ? icon('i-alert') : lvl==='warn' ? icon('i-info') : icon('i-check');
-  const cls = lvl => 'system-message'+(lvl==='err'?' error':lvl==='warn'?' warning':'');
-  /* Українська множина: 1 перевірка · 2–4 перевірки · 5+ перевірок (11–14 — «перевірок»). */
-  const plural = (n, one, few, many)=>{ const d=n%10, h=n%100;
-    return n+' '+(d===1&&h!==11 ? one : d>=2&&d<=4&&(h<12||h>14) ? few : many); };
-
-  const areaRow = (label, ms)=>{
-    const ord = [...ms].sort((a,b)=>RANK[a.lvl]-RANK[b.lvl]);
-    const worst = ord[0].lvl;
-    const w = ms.filter(m=>m.lvl==='warn').length, e = ms.filter(m=>m.lvl==='err').length;
-    /* X96 · В-85: підказка дії — лише коли є що робити; ⚠-норма (norm, правила x95) дії не кличе. */
-    const act = e ? 'err' : ms.some(m=>m.lvl==='warn'&&!m.norm) ? 'warn' : null;
-    const tail = [e ? plural(e,'помилка','помилки','помилок') : '',
-                  w ? plural(w,'попередження','попередження','попереджень') : ''].filter(Boolean);
-    const sub = plural(ms.length,'перевірка','перевірки','перевірок') + ' · ' + (tail.length ? tail.join(' · ') : 'без зауважень');
-    return el('article',{class:cls(worst)},[
-      el('details',{},[
-        el('summary',{},[ico(worst), el('div',{},[el('b',{text:label}), el('small',{text:sub}),
-          act ? el('small',{class:'sys-hint',text:HINT[act]}) : null])]),
-        el('ul',{class:'sys-rules'}, ord.map(m=> el('li',{class:m.lvl},[
-          el('span',{text:SIGN[m.lvl]}), el('span',{text:m.say||m.msg, title:m.msg})])))
-      ])
-    ]);
-  };
-  const flat = (lvl, msg)=> el('article',{class:cls(lvl)},[ico(lvl), el('div',{},[el('b',{text:msg})])]);
+function dataCheck(){
+  const box = el('div',{class:'accbody',style:'display:none'});
+  const head = el('p',{class:'sub',style:'margin:0'});
+  const srcLine = el('p',{class:'sub',style:'margin:0 0 6px;font-size:12px'});
+  const fileNote = el('p',{class:'sub',style:'margin:0 0 6px;font-size:12px;display:none'});
+  let opened=false;
+  /* Вибране людиною. Порожнє поле = бік береться з застосунку. */
+  const picked = {cat:null, scen:null, catName:'', scenName:''};
 
   const run = ()=>{
-    sum.textContent=''; list.textContent='';
+    box.innerHTML='';
     if(typeof AE_RULES==='undefined' || !AE_RULES.validate){
-      list.append(flat('err','Правила не завантажились: tools/ae_rules.js не прочитано.'));
+      head.style.color='var(--loss)';
+      head.textContent='✗ Правила не завантажились: tools/ae_rules.js не прочитано.';
       return;
     }
-    const r = runRules(null, null);
-    sum.append(metric(r.ok+r.warn+r.err,'перевірок виконано',''), metric(r.warn,'попередження','warning'),
-               metric(r.err,'критичних помилок','error'));
-    const AREAS = AE_RULES.AREAS || [];
-    const known = new Set(AREAS.map(a=>a[0]));
-    /* Рядок без області — не ховаємо і не вгадуємо: окрема група, названа чесно. */
-    const groups = AREAS.map(([k,label],i)=>({label, i, ms:r.out.filter(m=>m.area===k)}))
-      .filter(g=>g.ms.length);
-    const orphan = r.out.filter(m=>!known.has(m.area));
-    if(orphan.length) groups.push({label: AREAS.length ? 'Перевірки без області' : 'Правила без областей (потрібен x90)',
-                                   i: AREAS.length, ms: orphan});
-    const worstOf = g=> Math.min(...g.ms.map(m=>RANK[m.lvl]));
-    groups.sort((a,b)=> worstOf(a)-worstOf(b) || a.i-b.i);
-    for(const g of groups) list.append(areaRow(g.label, g.ms));
-    if(stamp){ const d=new Date();
-      stamp.textContent = 'Остання перевірка: ' + d.toLocaleDateString('uk-UA') + ', ' +
-        d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'}); }
+    /* Виклик стоїть один — у runRules(). Аргументи, які колись знову
+       зміняться, міняються там і одразу для обох споживачів. */
+    /* Джерело називається ЗАВЖДИ, навіть коли файл не вибирали. Вердикт
+       без імені того, що судилось, читається як вердикт про застосунок —
+       і саме так зелений прогін чужого файлу став би доказом ні про що. */
+    srcLine.textContent = 'Судиться: каталог — ' + (picked.catName || 'дані застосунку') +
+                          ' · сценарії — ' + (picked.scenName || 'дані застосунку');
+    /* ⚠ ЧОТИРИ АРГУМЕНТИ, не два. На двох правила не мовчать — вони
+       кажуть ⚠ «носій не переданий», і саме ті перевірки, заради яких
+       робились S17 і S18 (рядок mood) та звірка character з носієм,
+       стають інертними. Вердикт при цьому лишається зеленим і виглядає
+       як перевірка. Носій характерів і config беруться З ЗАСТОСУНКУ
+       навіть тоді, коли дані підсунуті файлом: судиться файл, а не
+       носій, і підміняти носій разом із даними означало б судити
+       вигадану пару. */
+    const r = runRules(picked.cat, picked.scen);
+    head.style.color = r.err ? 'var(--loss)' : 'var(--soft)';
+    head.textContent = (r.err?'✗':'✓')+' підсумок: ✓'+r.ok+' · ⚠'+r.warn+' · ✗'+r.err;
+    const SIGN={ok:'✓',warn:'⚠',err:'✗'};
+    const TONE={ok:'var(--vtm)',warn:'var(--soft)',err:'var(--loss)'};
+    for(const m of r.out) box.append(el('div',{class:'tapeline'},[
+      el('span',{style:'color:'+TONE[m.lvl],text:SIGN[m.lvl]+' '+m.msg})]));
+    box.style.display='';
   };
 
-  run();   /* В-76 */
-  return el('section',{class:'sys-checks'},[sum, list]);
+  let code='';
+  const codeInput = el('input',{type:'text',placeholder:'код куратора',
+    oninput:e=>code=e.target.value, onkeydown:e=>e.key==='Enter'&&unlock()});
+  const gateRow = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end'});
+  const unlock = ()=>{
+    /* Той самий код відмикає і панель, і вхід у редактор: двері одні.
+       Вигляд панелі не змінився ані на піксель — змінилось лише те, що
+       відімкнення тепер чути ще комусь (CURATOR.watch). */
+    if(!CURATOR.unlock(code)){
+      head.style.color='var(--loss)'; head.textContent='Код не підходить.'; return; }
+    opened=true; gateRow.style.display='none';
+    fileRow.style.display='flex'; run();
+  };
+  put(gateRow,
+    el('label',{class:'field',style:'margin:0;flex:1 1 160px'},[
+      el('span',{text:'Код куратора'}), codeInput]),
+    el('button',{class:'btn ghost',text:'Перевірити дані',onclick:unlock}));
+
+  /* ⚠ accept НЕ ставимо. У Files на iPhone фільтр за типом глушить файли,
+     що лежать в iCloud, і людина бачить порожній список замість свого
+     файлу. Тип усе одно перевіряється розбором, тобто надійніше. */
+  const fileIn = el('input',{type:'file',multiple:true,style:'display:none',
+    onchange:e=>takeFiles(e.target.files)});
+
+  const takeFiles = async (list)=>{
+    const files=[...list];
+    /* Скидання значення: без нього повторний вибір ТОГО САМОГО файлу
+       події не дає, і виправлений файл виглядає як невиправлений. */
+    fileIn.value='';
+    if(!files.length) return;
+    const bad=[];
+    for(const f of files){
+      let src='';
+      try{ src = await readFileText(f); }
+      catch(_){ bad.push(f.name+' — файл не прочитався з пристрою.'); continue; }
+      let v;
+      try{ v = JSON.parse(src); }
+      catch(err){ bad.push(f.name+' — '+jsonErrorText(err, src)); continue; }
+      const kind = classifyJson(v);
+      if(!kind){ bad.push(f.name+' — не схоже ні на каталог, ні на сценарії.'); continue; }
+      if(kind==='cat'){ picked.cat=v; picked.catName=f.name; }
+      else            { picked.scen=v; picked.scenName=f.name; }
+    }
+    fileNote.style.display = bad.length ? '' : 'none';
+    fileNote.style.color='var(--loss)';
+    fileNote.textContent = bad.join('  ·  ');
+    run();
+  };
+
+  const fileRow = el('div',{style:'display:none;gap:8px;flex-wrap:wrap;margin:0 0 10px'},[
+    fileIn,
+    el('button',{class:'btn ghost',text:'Вибрати файл…',onclick:()=>fileIn.click()}),
+    el('button',{class:'btn ghost',text:'Дані застосунку',onclick:()=>{
+      picked.cat=null; picked.scen=null; picked.catName=''; picked.scenName='';
+      fileNote.style.display='none'; fileNote.textContent=''; run();
+    }})
+  ]);
+
+  return el('details',{class:'acc',style:'margin-top:24px'},[
+    el('summary',{text:'Перевірка даних'}),
+    el('div',{class:'accbody'},[
+      el('p',{class:'sub',style:'margin:0 0 10px',text:
+        'Прогін тих самих правил, що ганяються на кожен push у репозиторій. '+
+        'Судяться дані, які цей застосунок зараз завантажив. Нічого не змінює.'}),
+      gateRow, fileRow, fileNote, srcLine, head, box
+    ])
+  ]);
 }
 
 /* ── ВХІД У РЕДАКТОР ──────────────────────────────────────────────
-   Блок мовчить, доки двері зачинені (CURATOR.open). З Х22.4 Settings без
-   дверей не відкривається, тож на екрані блок видно завжди; watch лишено
-   для шляху, що відчиняє двері без render(). */
+   Блок мовчить, доки двері зачинені, і зʼявляється тим самим кодом,
+   що відмикає панель перевірки — без render(), щоб не змести вердикт,
+   який людина щойно отримала. */
+function editEntry(){
+  const box = el('div',{style:'margin-top:24px;max-width:520px'},[
+    el('h2',{style:'margin:0 0 6px;font-size:17px',text:'Редактор даних'}),
+    el('p',{class:'sub',style:'margin:0 0 10px',text:
+      'Сценарії списком, з вердиктом правил на кожному. Читання: '+
+      'нічого не змінює і нічого не надсилає.'}),
+    el('button',{class:'btn ghost',text:'Відкрити редактор',
+      onclick:()=>{ S.screen='edit'; render(); }})
+  ]);
+  box.style.display = CURATOR.open ? '' : 'none';
+  CURATOR.watch.push(()=>{ box.style.display=''; });
+  return box;
+}
+
 /* ── ЕКРАН РЕДАКТОРА · Р-1а: список і світлофор ───────────────────
    Судить ЛОКАЛЬНО, тим самим тілом правил, що й воркер на записі
    (S21 §2): відмову видно до кнопки, а не після мережі.
@@ -3036,7 +1586,7 @@ function Editor(root){
                                 text:'✗ '+st.err+(st.warn?' · ⚠ '+st.warn:'')})
                   : st.warn ? el('span',{class:'est',style:'color:'+TONE.warn,text:'⚠ '+st.warn})
                             : el('span',{class:'est',style:'color:'+TONE.ok,text:'без зауважень'});
-      const card = el('div',{class:'card ecard','aria-current':(S.screen==='ascen'&&String(S.escen)===id)?'true':null},[
+      const card = el('div',{class:'card ecard'},[
         el('div',{class:'ord',text:'#'+id+' · '+(s.grp||'—')}),
         el('h3',{text:s.title||'без назви'}),
         el('p',{text:[s.character||'характер не вказано', s.mode||'режим не вказано'].join(' · ')}),
@@ -3051,7 +1601,7 @@ function Editor(root){
            два різні наміри одним жестом. */
         el('div',{style:'display:flex;gap:8px;align-items:center;margin-top:2px'},[
           el('button',{class:'btn ghost',style:'padding:6px 12px;font-size:13.5px',
-            text:'Правити', onclick:()=>{ S.escen=id; S.screen=(S.screen==='ascen'?'ascen':'escen'); render(); }}),
+            text:'Правити', onclick:()=>{ S.escen=id; S.screen='escen'; render(); }}),
           dr.length ? el('span',{class:'echip',
             text:'чернетка · '+dr.length+(dr.length===1?' поле':' поля/полів')}) : null
         ])
@@ -3090,6 +1640,7 @@ function Editor(root){
 
   put(root,
     el('div',{class:'top'},[
+      el('div',{class:'toprow'},[backBtn('назад',()=>{S.screen='settings';render()})]),
       el('h1',{class:'toptitle',text:'Редактор даних'})
     ]),
     el('p',{class:'sub',style:'margin:0 0 4px',text:
@@ -3177,8 +1728,8 @@ function PubBar(){
       el('input',{type:'password', value:EDITKEY.code, autocomplete:'off',
         placeholder:'ключ запису', oninput:e=>{ EDITKEY.code=e.target.value; }})]));
     box.append(el('p',{class:'publine',style:'color:var(--soft);margin-bottom:8px',
-      text:'Той самий код, яким відімкнено двері, — вписаний сам. Ніде не '+
-           'зберігається: закриєте вкладку — введете знову.'}));
+      text:'Це НЕ код куратора. Код куратора відмикає екран, цей — запис '+
+           'у репозиторій. Ніде не зберігається: закриєте вкладку — введете знову.'}));
   }
 
   const row = el('div',{style:'display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px'});
@@ -3201,7 +1752,7 @@ function ScenCard(root){
   const rec = id===null ? null : recOf(id);
   /* Ключ без запису — не аварія, а вихід зі стану, якого вже немає
      (дані перезавантажились під відкритою карткою). */
-  if(!rec){ S.screen='ascen'; render(); return; }
+  if(!rec){ S.screen='edit'; render(); return; }
 
   const SIGN={ok:'✓',warn:'⚠',err:'✗'};
   const TONE={ok:'var(--vtm)',warn:'var(--soft)',err:'var(--loss)'};
@@ -3592,7 +2143,7 @@ function ScenCard(root){
 
   put(root,
     el('div',{class:'top'},[
-      el('div',{class:'toprow'},[backBtn('до списку',()=>{S.screen='ascen';render()})]),
+      el('div',{class:'toprow'},[backBtn('до списку',()=>{S.screen='edit';render()})]),
       el('h1',{class:'toptitle',text:'#'+id+' · '+(rec.title||'без назви')})
     ]),
     el('p',{class:'enote',text:
@@ -3648,11 +2199,34 @@ function ScenCard(root){
   refresh();
 }
 
+function Gate(root){
+  let n='', a='';
+  const go=()=>{
+    if(!n.trim()||!a.trim())return;
+    S.me={name:n.trim(),pharmacy:a.trim()};
+    localStorage.setItem('ae_me',JSON.stringify(S.me));
+    S.screen='picker'; render();
+  };
+  put(root,
+    el('h1',{class:'lede',text:'Тренажер інтернет-замовлень'}),
+    el('p',{class:'sub',text:'Перш ніж почати — представтесь. Це потрібно, щоб куратор бачив ваші результати.'}),
+    el('label',{class:'field'},[el('span',{text:'Ім’я та прізвище'}),
+      el('input',{oninput:e=>n=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
+    el('label',{class:'field'},[el('span',{text:'Аптека'}),
+      el('input',{placeholder:'напр. 67, Калинова 1', oninput:e=>a=e.target.value, onkeydown:e=>e.key==='Enter'&&go()})]),
+    el('button',{class:'btn',onclick:go,text:'Далі'}),
+    /* Марка збірки. Значення тільки з config.json: зашитий у код номер
+       перестають оновлювати вже на другій видачі, і марка починає брехати. */
+    el('p',{class:'sub',style:'margin-top:22px;font-size:12px',
+      text:'Збірка '+(S.cfg.build||'—')})
+  );
+}
+
 function Picker(root){
   const groups=['Усі',...new Set(S.SCEN.map(s=>s.grp))];
   const list = S.group==='Усі' ? S.SCEN : S.SCEN.filter(s=>s.grp===S.group);
   put(root,
-    el('h1',{class:'lede',text:'Тренування'}),
+    el('h1',{class:'lede',text:'Вітаю, '+S.me.name.split(' ')[0]}),
     el('p',{class:'sub',text:'Оберіть замовлення для тренування — або відпрацюйте цілу зміну з '+S.cfg.shiftSize+' замовлень поспіль.'}),
     (!MOCK && !KEY.get() && !S.cfg.model.workerReady)
       ? el('div',{class:'err',html:'<b>Модель не підключена.</b> Сервер ще не налаштований, '
@@ -3662,8 +2236,10 @@ function Picker(root){
         S.shift={queue:pickShift(S.cfg.shiftSize),i:0,rows:[]};
         openScenario(S.shift.queue[0]);
       }}),
-      /* v2-міст · вхід у новий Каталог (Х21 крок 3). Помирає з переносом E1: тоді Каталог — у боковій панелі. Без живого екрана кнопки немає. */ V2.catalog ? el('button',{class:'btn ghost','data-v2-entry':'catalog',text:'Каталог',onclick:()=>{S.screen='catalog';render()}}) : null, /* /v2-міст */
       el('button',{class:'btn ghost',text:'Налаштування',onclick:()=>{S.screen='settings';render()}}),
+      el('button',{class:'btn ghost',text:'Змінити ім’я',onclick:()=>{
+        localStorage.removeItem('ae_me'); S.me=null; S.screen='gate'; render();
+      }})
     ]),
     el('div',{class:'tabs'}, groups.map(g=>el('button',{
       'aria-pressed':String(g===S.group), onclick:()=>{S.group=g;render()},
@@ -3681,8 +2257,7 @@ function Picker(root){
   );
 }
 
-function openScenario(sc, origin){
-  S.e2from = origin || 'e1';   /* Х24.4: дефолт обовʼязковий — exit() наступного замовлення кличе без origin */
+function openScenario(sc){
   S.sc=sc; S.cart=sc.order.slice(); S.history=[]; S.ended=false; S.feedback=''; S.waiting=false;
   S.attempt=1; S.phrase=''; S.judging=false;
   S.screen='game'; render();
@@ -3925,6 +2500,7 @@ function Result(root){
   const retries=rows.reduce((a,r)=>a+((r.tries||1)-1),0);
   put(root,
     el('h1',{class:'lede',text:'Зміну завершено'}),
+    el('p',{class:'sub',text:S.me.name+' · аптека '+S.me.pharmacy}),
     el('div',{class:'brief',style:'max-width:420px'},[
       el('div',{class:'bignum',style:'color:'+(got>0?'var(--vtm)':'var(--ink)'),
         text:(got>0?'+':'')+uah(got)+' ₴'}),

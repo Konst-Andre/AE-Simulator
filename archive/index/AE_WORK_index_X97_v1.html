@@ -433,41 +433,15 @@ body.v2-on { margin:0 }
 .v2 .typing i { width:7px; height:7px; border-radius:50%; background:var(--anc-gray-light); }
 .v2 .typing i:nth-child(2) { background:var(--anc-blue); }
 .v2 .typing i:nth-child(3) { background:var(--anc-gray-light); }
-.v2 .composer { padding:14px 19px 16px; background:#1C1E240A; }
+.v2 .composer { padding:0 19px 18px; border-top:1px solid var(--anc-border); background:#fff; }
 .v2 .quick-phrases { display:flex; gap:8px; padding:14px 0 12px; overflow:auto; }
 .v2 .quick-phrases button { flex:0 0 auto; min-height:36px; padding:0 11px; color:var(--anc-text); border:1px solid var(--anc-blue); border-radius:7px; background:#fff; font-size:12px; font-weight:600; }
+.v2 .composer-row { display:flex; gap:10px; }
 .v2 textarea { display:block; flex:1; min-height:68px; resize:none; padding:13px 14px; border:1px solid var(--anc-blue); border-radius:8px; outline:none; color:var(--anc-text); }
 .v2 textarea::placeholder { color:var(--anc-gray); }
 .v2 .send { display:grid; place-items:center; width:58px; border:0; border-radius:8px; background: var(--anc-yellow); color:var(--anc-text); }
 .v2 .send:disabled { background:var(--anc-border); color:var(--anc-gray-light); cursor:not-allowed; }
-/* ── X99 · КОМПОЗЕР-ОСТРІВ · досьє композера §7 паспорт + §8 вироки (S81), В-134 (S82) ──
-   живе доки: device-тест 1920·1536·1280 не канонізував числа (тоді досьє видаляється, П123)
-   Селектори навмисно вужчі за спільні `.v2 textarea` / `.v2 .panel-head` / `.v2 .send`. */
-.v2 .comp-isl { --comp-isl-r:28px; padding:14px; border-radius:var(--comp-isl-r); background:#fff; box-shadow:0 12px 82px 28px #008ecc47; }
-.v2 .comp-isl .quick-phrases { gap:8px; padding:0 0 10px; }
-.v2 .comp-isl .quick-phrases button { min-height:28px; padding:0 12px; border:1px solid #d1d1d1; border-radius:12px; background:#fff; color:var(--anc-text); font-size:12px; font-weight:600; }
-.v2 .comp-isl .qa-trig { anchor-name:--e2qa; }
-/* X100 · popover фраз. Тінь — СТАВКА (паспорта нема). --qa-fit: коли праворуч не вміщається (390px:
-   виліт на 11px, заміряно headless) — по центру над якорем на всю ширину; десктоп лишається під кнопкою. */
-@position-try --qa-fit { position-area:top span-all; justify-self:center; }
-.v2 .qa-pop { position-anchor:--e2qa; position-area:top span-right; position-try-fallbacks:flip-block, --qa-fit; inset:auto; margin:0 0 8px; width:max-content; max-width:min(380px, calc(100vw - 24px)); max-height:min(60vh, 420px); overflow:auto; padding:6px; border:1px solid #E7E7E7; border-radius:14px; background:#fff; color:var(--anc-text); box-shadow:0 12px 32px #1C1E2429; }
-.v2 .qa-pop .qa-grp + .qa-grp { margin-top:4px; padding-top:4px; border-top:1px solid #E7E7E7; }
-.v2 .qa-pop .qa-h { padding:6px 10px 2px; color:var(--anc-gray); font-size:11px; font-weight:600; }
-.v2 .qa-pop .qa-item { display:block; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent; color:var(--anc-text); font-size:13px; text-align:left; cursor:pointer; }
-.v2 .qa-pop .qa-item:hover { background:#1C1E240A; }
-.v2 .qa-pop .qa-item:focus-visible { outline:2px solid var(--anc-blue); outline-offset:-2px; }
-.v2 .well { position:relative; border:1px solid #E7E7E7; border-radius:14px; background:#1C1E2408; box-shadow:inset 0 0 4px 0 #0000001A, inset 0 -1px 0 0 #FFFFFFB3; }
-/* В-131 · фокус глибиною, без кольору — СТАВКА */
-.v2 .well:focus-within { border-color:#1C1E244D; box-shadow:inset 0 0 4px 0 #00000029, inset 0 -1px 0 0 #FFFFFFB3; }
-.v2 .well textarea { display:block; width:100%; flex:none; min-height:72px; max-height:220px; field-sizing:content; overflow-y:auto; resize:none; padding:12px 68px 12px 14px; border:0; border-radius:14px; outline:none; background:transparent; line-height:1.45; }
-.v2 .well textarea:disabled { background:transparent; color:var(--anc-gray); }
-.v2 .well .send { position:absolute; right:14px; bottom:14px; width:46px; height:42px; border-radius:12px; background:var(--anc-yellow); box-shadow:0 3px 3px #1C1E243D; }
-.v2 .well .send:disabled { background:var(--anc-border); color:var(--anc-gray-light); box-shadow:none; }
-.v2 .well .send svg { width:23px; height:23px; }
-/* стик шапки: both + hdLine 0 — лише розмова */
-.v2 .dialogue .panel-head { position:relative; z-index:2; border-bottom:0; box-shadow:0 4px 8px -2px #1C1E241A; }
-.v2 .dialogue .messages { padding-bottom:64px; box-shadow:inset 0 3px 5px -1px #1C1E241F; }
-/* ── /X99 ── */
+.v2 .composer-note { display:flex; justify-content:flex-end; padding-top:9px; color:var(--anc-gray); font-size:11px; }
 .v2 .cart-panel { display:grid; min-height:0; align-content:start; gap:10px; overflow:auto; background:transparent; border:0; box-shadow:none; }
 .v2 .cart-panel .panel { min-height:0; }
 .v2 .cart-head { justify-content:space-between; }
@@ -687,9 +661,10 @@ body.v2-on { margin:0 }
   .v2 .person .avatar { width:39px; height:39px; font-size:15px; }
   .v2 .messages { padding:18px 13px 10px; }
   .v2 .bubble-wrap { max-width:83%; }
-  .v2 .composer { padding:10px 12px 12px; }
+  .v2 .composer { padding:0 12px 12px; }
   .v2 .quick-phrases { padding-top:10px; }
   .v2 .quick-phrases button { min-height:34px; }
+  .v2 .composer-note { display:none; }
   .v2 .cart-panel .panel { width:100%; }
   .v2 .cart-row { padding:6px 0; }
   .v2 .quiet-note { margin:0 14px 12px; }
@@ -928,7 +903,7 @@ body.v2-on { margin:0 }
 </head>
 <body>
 <!-- v2 · спрайт іконок ПК-оболонки (Х21). Лише символи, які кличе icon(): смоук X21 S6 звіряє обидва боки. -->
-<svg id="v2-sprite" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></symbol><symbol id="i-box" viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M10 12h6M10 16h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20V4"/><path d="M9 20v-6M14 20V9M19 20v-9"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4V4ZM13 4h7v7h-7V4ZM4 13h7v7H4v-7ZM13 13h7v7h-7v-7Z"/></symbol><symbol id="i-chip" viewBox="0 0 24 24"><path d="M7 7h10v10H7V7Z"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/><path d="M12 3l1.4 2.6 2.9-.5.6 2.9 2.6 1.4-1.5 2.6 1.5 2.6-2.6 1.4-.6 2.9-2.9-.5L12 21l-1.4-2.6-2.9.5-.6-2.9L4.5 14.6 6 12 4.5 9.4l2.6-1.4.6-2.9 2.9.5L12 3Z"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M22 12h-2M12 22v-2M2 12h2"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/><path d="M9 10h6"/></symbol><symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H7"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></symbol><symbol id="i-anc" viewBox="0 0 250.6 229.9"><path fill-rule="evenodd" d="M55.5 134.9L28.1 134.9L23.1 149.7C22.7 151.1 21.4 152.0 20.0 152.0L3.8 152.0C1.6 152.0 0.0 149.8 0.7 147.7L21.8 81.8C22.2 80.4 23.5 79.5 24.9 79.5L58.8 79.5C60.2 79.5 61.5 80.4 61.9 81.8L83.3 147.7C84.0 149.8 82.4 152.0 80.2 152.0L63.3 152.0C61.8 152.0 60.6 151.0 60.1 149.7L55.5 134.9M32.7 119.4L50.5 119.5L41.8 91.0L32.7 119.4Z"/><path fill-rule="evenodd" d="M177.2 148.3L177.2 83.0C177.2 81.2 178.7 79.7 180.5 79.7L197.5 79.7C199.3 79.7 200.8 81.2 200.8 83.0L200.8 133.1L217.8 133.1L217.8 83.0C217.8 81.2 219.2 79.7 221.1 79.7L238.1 79.7C239.9 79.7 241.4 81.2 241.4 83.0L241.4 133.1L247.3 133.1C249.1 133.1 250.6 134.6 250.6 136.4L250.6 161.9C250.6 163.7 249.1 165.2 247.3 165.2L239.9 165.2C238.2 165.2 236.8 163.9 236.6 162.3L235.0 151.6L180.5 151.6C178.7 151.6 177.2 150.2 177.2 148.3Z"/><path fill-rule="evenodd" d="M162.1 82.8L162.1 148.3C162.1 150.2 160.6 151.6 158.8 151.6L140.9 151.6C139.1 151.6 137.6 150.2 137.6 148.3L137.6 125.1L117.5 125.1L117.5 148.3C117.5 150.2 116.0 151.6 114.2 151.6L96.3 151.6C94.5 151.6 93.0 150.2 93.0 148.3L93.0 82.8C93.0 81.0 94.5 79.5 96.3 79.5L114.2 79.5C116.0 79.5 117.5 81.0 117.5 82.8L117.5 106.0L137.6 106.0L137.6 82.8C137.6 81.0 139.1 79.5 140.9 79.5L158.8 79.5C160.6 79.5 162.1 81.0 162.1 82.8Z"/><path fill-rule="nonzero" d="M110.0 27.6C116.2 39.1 129.0 42.9 129.0 42.9C136.9 45.4 165.4 43.1 172.4 44.5C179.4 45.9 185.4 46.3 187.6 44.4C189.8 42.5 187.3 39.5 184.1 38.1C174.4 33.8 152.3 30.1 152.3 30.1C152.3 30.1 184.8 15.3 219.6 61.5C221.9 64.5 230.1 63.8 226.4 56.6C222.3 48.6 193.9 0.0 126.2 0.0C80.2 0.0 43.9 30.2 28.0 61.6C27.4 62.9 29.1 64.0 30.0 62.9C42.4 48.3 73.0 18.5 110.0 27.6Z"/><path fill-rule="nonzero" d="M143.5 202.3C137.4 190.8 124.5 187.0 124.5 187.0C116.6 184.5 88.1 186.8 81.1 185.4C74.1 183.9 68.1 183.6 65.9 185.5C63.7 187.4 66.2 190.3 69.4 191.7C79.1 196.0 101.2 199.7 101.2 199.7C101.2 199.7 68.7 214.5 33.9 168.4C31.6 165.3 23.4 166.1 27.1 173.3C31.2 181.3 59.6 229.9 127.3 229.9C173.3 229.9 209.7 199.6 225.5 168.3C226.1 167.0 224.4 165.8 223.5 166.9C211.1 181.5 180.5 211.4 143.5 202.3Z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol></svg>
+<svg id="v2-sprite" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"><symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7V5Z"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></symbol><symbol id="i-box" viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v8l8 4 8-4V8M12 12v8"/></symbol><symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M10 12h6M10 16h6"/></symbol><symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 20V4"/><path d="M9 20v-6M14 20V9M19 20v-9"/></symbol><symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4V4ZM13 4h7v7h-7V4ZM4 13h7v7H4v-7ZM13 13h7v7h-7v-7Z"/></symbol><symbol id="i-chip" viewBox="0 0 24 24"><path d="M7 7h10v10H7V7Z"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/><path d="M12 3l1.4 2.6 2.9-.5.6 2.9 2.6 1.4-1.5 2.6 1.5 2.6-2.6 1.4-.6 2.9-2.9-.5L12 21l-1.4-2.6-2.9.5-.6-2.9L4.5 14.6 6 12 4.5 9.4l2.6-1.4.6-2.9 2.9.5L12 3Z"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M22 12h-2M12 22v-2M2 12h2"/></symbol><symbol id="i-chat" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3V5Z"/><path d="M9 10h6"/></symbol><symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2 12h11l2-8H7"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></symbol><symbol id="i-arrow" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 3-9-3-9Z"/><path d="M6 12h15"/></symbol><symbol id="i-anc" viewBox="0 0 250.6 229.9"><path fill-rule="evenodd" d="M55.5 134.9L28.1 134.9L23.1 149.7C22.7 151.1 21.4 152.0 20.0 152.0L3.8 152.0C1.6 152.0 0.0 149.8 0.7 147.7L21.8 81.8C22.2 80.4 23.5 79.5 24.9 79.5L58.8 79.5C60.2 79.5 61.5 80.4 61.9 81.8L83.3 147.7C84.0 149.8 82.4 152.0 80.2 152.0L63.3 152.0C61.8 152.0 60.6 151.0 60.1 149.7L55.5 134.9M32.7 119.4L50.5 119.5L41.8 91.0L32.7 119.4Z"/><path fill-rule="evenodd" d="M177.2 148.3L177.2 83.0C177.2 81.2 178.7 79.7 180.5 79.7L197.5 79.7C199.3 79.7 200.8 81.2 200.8 83.0L200.8 133.1L217.8 133.1L217.8 83.0C217.8 81.2 219.2 79.7 221.1 79.7L238.1 79.7C239.9 79.7 241.4 81.2 241.4 83.0L241.4 133.1L247.3 133.1C249.1 133.1 250.6 134.6 250.6 136.4L250.6 161.9C250.6 163.7 249.1 165.2 247.3 165.2L239.9 165.2C238.2 165.2 236.8 163.9 236.6 162.3L235.0 151.6L180.5 151.6C178.7 151.6 177.2 150.2 177.2 148.3Z"/><path fill-rule="evenodd" d="M162.1 82.8L162.1 148.3C162.1 150.2 160.6 151.6 158.8 151.6L140.9 151.6C139.1 151.6 137.6 150.2 137.6 148.3L137.6 125.1L117.5 125.1L117.5 148.3C117.5 150.2 116.0 151.6 114.2 151.6L96.3 151.6C94.5 151.6 93.0 150.2 93.0 148.3L93.0 82.8C93.0 81.0 94.5 79.5 96.3 79.5L114.2 79.5C116.0 79.5 117.5 81.0 117.5 82.8L117.5 106.0L137.6 106.0L137.6 82.8C137.6 81.0 139.1 79.5 140.9 79.5L158.8 79.5C160.6 79.5 162.1 81.0 162.1 82.8Z"/><path fill-rule="nonzero" d="M110.0 27.6C116.2 39.1 129.0 42.9 129.0 42.9C136.9 45.4 165.4 43.1 172.4 44.5C179.4 45.9 185.4 46.3 187.6 44.4C189.8 42.5 187.3 39.5 184.1 38.1C174.4 33.8 152.3 30.1 152.3 30.1C152.3 30.1 184.8 15.3 219.6 61.5C221.9 64.5 230.1 63.8 226.4 56.6C222.3 48.6 193.9 0.0 126.2 0.0C80.2 0.0 43.9 30.2 28.0 61.6C27.4 62.9 29.1 64.0 30.0 62.9C42.4 48.3 73.0 18.5 110.0 27.6Z"/><path fill-rule="nonzero" d="M143.5 202.3C137.4 190.8 124.5 187.0 124.5 187.0C116.6 184.5 88.1 186.8 81.1 185.4C74.1 183.9 68.1 183.6 65.9 185.5C63.7 187.4 66.2 190.3 69.4 191.7C79.1 196.0 101.2 199.7 101.2 199.7C101.2 199.7 68.7 214.5 33.9 168.4C31.6 165.3 23.4 166.1 27.1 173.3C31.2 181.3 59.6 229.9 127.3 229.9C173.3 229.9 209.7 199.6 225.5 168.3C226.1 167.0 224.4 165.8 223.5 166.9C211.1 181.5 180.5 211.4 143.5 202.3Z"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol></svg>
 <!-- /v2 -->
 <div class="wrap" id="app">
   <p class="sub">Завантаження…</p>
@@ -1614,14 +1589,9 @@ V2.picker = Training;
    Підключено Х23.3: V2.game = Talk (у кінці блоку). Старий Game — запасний до кроку 8: render() бере
    його, коли V2.game немає. */
 const E2_LIMIT = 6;
-/* X100 · фрази для popover композера. WWHAM: для кого · що турбує · як довго · що вже пробували ·
-   інші ліки. Зачини, не готові відповіді — інакше тренажер розвʼязує задачу за фармацевта.
-   «…» в кінці = фармацевт дописує сам. Дім у даних — окремим кроком (досьє композера, крок 4). */
-const E2_PHRASES = [
-  ['Розпитати', ['Підкажіть, для кого препарат?', 'Що саме турбує?', 'Як давно це триває?',
-                 'Чи вже щось приймали від цього?', 'Чи приймаєте зараз інші ліки?']],
-  ['Порадити',  ['Можу запропонувати до цього…', 'Щодо курсу прийому: …']],
-  ['Завершити', ['Якщо за кілька днів не покращиться — зверніться до лікаря.']]];
+const E2_STARTERS = [['Уточнити симптоми', 'Підкажіть, будь ласка, які саме симптоми'],
+  ['Запропонувати супутній засіб', 'Можу запропонувати супутній засіб'],
+  ['Уточнити курс', 'Уточню, будь ласка, курс лікування']];
 const e2Now = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
 const e2Pos = n => n + ' ' + (n%10===1 && n%100!==11 ? 'позиція' : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 'позиції' : 'позицій');
 function e2State(){
@@ -1741,30 +1711,16 @@ function Talk(){
   ta.value = st.draft; ta.disabled = S.ended;
   const send = el('button', {type:'button', class:'send', 'aria-label':'Надіслати відповідь', onclick:say}, [icon('i-send')]);
   send.disabled = S.ended || S.waiting;
-  /* X100 · фрази — одна кнопка і popover над нею (досьє композера, крок 3) */
-  const putPhrase = t => {
-    const cont = t.endsWith('…'), add = cont ? t.slice(0, -1).trimEnd() + ' ' : t + ' ';
-    const v = ta.value, a = ta.selectionStart ?? v.length, b = ta.selectionEnd ?? a;
-    const pre = v.slice(0, a), glue = pre && !/\s$/.test(pre) ? ' ' : '';
-    ta.value = pre + glue + add + v.slice(b); st.draft = ta.value;
-    const pos = (pre + glue + add).length;
-    pop.hidePopover(); ta.focus(); ta.setSelectionRange(pos, pos); };
-  const pop = el('div', {id:'e2-qa', popover:'auto', class:'qa-pop', ontoggle:e => {
-      if(e.newState !== 'open' || CSS.supports('anchor-name', '--a')) return;
-      const r = trig.getBoundingClientRect();   /* фолбек без anchor positioning */
-      pop.style.left = r.left + 'px'; pop.style.top = Math.max(8, r.top - pop.offsetHeight - 8) + 'px'; }},
-    E2_PHRASES.map(([title, list]) => el('div', {class:'qa-grp', role:'group', 'aria-label':title}, [
-      el('div', {class:'qa-h', 'aria-hidden':'true', text:title}),
-      ...list.map(t => el('button', {type:'button', class:'qa-item', onclick:() => putPhrase(t)}, [t]))])));
-  const trig = el('button', {type:'button', class:'qa-trig', popovertarget:'e2-qa', disabled:S.ended || S.waiting},
-    ['Підказка фрази ', el('span', {'aria-hidden':'true', text:'▾'})]);
+  const starters = E2_STARTERS.map(([label, text]) => {
+    const b = el('button', {type:'button', onclick:() => { ta.value = text + '. ' + ta.value; st.draft = ta.value; ta.focus(); }}, [label]);
+    b.disabled = S.ended; return b; });
   const dialogue = el('section', {class:'panel dialogue'}, [
     el('header', {class:'panel-head'}, [el('span', {class:'icon-chip'}, [icon('i-chat')]), el('h2', {text:'Діалог з клієнтом'})]),
     msgs,
     el('div', {class:'composer'}, [
-      el('div', {class:'comp-isl'}, [
-        el('div', {class:'quick-phrases'}, [trig]), pop,
-        el('div', {class:'well'}, [ta, send])])])]);
+      el('div', {class:'quick-phrases'}, starters),
+      el('div', {class:'composer-row'}, [ta, send]),
+      el('div', {class:'composer-note'}, [el('span', {text:POINTER_FINE ? 'Enter — відправити · Shift + Enter — новий рядок' : 'Ctrl + Enter — відправити'})])])]);
 
   /* ── замовлення: без грошей (Р1) ── */
   const inCart = S.cart.map(c => S.ALL[c]).filter(Boolean);

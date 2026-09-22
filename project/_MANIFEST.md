@@ -7,13 +7,13 @@
 носієм **відкритого по продукту** (що робити далі) і живе в `summary/`. Маніфест відповідає
 на питання «що тут лежить і чи воно ще те саме», ЧЕРГА — на питання «що робимо».
 
-Заміряно інструментом (`md5sum`) у сесії S80 · 19.09.2026.
+Заміряно інструментом (`md5sum`) у сесії S80 · 19.09.2026; рядки S82 — 22.09.2026.
 Розбіжність md5 із фактичним файлом = подія, яку розбирають до роботи.
 
 | файл | md5 (8) | розмір | живе доки | щабель ЧЕРГИ |
 |---|---|---|---|---|
 | `summary/AE_Simulator_CHERGA.md` | `2e1d0502` | 8 КБ | у черзі є хоч один непройдений щабель | — |
-| `summary/AE_Simulator_session_summary_S79_DIM_U_REPO.md` | `125d365c` | 16 КБ | D2 (порт A2 v2 у X97) не завершено | щабель 2 |
+| `summary/AE_Simulator_session_summary_S82_KOMPOZER_OSTRIV.md` | `b02f0cd4` | 14 КБ | наступне самері не стало живим | — |
 | `summary/AE_Simulator_session_summary_S80_PROKHID_V44.md` | `3e880faa` | 23 КБ | v4.5 (В-118…В-126) не видана | щабель 2 |
 | `knowledge/AE_Simulator_SPEC_v0_5.md` | `9a345be9` | 87 КБ | назавжди | — |
 | `knowledge/AE_Simulator_BIBLIOTEKA_HARAKTERIV_v1.md` | `b210bef7` | 19 КБ | назавжди | — |
@@ -29,8 +29,6 @@
 | `stand/a2/s80_freewalk_probe_v2_add.py` | `e9569a4f` | 3 КБ | те саме (домір Н9 · Н12) | щабель 2 |
 | `stand/a2/AE_D1v4_FINDINGS_v4.md` | `59885487` | 26 КБ | вироки не перенесено в SPEC і код (П116) | щабель 2 · D2 |
 | `stand/composer/AE_COMPOSER_harness_v2.html` | `fc20a6b8` | 35 КБ | Е2 «Композер» не закрито | щабель 3 |
-| `stand/composer/x99_composer_island_apply_v2.py` | `a165c628` | 6 КБ | X99 не заступлено наступним index (вхід — X97) | щабель 3 |
-| `stand/composer/x100_composer_popover_apply_v1.py` | `10600516` | 7 КБ | X100 не заступлено наступним index (вхід — X99 v2) | щабель 3 |
 | `stand/sources/mockup_X21_v1_html.html` | `d779cfc7` | 88 КБ | є непортовані A-екрани | щаблі 5·6·7 |
 | `stand/sources/AE_X27_SIDEBAR_v19.html` | `4609434b` | 160 КБ | є непортовані A-екрани | щаблі 5·6·7 |
 | `stand/sources/ANC_island_animations_standalone_v1.html` | `67da39db` | 28 КБ | рух і шрифти не зроблено | щабель 8 |
@@ -44,7 +42,8 @@
 | `ae_rules_X95_v1.js` | `tools/ae_rules.js` у корені репо | побайтово той самий файл, `e0b99591` |
 | `v42`/`v43`/`v44_apply_v1.py` | `archive/apply/` | одноразові, шаблон уже запечено |
 | шаблон і генератор v4.3 | `archive/stand/` | мертва версія (П118) |
-| `x99_composer_island_apply_v1.py` | `archive/apply/` | заступлено v2 (В-136 · В-137), S82 |
+| `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
 | самері S73–S78 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
-| `AE_WORK_index_X97_v1.html` | тільки claude.ai Project | В-115 дозволив `index_work/`, але `Lens_claude_github_push.py:26` `FORBIDDEN_PATH` блокує шлях — чекає на правку ядра в governance-сесії |
+| робочий білд | корінь репо `index.html` = X100 `72c8cca1` (S82) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 |
+| старий v1 `index.html` (build v30, `410efa15`) | `archive/index/index_v30_2026-09-07.html` | заміщений X100 у корені (S82) |
 | `AE_CHAT_BG_stagebench_v1.html` | ніде | стенд фону чату, заміщений композером (В-116) |
