@@ -1425,7 +1425,7 @@ const groupsNow = () => { const g=[]; for (const id of ids()) if(!st.del[id]){ c
 /* v2.6 · перевірки з ae_rules.js біля поля: E — блокує публікацію, W — ні */
 /* В-144 · повідомлення — лише з рушія (runRules → spreadVerdict), біля поля — D3. Локальні checks мокапа не портуються. */
 let VM = null;
-const verdict = () => { if(VM) return VM; const live=ids().filter(i=>!st.del[i]); const r=runRules(null, live.map(cur));
+const verdict = () => { if(VM) return VM; const live=ids().filter(i=>!st.del[i]); const r=runRules(null, live.map(recOut));   /* 5.1 · В-151: судимо те, що поїде у файл */
   return (VM = r ? spreadVerdict(r.out, new Set(live)) : {byId:new Map(), general:[]}); };
 function checks(s){ return (verdict().byId.get(String(s.id))||[]).filter(m=>m.lvl!=='ok').map(m=>({lvl:m.lvl==='err'?'e':'w', m:m.msg})); }
 const errs = s => checks(s).filter(x=>x.lvl==='e');
@@ -2596,7 +2596,7 @@ async function boot(){
       for(const it of v.items) S.ALL[it.c]={...it,cat:k};
     }
     /* В-103: no — з фрази. Нові обʼєкти, а не мутація: S.RAW лишається рівно файлом (звірка :loadSnap). */
-    S.SCEN=scn.scenarios.map(s=>({...s, no:noOf(s.open).no}));
+    S.SCEN=scenOf(scn);
     /* Обгортки лишаються цілими: публікація пише файл, а не масив. */
     S.RAW={cat, scn};
     /* Дані і носій характерів мусять сходитись. Порожній {{character}} — це
@@ -2654,6 +2654,8 @@ function noOf(open){
   for (const m of o.matchAll(/(?:[а-яіїєґ']+-){3}[а-яіїєґ']+/g)){ const p=m[0].split('-'); if(p.every(x=>x in NO_DIG)) f.push(+p.map(x=>NO_DIG[x]).join('')); }
   return { no: f[0] ?? null, many: new Set(f).size > 1 };
 }
+/* В-103 · S.SCEN з файлу — нові обʼєкти, S.RAW лишається рівно файлом. Один рядок на старт і на публікацію. */
+function scenOf(scn){ return scn.scenarios.map(s=>({...s, no:noOf(s.open).no})); }
 function pickShift(n){
   const NET = S.SCEN;   /* В-103: усі сценарії, і «оформлення на місці» теж — номер не фільтр */
   const mix = a => a.slice().sort(()=>Math.random()-0.5);
@@ -3326,6 +3328,18 @@ const recOf = id => {
   if(r && d && 'open' in d) r.no = noOf(r.open).no;   /* В-103: правка фрази = новий номер */
   return r;
 };
+/* D2 крок 5.1 · В-151 · ЯК ЗАПИС ЛЯЖЕ У ФАЙЛ — один дім. Публікація пише outRec, острів судить recOut:
+   що бачать правила на екрані, те саме побачить воркер. no — з фрази (В-103: правила воркера читають no з
+   файлу, ae_rules :98 :268). main — чинний, якщо він є в cats, інакше перша категорія (В-96: у формі поля
+   немає). Не «завжди cats[0]», як мокап: у 3 записах файлу (#21 #36 #42) main інший, і правка назви мовчки
+   зсунула б mainCat судді. */
+const outRec = r => {
+  r.no = noOf(r.open).no;
+  const c = Array.isArray(r.cats) ? r.cats : [];
+  if(!c.includes(r.main)) r.main = c[0] || '';
+  return r;
+};
+const recOut = id => { const r = recOf(id); return r ? outRec(JSON.parse(JSON.stringify(r))) : null; };
 const scenAll = () => S.SCEN.map(s=>recOf(String(s.id)));
 /* Правка, що збіглася з файлом, — не правка. Без цього повернення поля
    до вихідного тексту лишало б картку позначеною назавжди.
@@ -3424,14 +3438,22 @@ async function loadSnap(){
 
 /* Чернетка накладається на СВІЖИЙ файл, а не на той, що в памʼяті:
    інакше публікація повертала б застарілі сусідні записи. */
+/* D2 крок 5.1: видалені (S.edel) випадають · правлені → outRec поверх свіжого · нові (правка без бази, Р-1д)
+   — у кінець. Незачеплені записи лишаються рівно файлом. Форма запису — жорстке видалення: відновлення дає
+   git (кожна публікація — коміт); прапорець deleted довелось би фільтрувати в кожному читачі масиву. */
 const mergeDraft = base => {
   const out = JSON.parse(JSON.stringify(base));
-  const arr = out.scenarios || out;
+  const arr = out.scenarios || out, have = new Set(arr.map(r=>String(r.id)));
+  const next = [];
   for(const rec of arr){
-    const d = S.edraft[String(rec.id)];
-    if(d) Object.assign(rec, d);
+    const id = String(rec.id), d = S.edraft[id];
+    if(S.edel[id]) continue;
+    next.push(d ? outRec({...rec, ...JSON.parse(JSON.stringify(d))}) : rec);
   }
-  return out;
+  for(const id of Object.keys(S.edraft))
+    if(!have.has(id) && !S.edel[id]) next.push(outRec(JSON.parse(JSON.stringify(S.edraft[id]))));
+  if(out.scenarios){ out.scenarios = next; return out; }
+  return next;
 };
 
 async function publish(){
@@ -3467,7 +3489,8 @@ async function publish(){
       lines: moved.length ? ['Розійшлись: '+moved.join(' · ')] : []};
     return render();
   }
-  const n = Object.keys(S.edraft).length;
+  const n = new Set(Object.keys(S.edraft).concat(Object.keys(S.edel))).size;
+  const next = mergeDraft(fresh.obj);
   let res, j;
   try{
     res = await fetch(S.cfg.editEndpoint,{method:'POST',
@@ -3478,7 +3501,7 @@ async function publish(){
          поїхав би в коміт. */
       headers:{'Content-Type':'application/json',
                'x-ae-edit-code':encodeURIComponent(EDITKEY.code.trim())},
-      body:JSON.stringify({catalog:S.esnap.cat, scenarios:mergeDraft(fresh.obj),
+      body:JSON.stringify({catalog:S.esnap.cat, scenarios:next,
         save:'scenarios', note:'редактор даних: сценаріїв '+n})});
     j = await res.json();
   }catch(e){
@@ -3500,9 +3523,12 @@ async function publish(){
       lines:(j&&j.out||[]).filter(m=>m.lvl==='err').map(m=>'✗ '+m.msg)};
     return render();
   }
-  S.edraft = {};
+  /* D2 крок 5.1: воркер підтвердив запис саме цього тіла — воно й стає даними сторінки. Інакше до оновлення
+     Pages нові зникли б, видалені повернулись, правки відкотились: публікація виглядала б невдалою. */
+  S.RAW.scn = next; S.SCEN = scenOf(next);
+  S.edraft = {}; S.edel = {};
   S.epub = {state:'ok', text:(j.text||'Збережено.')
-    + ' Сторінка ще показує стару версію: GitHub Pages оновиться за хвилину-дві.'};
+    + ' Тут уже нова версія; після перезавантаження GitHub Pages покаже її за хвилину-дві.'};
   S.esnap = null;
   render();
 }
