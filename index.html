@@ -1530,7 +1530,8 @@ V2.scenarios = Scenarios;
 const E1_GEN = {2:'двох',3:'трьох',4:'чотирьох',5:'п’яти',6:'шести',7:'семи',8:'восьми',9:'дев’яти',10:'десяти'};
 const e1Talks = n => n + ' ' + (n%10===1 && n%100!==11 ? 'розмова' : (n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20)) ? 'розмови' : 'розмов');
 const e1Cap = t => t ? t.charAt(0).toUpperCase() + t.slice(1) : '—';
-const e1Pot = sc => sc.noSale ? null : 'до +' + uah(potential(sc)) + ' ₴';
+const e1Pot = sc => { if(sc.noSale) return null; const p = potential(sc);   /* В-119 */
+  return p===null ? '—' : p>0 ? 'до +' + uah(p) + ' ₴' : '0 ₴'; };
 function Training(){
   const st = S.e1 || (S.e1 = {term:'', sel:S.SCEN.length ? S.SCEN[0].id : null});
   const n = S.cfg.shiftSize;
@@ -1727,7 +1728,7 @@ function Talk(){
     const d0 = bonusOf(S.cart) - bonusOf(sc.order);
     msgs.append(el('p', {class:'talk-sys', text:'Розмову завершено'}),
       el('section', {class:'notice talk-review'}, [
-        el('strong', {}, [icon('i-target'), sc.noSale ? 'РОЗБІР · правильна дія — не міняти' : 'РОЗБІР · приріст ' + uah(d0) + ' з ' + pot + ' ₴']),
+        el('strong', {}, [icon('i-target'), sc.noSale ? 'РОЗБІР · правильна дія — не міняти' : 'РОЗБІР · приріст ' + uah(d0) + ' з ' + potLabel(pot)]),
         S.judging ? dots('Суддя пише розбір') : S.feedback ? el('p', {text:S.feedback}) : null,
         !S.judging && S.phrase ? el('p', {class:'talk-say'}, [el('b', {text:'Варто було сказати: '}), '«' + S.phrase + '»']) : null]));
   }
@@ -1843,7 +1844,7 @@ V2.game = Talk;
 function Summary(){
   const sh = S.shift, rows = sh.rows, scored = rows.filter(r=>!r.sc.noSale);
   const got = scored.reduce((a,r)=>a+r.delta,0);
-  const pot = scored.reduce((a,r)=>a+r.pot,0)||1;
+  const pot = scored.reduce((a,r)=>a+(r.pot||0),0)||1;
   const pct = Math.max(0,Math.min(100,Math.round(got/pot*100)));
   const slips = rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
   const retries = rows.reduce((a,r)=>a+((r.tries||1)-1),0);
@@ -2014,7 +2015,11 @@ async function boot(){
 const uah = n => (Math.round(n*100)/100).toFixed(2).replace('.',',');
 const bonusOf = cs => cs.reduce((s,c)=>s+(S.ALL[c]?S.ALL[c].b:0),0);
 const idealOf = sc => S.cfg.rule==='vtm' ? (sc.bv||[]) : (sc.bm||[]);
-const potential = sc => Math.max(1, Math.round(bonusOf(idealOf(sc)) - bonusOf(sc.order)));
+/* В-119 · орієнтир не бреше: Math.max(1,…) знято. Порожній ідеальний набір → null («—»),
+   приріст ≤0 → чесний 0. Округлення до цілої гривні лишається. Суми зміни беруть null як 0. */
+const potential = sc => { const ideal = idealOf(sc);
+  return ideal.length ? Math.max(0, Math.round(bonusOf(ideal) - bonusOf(sc.order))) : null; };
+const potLabel = p => p===null ? '—' : p + ' ₴';
 const poolOf = sc => sc.cats.flatMap(k=>S.CAT[k]||[]);
 
 /* Добірка зміни: одна пастка/noSale, одне багатопозиційне, одне
@@ -2105,7 +2110,7 @@ function buildJudge(sc, history, cart){
     catalog: poolOf(sc).map(i=>i.c+' | '+i.n+' | '+(i.k||'—')+' | '+i.b+' ₴').join('\n'),
     orderList: nameOf(sc.order), cartList: nameOf(cart),
     baseSum: uah(base), nowSum: uah(now),
-    delta: uah(now-base), pot: potential(sc),
+    delta: uah(now-base), pot: (potential(sc) ?? '—'),   /* В-119: judge.md пише «{{pot}} ₴» — формулювання для «—» → крок 3 */
     idealList: nameOf(ideal),
     noSaleLine: sc.noSale
       ? 'УВАГА: у цьому сценарії правильна дія — нічого не міняти. Приріст тут НЕ мета.'
@@ -2297,14 +2302,14 @@ const engineMock = {
       cart: S.cart.slice(),
       ended, endReason: ended?'paid':'',
       step: steps[Math.min(n,steps.length)-1] || 'закритий',
-      feedback: ended ? 'Це заглушка розбору. Орієнтир — приріст близько '+potential(sc)+' ₴.' : ''
+      feedback: ended ? 'Це заглушка розбору. Орієнтир — приріст близько '+potLabel(potential(sc))+'.' : ''
     };
   },
   async judge(sc, history, cart){
     await new Promise(r=>setTimeout(r,120));
     const d = bonusOf(cart)-bonusOf(sc.order);
     return {
-      feedback:'Заглушка судді. Приріст '+uah(d)+' ₴ з орієнтира '+potential(sc)+' ₴.',
+      feedback:'Заглушка судді. Приріст '+uah(d)+' ₴ з орієнтира '+potLabel(potential(sc))+'.',
       phrase: d>0 ? '' : 'А до цього зазвичай беруть ще одну позицію — показати?'
     };
   }
@@ -2329,7 +2334,7 @@ const engineLive = {
         + 'У списку: '+(r.sc.order.map(c=>S.ALL[c].n).join('; ')||'нічого')+'. ';
       const res = r.sc.noSale
         ? 'Правильна дія — нічого не міняти. Фармацевт '+(r.delta>0?'усе-таки змінив чек':'чек не змінив')+'. '
-        : 'Приріст '+uah(r.delta)+' ₴ з орієнтира '+r.pot+' ₴. ';
+        : 'Приріст '+uah(r.delta)+' ₴ з орієнтира '+potLabel(r.pot)+'. ';
       return head+res+'Розбір розмови: '+(r.fb||'—');
     }).join('\n\n');
     const prompt = fill(S.P.debrief, {shiftSize:rows.length, body});
@@ -3674,7 +3679,7 @@ function Picker(root){
       el('h3',{text:s.title}),
       el('p',{text:s.who+' · '+s.mode}),
       el('div',{class:'cardfoot'},[
-        el('span',{text:(s.order.length||'—')+' поз. · орієнтир '+potential(s)+' ₴'}),
+        el('span',{text:(s.order.length||'—')+' поз. · орієнтир '+potLabel(potential(s))}),
         s.trap?el('span',{class:'trap',text:'пастка'}):s.noSale?el('span',{class:'trap',text:'не міняти'}):null
       ])
     ])))
@@ -3711,7 +3716,7 @@ function Game(root){
       const d0=bonusOf(S.cart)-bonusOf(sc.order);
       const head = sc.noSale
         ? 'РОЗБІР · правильна дія — не міняти'
-        : 'РОЗБІР · приріст '+uah(d0)+' з '+pot+' ₴';
+        : 'РОЗБІР · приріст '+uah(d0)+' з '+potLabel(pot);
       if(S.judging) log.append(el('div',{class:'turn review'},[
         el('span',{class:'who',text:'РОЗБІР'}),
         el('span',{class:'dots',html:'<i></i><i></i><i></i>'})]));
@@ -3808,7 +3813,7 @@ function Game(root){
         el('span',{text:'Приріст розмови'}),
         el('span',{class:'num big',style:'color:'+dcol,text:(delta>0?'+':'')+uah(delta)+' ₴'})]),
       el('div',{class:'tapeline',style:'color:var(--soft)'},[
-        el('span',{text:'Орієнтир'}),el('span',{class:'num',text:pot+' ₴'})])
+        el('span',{text:'Орієнтир'}),el('span',{class:'num',text:potLabel(pot)})])
     );
   };
 
@@ -3919,7 +3924,7 @@ function Result(root){
       text:'Розбір не вдався: '+e.message+' Результат зміни збережено — його видно вище.'}));
   });
   const got=scored.reduce((a,r)=>a+r.delta,0);
-  const pot=scored.reduce((a,r)=>a+r.pot,0)||1;
+  const pot=scored.reduce((a,r)=>a+(r.pot||0),0)||1;
   const pct=Math.max(0,Math.min(100,Math.round(got/pot*100)));
   const slips=rows.filter(r=>r.delta<0||(r.sc.noSale&&r.delta>0));
   const retries=rows.reduce((a,r)=>a+((r.tries||1)-1),0);
