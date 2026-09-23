@@ -1984,7 +1984,8 @@ async function boot(){
       S.CAT[k]=v.items; S.LABEL[k]=v.label;
       for(const it of v.items) S.ALL[it.c]={...it,cat:k};
     }
-    S.SCEN=scn.scenarios;
+    /* В-103: no — з фрази. Нові обʼєкти, а не мутація: S.RAW лишається рівно файлом (звірка :loadSnap). */
+    S.SCEN=scn.scenarios.map(s=>({...s, no:noOf(s.open).no}));
     /* Обгортки лишаються цілими: публікація пише файл, а не масив. */
     S.RAW={cat, scn};
     /* Дані і носій характерів мусять сходитись. Порожній {{character}} — це
@@ -2024,8 +2025,20 @@ const poolOf = sc => sc.cats.flatMap(k=>S.CAT[k]||[]);
 
 /* Добірка зміни: одна пастка/noSale, одне багатопозиційне, одне
    рецептурне, решта — випадково. Так само, як в оригіналі. */
+/* В-103 · номер замовлення — лише текст фрази, не правило і не поле (В-101). Рушій бере його
+   з «Першої фрази клієнта»: 4 цифри або 4 слова-цифри через дефіс («чотири-чотири-один-сім»).
+   Порт noOf з мокапа A2 v4.5 (tpl :315) дослівно. На даних S84 — 43/43 збіг із полем no файлу.
+   Поле no у файлі поки лишається (його читають правила воркера, ae_rules :98 :268); узгодження
+   при публікації — D2 крок 5. */
+const NO_DIG = {'нуль':0,'один':1,'одна':1,'два':2,'дві':2,'три':3,'чотири':4,"п'ять":5,'шість':6,'сім':7,'сьомий':7,'вісім':8,"дев'ять":9};
+function noOf(open){
+  const o = String(open||'').toLowerCase().replace(/[’ʼ]/g,"'"); const f=[];
+  for (const m of o.matchAll(/(?<![\d,.])\d{4}(?!\d)/g)) f.push(+m[0]);
+  for (const m of o.matchAll(/(?:[а-яіїєґ']+-){3}[а-яіїєґ']+/g)){ const p=m[0].split('-'); if(p.every(x=>x in NO_DIG)) f.push(+p.map(x=>NO_DIG[x]).join('')); }
+  return { no: f[0] ?? null, many: new Set(f).size > 1 };
+}
 function pickShift(n){
-  const NET = S.SCEN.filter(x=>x.no);
+  const NET = S.SCEN;   /* В-103: усі сценарії, і «оформлення на місці» теж — номер не фільтр */
   const mix = a => a.slice().sort(()=>Math.random()-0.5);
   const take = (pool,used) => mix(pool.filter(x=>!used.has(x.id)))[0]||null;
   const out=[], used=new Set();
@@ -2687,7 +2700,9 @@ function runRules(cat, scen){
 const recOf = id => {
   const base = S.SCEN.find(s=>String(s.id)===id) || null;
   const d = S.edraft[id];
-  return base ? (d ? {...base, ...d} : base) : (d ? {...d} : null);
+  const r = base ? (d ? {...base, ...d} : base) : (d ? {...d} : null);
+  if(r && d && 'open' in d) r.no = noOf(r.open).no;   /* В-103: правка фрази = новий номер */
+  return r;
 };
 const scenAll = () => S.SCEN.map(s=>recOf(String(s.id)));
 /* Правка, що збіглася з файлом, — не правка. Без цього повернення поля
