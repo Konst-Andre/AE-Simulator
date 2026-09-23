@@ -2015,7 +2015,13 @@ async function boot(){
 /* ── ГРОШІ І ПІДРАХУНОК ──────────────────────────────────────────── */
 const uah = n => (Math.round(n*100)/100).toFixed(2).replace('.',',');
 const bonusOf = cs => cs.reduce((s,c)=>s+(S.ALL[c]?S.ALL[c].b:0),0);
-const idealOf = sc => S.cfg.rule==='vtm' ? (sc.bv||[]) : (sc.bm||[]);
+/* В-107 · два набори — одне правило. Який набір ідеальний, вирішує config.rule (vtm → bv, stm → bm);
+   другий — «теж добрий»: не помилка, але в орієнтир не входить (В-120). Раніше правило жило двічі —
+   тут (запас bm) і в buildJudge (запас bv); для невідомого rule вони розходились. Запас — ВТМ, як у мокапі A2. */
+const setsOf = sc => S.cfg.rule==='stm'
+  ? {best:sc.bm||[], alt:sc.bv||[], bestLab:'ЗФ',  altLab:'ВТМ'}
+  : {best:sc.bv||[], alt:sc.bm||[], bestLab:'ВТМ', altLab:'ЗФ'};
+const idealOf = sc => setsOf(sc).best;
 /* В-119 · орієнтир не бреше: Math.max(1,…) знято. Порожній ідеальний набір → null («—»),
    приріст ≤0 → чесний 0. Округлення до цілої гривні лишається. Суми зміни беруть null як 0. */
 const potential = sc => { const ideal = idealOf(sc);
@@ -2102,7 +2108,7 @@ function buildSystem(sc){
 function buildJudge(sc, history, cart){
   const nameOf = cs => cs.map(c=>S.ALL[c]&&S.ALL[c].n).filter(Boolean).join('; ') || 'нічого';
   const base = bonusOf(sc.order), now = bonusOf(cart);
-  const ideal = (S.cfg.rule==='stm' ? sc.bm : sc.bv) || [];
+  const sets = setsOf(sc), pot = potential(sc);   /* В-107 · В-119 */
   const transcript = ['КЛІЄНТ: '+sc.open]
     .concat(history.map(m=>(m.role==='user'?'ФАРМАЦЕВТ: ':'КЛІЄНТ: ')+m.content))
     .join('\n');
@@ -2123,8 +2129,9 @@ function buildJudge(sc, history, cart){
     catalog: poolOf(sc).map(i=>i.c+' | '+i.n+' | '+(i.k||'—')+' | '+i.b+' ₴').join('\n'),
     orderList: nameOf(sc.order), cartList: nameOf(cart),
     baseSum: uah(base), nowSum: uah(now),
-    delta: uah(now-base), pot: (potential(sc) ?? '—'),   /* В-119: judge.md пише «{{pot}} ₴» — формулювання для «—» → крок 3 */
-    idealList: nameOf(ideal),
+    delta: uah(now-base), pot: pot===null ? 'не задано — ідеального набору в сценарії немає' : pot+' ₴',
+    idealList: nameOf(sets.best), idealLab: sets.bestLab,
+    altList: nameOf(sets.alt), altLab: sets.altLab,
     noSaleLine: sc.noSale
       ? 'УВАГА: у цьому сценарії правильна дія — нічого не міняти. Приріст тут НЕ мета.'
       : ''
