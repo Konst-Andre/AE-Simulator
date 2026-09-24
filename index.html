@@ -1600,6 +1600,7 @@ function paintSync(pub, dirty){
   const w=$('#m-sync'); if(!w) return;
   const e=S.epub; let tone='bad', text='', lines=[], code=false, again=false, block=false;
   if(!pubReady()){ text='Публікація недоступна: у config.json не оголошено editEndpoint або sourceApi.'; block=true; }
+  else if(e && e.state==='busy' && e.quiet){ tone='busy'; block=true; }   /* D2 5в · П127 (1): фонова звірка — тиша */
   else if(!e || e.state==='busy'){ tone='busy'; text=(e&&e.text)||'Звіряємо з репозиторієм…'; block=true; }
   else if(e.state==='ok' && !S.esnap){ block=true;
     if(dirty.length){ tone='busy'; text='Нові правки після публікації — спершу звірте з репозиторієм.'; again=true; } }
@@ -1765,7 +1766,10 @@ W.addEventListener('click', e => {
 });
 
 
-  if(pubReady() && S.epub===null) loadSnap();   /* 5.3 · звірка на вході, як старий Editor */
+  S.epubPaint = () => W.isConnected ? (paint(), true) : false;   /* D2 5в: звірка перемальовує острів, не сторінку */
+  if(pubReady() && S.epub===null){ loadSnap({quiet:true});   /* 5.3 · звірка на вході, як старий Editor; 5в — тиха */
+    setTimeout(() => { const e=S.epub;   /* довше 1 с — Олі треба знати, чому кнопка чекає */
+      if(W.isConnected && e && e.state==='busy' && e.quiet){ e.quiet=false; paint(); } }, 1000); }
   drawEditor();
   if(S.epub && S.epub.done && !S.epub.shown){ S.epub.shown=true; toast(S.epub.text); }
   Object.assign(window, {set, drawEditor, openGroups, drawGroups, ask, toast, cur, st});
@@ -3041,6 +3045,7 @@ function render(){
      щойно знищено, і його елементи більше нікому не показувати. Без цього
      рядка кожен перехід додавав би ще одну функцію на мертвий DOM. */
   CURATOR.watch.length = 0;
+  S.epubPaint = null;   /* D2 5в: підписник звірки — той самий закон, що й CURATOR.watch */
   /* v2: екран нового дизайну — в оболонці, з класом v2-on на body (Х21) */
   const v2 = V2[S.screen];
   document.body.classList.toggle('v2-on', !!v2);
@@ -3447,13 +3452,14 @@ async function ghRead(path){
 /* Знімок береться один раз на вхід у редактор і одразу звіряється з тим,
    що завантажила сторінка. Розбіжність тут означає не гонку, а застарілу
    сторінку — і лікується перезавантаженням, а не публікацією. */
-async function loadSnap(){
+async function loadSnap(o){
   /* ⚠ Прапорець ставиться, а render() НЕ викликається: loadSnap стартує
      зсередини Editor(), до put(root,…). Перемальовування звідти пішло б
      рекурсією — внутрішній Editor малює сторінку, зовнішній дописує в неї
      свої вузли другим разом, і вердикт задвоюється. Смуга й так побачить
      'busy': прапорець виставлений синхронно, до першого await. */
-  S.epub = {state:'busy', text:'Звіряємо з репозиторієм…'};
+  /* D2 5в · П127 (1): звірка на вході острова — тиха (quiet), смугу не малює; острів знімає quiet сам через 1 с. */
+  S.epub = {state:'busy', text:'Звіряємо з репозиторієм…', quiet:!!(o&&o.quiet)};
   try{
     const [scn,cat] = await Promise.all([
       ghRead('data/scenarios.json'), ghRead('data/catalog.json')]);
@@ -3469,6 +3475,9 @@ async function loadSnap(){
     S.epub = {state:'fail', text:'Не вдалося звірити з репозиторієм. '
       + String(e&&e.message||e) + ' Публікація зупинена.'};
   }
+  /* D2 5в: екран, що підписався (острів), перемальовує лише себе — фокус і каретка Олі лишаються.
+     Без підписника (старий Editor) — як було: render(). */
+  if(S.epubPaint && S.epubPaint()) return;
   render();
 }
 
