@@ -13,8 +13,8 @@
 
 | файл | md5 (8) | розмір | живе доки | щабель ЧЕРГИ |
 |---|---|---|---|---|
-| `summary/AE_Simulator_CHERGA.md` | `63eebe45` | 8 КБ | у черзі є хоч один непройдений щабель | — |
-| `summary/AE_Simulator_session_summary_S85_D2_OSTRIV.md` | `0988ef13` | 14 КБ | наступне самері не стало живим | — |
+| `summary/AE_Simulator_CHERGA.md` | `820ca86a` | 8 КБ | у черзі є хоч один непройдений щабель | — |
+| `summary/AE_Simulator_session_summary_S86_D2_PUBLIKATSIIA.md` | `2735aa48` | 16 КБ | наступне самері не стало живим | — |
 | `knowledge/AE_Simulator_SPEC_v0_5.md` | `9a345be9` | 87 КБ | назавжди | — |
 | `knowledge/AE_Simulator_BIBLIOTEKA_HARAKTERIV_v1.md` | `b210bef7` | 19 КБ | назавжди | — |
 | `knowledge/AE_Simulator_MOOD_RULE_v1.md` | `b53d54b0` | 16 КБ | назавжди | — |
@@ -50,7 +50,7 @@
 | `s78_olya_walk_v3.py` · `s83_v45_touch_v1.py` · `AE_D1v4_FINDINGS_v4.md` · `s80_freewalk_probe_v1` / `_v2_add` | `archive/stand/` | поглинуті (Н9–Н14 стали кроками 30–36 і замірами) `s83_olya_walk_v4.py` і FINDINGS v5 (S83) |
 | `s85_olya_walk_v5_root.py` · `s86_pub_stub_v1.py` · `s86_sync_strip_v1.py` | `archive/stand/` | поглинуті (S86): v5 → v6 (заглушка GitHub), pub_stub v1 → v2 (кнопкою), смуга — перевірки в v2 + вирок 5.2 |
 | `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
-| самері S73–S83 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
+| самері S73–S85 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
 | робочий білд | корінь репо `index.html` = X107 `d7c81530` (S86 · D2 крок 5.3 — публікація з острова жива, Р1 знято; X106 `4254b656` — S86 · D2 крок 5.2 смуга запису й поле коду; X105 `e9aae4d6` — S86 · D2 крок 5.1 рушій запису, В-151; X104 `51bd05df` — S85 · D2 крок 4 острів A2v2 за `?a2v2`; X103 `d50aad7b` — S84 · В-119 · В-103 · В-107; `prompts/judge.md` `90291e4d`) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 (`72c8cca1`) → `d2s1_apply_v1.py` → X101 (`93753f6c`) → `d2s2_apply_v1.py` → X102 (`d145ac74`) → `d2s3_apply_v1.py` → X103 → `d2s4_apply_v1.py` → X104 → `d2s5_1_apply_v1.py` → X105 → `d2s5_2_apply_v1.py` → X106 → `d2s5_3_apply_v1.py` → X107 |
 | старий v1 `index.html` (build v30, `410efa15`) | `archive/index/index_v30_2026-09-07.html` | заміщений X100 у корені (S82) |
 | `AE_CHAT_BG_stagebench_v1.html` | ніде | стенд фону чату, заміщений композером (В-116) |
