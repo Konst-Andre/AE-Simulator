@@ -1766,7 +1766,7 @@ W.addEventListener('click', e => {
 });
 
 
-  S.epubPaint = () => W.isConnected ? (paint(), true) : false;   /* D2 5в: звірка перемальовує острів, не сторінку */
+  S.epubPaint = a => W.isConnected ? ((a ? drawEditor() : paint()), true) : false;   /* D2 5в: звірка перемальовує острів, не сторінку; взяли main — і форму */
   if(pubReady() && S.epub===null){ loadSnap({quiet:true});   /* 5.3 · звірка на вході, як старий Editor; 5в — тиха */
     setTimeout(() => { const e=S.epub;   /* довше 1 с — Олі треба знати, чому кнопка чекає */
       if(W.isConnected && e && e.state==='busy' && e.quiet){ e.quiet=false; paint(); } }, 1000); }
@@ -3460,13 +3460,22 @@ async function loadSnap(o){
      'busy': прапорець виставлений синхронно, до першого await. */
   /* D2 5в · П127 (1): звірка на вході острова — тиха (quiet), смугу не малює; острів знімає quiet сам через 1 с. */
   S.epub = {state:'busy', text:'Звіряємо з репозиторієм…', quiet:!!(o&&o.quiet)};
+  let adopted = false;   /* D2 5в: сторінка взяла main — острову треба перемалювати й форму, не лише смугу */
   try{
     const [scn,cat] = await Promise.all([
       ghRead('data/scenarios.json'), ghRead('data/catalog.json')]);
     S.esnap = {sha:scn.sha, scn:scn.obj, cat:cat.obj};
-    const same = JSON.stringify(scn.obj.scenarios||scn.obj)
-              === JSON.stringify((S.RAW&&S.RAW.scn&&S.RAW.scn.scenarios)||S.SCEN);
-    S.epub = same
+    const fresh = scn.obj.scenarios||scn.obj, mine = (S.RAW&&S.RAW.scn&&S.RAW.scn.scenarios)||S.SCEN;
+    const same = JSON.stringify(fresh) === JSON.stringify(mine);
+    /* D2 5в · редактор читає main, а не копію Pages (Pages відстає на деплой + max-age=600, заміряно S87).
+       Розбіжність — не привід зупиняти Олю: сторінка бере main. Зупинка лишається лише там, де main змінився
+       у ТОМУ Ж записі, який Оля вже править чи видаляє — лише там правка лягла б поверх чужої. */
+    const byId = a => Object.fromEntries(a.map(r=>[String(r.id), JSON.stringify(r)]));
+    const F = byId(fresh), M = byId(mine);
+    const clash = same ? [] : [...new Set([...Object.keys(S.edraft||{}), ...Object.keys(S.edel||{})])]
+      .filter(id => id in M && F[id] !== M[id]);
+    if(!same && !clash.length){ S.RAW.scn = scn.obj; S.SCEN = scenOf(scn.obj); adopted = true; }
+    S.epub = same || !clash.length
       ? {state:'ok', text:'Звірено з репозиторієм: дані сторінки збігаються з main.'}
       : {state:'stale', text:'Сторінка показує НЕ те, що лежить у репозиторії. '
           + 'Публікація зупинена: правка лягла б поверх чужої. Перезавантажте сторінку.'};
@@ -3477,7 +3486,7 @@ async function loadSnap(o){
   }
   /* D2 5в: екран, що підписався (острів), перемальовує лише себе — фокус і каретка Олі лишаються.
      Без підписника (старий Editor) — як було: render(). */
-  if(S.epubPaint && S.epubPaint()) return;
+  if(S.epubPaint && S.epubPaint(adopted)) return;
   render();
 }
 
