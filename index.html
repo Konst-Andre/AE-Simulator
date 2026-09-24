@@ -996,6 +996,18 @@ body.v2-on { margin:0 }
 .v2 .a2v2 .pub-why{grid-column:1 / -1;display:flex;align-items:center;gap:6px;min-width:0;padding:6px 10px;border-radius:9px;background:var(--loss-5);color:var(--loss);font-size:12.5px;white-space:nowrap;overflow:hidden}
 .v2 .a2v2 .pub-why>span{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .v2 .a2v2 .pub-why button{border:0;background:none;padding:0;color:var(--anc-blue);font:inherit;font-weight:700;text-decoration:underline;flex:none}
+/* D2 крок 5.2 · смуга запису: тон bad — червона (як pub-why), busy — нейтральна; переноситься, не ріже текст */
+.v2 .a2v2 .pub-sync{grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-width:0;padding:8px 10px;border:1px solid #E9B8AC;border-radius:9px;background:var(--loss-5);color:var(--loss);font-size:12.5px;line-height:1.4}
+.v2 .a2v2 .pub-sync[data-tone="busy"]{border-color:var(--anc-border);background:#fff;color:var(--anc-gray)}
+.v2 .a2v2 .pub-sync .t{flex:1 1 320px;min-width:0;overflow-wrap:anywhere}
+.v2 .a2v2 .pub-sync .lines{flex:1 1 100%;min-width:0;color:var(--anc-text-2);overflow-wrap:anywhere}
+.v2 .a2v2 .pub-sync .lines:empty{display:none}
+.v2 .a2v2 .pub-sync .code{display:flex;align-items:center;gap:8px;flex:0 1 320px;min-width:0;color:var(--anc-text);font-weight:600}
+.v2 .a2v2 .pub-sync .code>span{white-space:nowrap}
+.v2 .a2v2 .pub-sync .code .in{flex:1 1 auto;min-width:0;padding:6px 10px;font-weight:400}
+.v2 .a2v2 .pub-sync .btn{min-height:32px;padding:0 12px;flex:none}
+/* [hidden] — ОСТАННІМ: .code і .btn мають ту саму вагу й display, і правило вище за текстом програвало б */
+.v2 .a2v2 .pub-sync[hidden],.v2 .a2v2 .pub-sync [hidden]{display:none}
 .v2 .a2v2 .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
 .v2 .a2v2 .pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
 .v2 .a2v2 .pill.ok{background:var(--anc-positive-10);color:var(--anc-positive)}
@@ -1500,6 +1512,7 @@ function drawEditor(){
     <textarea class="title-in" id="f-title" data-k="title" rows="1" aria-label="Назва сценарію" placeholder="Назва сценарію" ${st.del[id]?'readonly':''}>${esc(s.title)}</textarea>
     <div class="head-msg" id="m-title"></div>
     <div class="pub-why" id="m-pub" hidden></div>
+    <div class="pub-sync" id="m-sync" role="status" aria-live="polite" data-tone="bad" hidden><span class="t" id="m-sync-t"></span><div class="lines" id="m-sync-l"></div><label class="code" id="m-code" hidden><span>Код редактора</span><input class="in" type="password" id="f-code" autocomplete="off" placeholder="ключ запису" aria-describedby="m-sync-t"></label><button type="button" class="btn" id="resync" hidden>Звірити ще раз</button></div>
   </div>
   ${st.del[id] ? `<div class="del-bar" role="status"><span><b>Сценарій буде видалено під час публікації.</b> Ваші правки збережено — «Повернути» відновить і сценарій, і правки.</span><button class="btn" id="delBack">Повернути</button></div>` : ''}
   <div class="seg" role="tablist"><button data-view="form" class="${st.view==='form'?'on':''}">Форма</button><button data-view="pv" class="${st.view==='pv'?'on':''}">Як побачить фармацевт</button></div>
