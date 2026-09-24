@@ -23,9 +23,8 @@
 | `stand/a2/mock_a2v2_tpl_v4_5.html` | `145a9ba0` | 61 КБ | A2 v2 не портовано в продукт (D2) | щабель 2 · D2 |
 | `stand/a2/d1_a2v2_mock_build_v4_5.py` | `b2e655b4` | 2 КБ | шаблон v4.5 живий | щабель 2 · D2 |
 | `stand/a2/s83_olya_walk_v4.py` | `230cb324` | 25 КБ | стенд A2 живий (66 вердиктів: v3 цілком + кроки 24–38) | щабель 2 · D2 |
-| `stand/a2/s85_olya_walk_v5_root.py` | `0fd37a92` | 26 КБ | детектор D2 на корені `?a2v2` (v4 + оснастка кореня); крок 4: 59 ✓ · 7 ✗ заявлені (24–29 → крок 6, 30 → крок 5) | D2 кроки 4–7 |
-| `stand/a2/s86_pub_stub_v1.py` | `582d9476` | 7 КБ | детектор D2 крок 5 — тіло публікації на заглушках GitHub і воркера; X105: 17 ✓ · 0 ✗, X104: 11 ✗ (негативний контроль) | D2 кроки 5–7 |
-| `stand/a2/s86_sync_strip_v1.py` | `a9e8c25e` | 5 КБ | детектор D2 крок 5.2 — смуга запису `#m-sync` і поле коду (HTML/CSS) на 1920·1536·1280·760; X106: 29 ✓ · 0 ✗, X105 — вихід 2 | крок 5.3 поглине |
+| `stand/a2/s86_olya_walk_v6_root.py` | `4ff2c8e7` | 26 КБ | детектор D2 на корені `?a2v2` (v5 + заглушка api.github.com, S86); з кроку 5.3: 60 ✓ · 6 ✗ заявлені (24–29 → крок 6) | D2 кроки 5б–7 |
+| `stand/a2/s86_pub_stub_v2.py` | `3009db6c` | 12 КБ | детектор D2 крок 5 — публікація КНОПКОЮ на заглушках зі станом: тіло запису · код · тост · звірка після запису · stale · conflict · 1280; X107: 27 ✓ · 0 ✗, X106: 7 ✗ | D2 кроки 5б–7 |
 | `stand/a2/AE_D1v4_FINDINGS_v5.md` | `dc560efa` | 31 КБ | вироки не перенесено в SPEC і код (П116, D2) | щабель 2 · D2 |
 | `stand/composer/AE_COMPOSER_harness_v2.html` | `fc20a6b8` | 35 КБ | Е2 «Композер» не закрито | щабель 3 |
 | `stand/sources/mockup_X21_v1_html.html` | `d779cfc7` | 88 КБ | є непортовані A-екрани | щаблі 5·6·7 |
@@ -46,10 +45,12 @@
 | `d2s4_apply_v1.py` (D2 крок 4 · В-143 · В-144) | `archive/apply/` | запечено в X104; вхід — X103 `d50aad7b` з git + шаблон v4.5 `145a9ba0` |
 | `d2s5_1_apply_v1.py` (D2 крок 5.1 · В-151) | `archive/apply/` | запечено в X105; вхід — X104 `51bd05df` з git |
 | `d2s5_2_apply_v1.py` (D2 крок 5.2) | `archive/apply/` | запечено в X106; вхід — X105 `e9aae4d6` з git |
+| `d2s5_3_apply_v1.py` (D2 крок 5.3 · Р1 знято) | `archive/apply/` | запечено в X107; вхід — X106 `4254b656` з git |
 | шаблон і генератор v4.3 · v4.4 (`807bf9ae`) · `s79_v44_probe_v1` / `s79_v44_grp_probe_v1` | `archive/stand/` | мертві версії (П118); v4.4 змерджено в v4.5 (S83) |
 | `s78_olya_walk_v3.py` · `s83_v45_touch_v1.py` · `AE_D1v4_FINDINGS_v4.md` · `s80_freewalk_probe_v1` / `_v2_add` | `archive/stand/` | поглинуті (Н9–Н14 стали кроками 30–36 і замірами) `s83_olya_walk_v4.py` і FINDINGS v5 (S83) |
+| `s85_olya_walk_v5_root.py` · `s86_pub_stub_v1.py` · `s86_sync_strip_v1.py` | `archive/stand/` | поглинуті (S86): v5 → v6 (заглушка GitHub), pub_stub v1 → v2 (кнопкою), смуга — перевірки в v2 + вирок 5.2 |
 | `x99_composer_island_apply_v1/v2.py` · `x100_composer_popover_apply_v1.py` | `archive/apply/` | запечено: X100 у корені (S82). Вхід x99 — X97 (`archive/index/`) |
 | самері S73–S83 · `x95`–`x98_apply` · `AE_WORK_index_X24_5` | `archive/` | мертві версії |
-| робочий білд | корінь репо `index.html` = X106 `4254b656` (S86 · D2 крок 5.2 — смуга запису й поле коду в острові, приховані до 5.3; X105 `e9aae4d6` — S86 · D2 крок 5.1 рушій запису, В-151; X104 `51bd05df` — S85 · D2 крок 4 острів A2v2 за `?a2v2`; X103 `d50aad7b` — S84 · В-119 · В-103 · В-107; `prompts/judge.md` `90291e4d`) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 (`72c8cca1`) → `d2s1_apply_v1.py` → X101 (`93753f6c`) → `d2s2_apply_v1.py` → X102 (`d145ac74`) → `d2s3_apply_v1.py` → X103 → `d2s4_apply_v1.py` → X104 → `d2s5_1_apply_v1.py` → X105 → `d2s5_2_apply_v1.py` → X106 |
+| робочий білд | корінь репо `index.html` = X107 `d7c81530` (S86 · D2 крок 5.3 — публікація з острова жива, Р1 знято; X106 `4254b656` — S86 · D2 крок 5.2 смуга запису й поле коду; X105 `e9aae4d6` — S86 · D2 крок 5.1 рушій запису, В-151; X104 `51bd05df` — S85 · D2 крок 4 острів A2v2 за `?a2v2`; X103 `d50aad7b` — S84 · В-119 · В-103 · В-107; `prompts/judge.md` `90291e4d`) | В-139: репо — єдиний дім; попередні — git-історія. ланцюг відтворюється: `archive/index/AE_WORK_index_X97_v1.html` (`386394e6`) → x99 v2 → x100 (`72c8cca1`) → `d2s1_apply_v1.py` → X101 (`93753f6c`) → `d2s2_apply_v1.py` → X102 (`d145ac74`) → `d2s3_apply_v1.py` → X103 → `d2s4_apply_v1.py` → X104 → `d2s5_1_apply_v1.py` → X105 → `d2s5_2_apply_v1.py` → X106 → `d2s5_3_apply_v1.py` → X107 |
 | старий v1 `index.html` (build v30, `410efa15`) | `archive/index/index_v30_2026-09-07.html` | заміщений X100 у корені (S82) |
 | `AE_CHAT_BG_stagebench_v1.html` | ніде | стенд фону чату, заміщений композером (В-116) |

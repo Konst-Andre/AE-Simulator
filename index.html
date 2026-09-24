@@ -1571,9 +1571,8 @@ function paint(){
     : `<span class="pill ok">Опубліковано</span>`;
   const pub=$('#pub'); pub.disabled = !dirty.length || blockers.length>0;
   pub.textContent = dirty.length>1 ? `Опублікувати · ${dirty.length}` : 'Опублікувати';
-  /* Р1 · публікація з острова — D2 крок 5: mergeDraft поки губить нові записи (ходить лише по id файлу) */
-  pub.disabled = true;
   pub.title = blockers.length ? 'Спершу виправте проблеми: '+blockers.map(i=>cur(i).title||'Без назви').join(', ') : dirty.length>1 ? 'Опублікує зміни в '+plural(dirty.length,'сценарії','сценаріях','сценаріях') : '';
+  paintSync(pub, dirty);
   if($('#undo')) $('#undo').disabled = !ch.length;
   $('#pv').classList.toggle('gone', !!st.del[id]);
   $('#f-grp').disabled = !!st.del[id];
@@ -1593,6 +1592,25 @@ function paint(){
     + (twin.length ? `<span class="w">⚠ Такий самий номер у «${esc(cur(twin[0]).title||'Без назви')}»</span>` : '');
   paintPub(dirty, blockers);
   drawPreview(s); drawList();
+}
+
+/* D2 крок 5.3 · смуга запису: стан S.epub рушія (loadSnap/publish) → #m-sync. Дані (#m-pub) і запис — різні предмети.
+   Пише лише зелена звірка або відмова по коду — як старий редактор (:3806). Помилка — role=alert, очікування — status. */
+function paintSync(pub, dirty){
+  const w=$('#m-sync'); if(!w) return;
+  const e=S.epub; let tone='bad', text='', lines=[], code=false, again=false, block=false;
+  if(!pubReady()){ text='Публікація недоступна: у config.json не оголошено editEndpoint або sourceApi.'; block=true; }
+  else if(!e || e.state==='busy'){ tone='busy'; text=(e&&e.text)||'Звіряємо з репозиторієм…'; block=true; }
+  else if(e.state==='ok' && !S.esnap){ block=true;
+    if(dirty.length){ tone='busy'; text='Нові правки після публікації — спершу звірте з репозиторієм.'; again=true; } }
+  else if(e.state==='ok'){ }
+  else if(e.state==='code'){ text=e.text; code=true; }
+  else { text=e.text; lines=e.lines||[]; again=true; block=true; }
+  w.hidden=!text; w.dataset.tone=tone; w.setAttribute('role', tone==='bad' ? 'alert' : 'status');
+  $('#m-sync-t').textContent=text; $('#m-sync-l').textContent=lines.join(' · ');
+  $('#m-code').hidden=!code; $('#resync').hidden=!again;
+  const f=$('#f-code'); if(f.value!==EDITKEY.code) f.value=EDITKEY.code;
+  if(block){ pub.disabled=true; if(text) pub.title=text; }
 }
 
 function paintPub(dirty, blockers){
@@ -1687,10 +1705,12 @@ function applyGroups(){
 /* ── події ── */
 W.addEventListener('keydown', e => {
   if (e.key==='Enter' && ['f-title','f-who','f-mode'].includes(e.target.id)) e.preventDefault();
+  if (e.key==='Enter' && e.target.id==='f-code'){ e.preventDefault(); if(!$('#pub').disabled) publish(); }
 });
 W.addEventListener('input', e => {
   const t=e.target, k=t.dataset.k;
   if (t.id==='q'){ st.q=t.value; drawList(); return; }
+  if (t.id==='f-code'){ EDITKEY.code=t.value; return; }   /* 5.3 · ключ — лише памʼять модуля */
   if (t.dataset.gi!==undefined){ gw[+t.dataset.gi].name=t.value; const pos=t.selectionStart; drawGroups(); const n=$(`[data-gi="${t.dataset.gi}"]`); n.focus(); n.setSelectionRange(pos,pos); return; }
   if(!k || t.type==='checkbox' || t.tagName==='SELECT') return;
   set(k, ['title','who','mode'].includes(k) ? t.value.replace(/\s*\n\s*/g,' ') : t.value);
@@ -1729,7 +1749,8 @@ W.addEventListener('click', e => {
     ask('Видалити сценарій?', '«'+(cur(id).title||'Без назви')+'» зникне з тренажера після публікації. До публікації його можна повернути.', 'Видалити', ()=>{ st.del[id]=true; drawEditor(); toast('Позначено до видалення'); });
     return;
   }
-  if(t.id==='pub'){ return; }   /* Р1 · крок 5 */
+  if(t.id==='pub'){ publish(); return; }   /* 5.3 · Р1 знято: запис — publish() рушія */
+  if(t.id==='resync'){ S.epub=null; S.esnap=null; loadSnap(); return; }
   if(t.id==='newSc'){
     const id = String(Math.max(...ids().map(Number))+1);
     const nNew = Object.keys(st.created).length;
@@ -1744,7 +1765,9 @@ W.addEventListener('click', e => {
 });
 
 
+  if(pubReady() && S.epub===null) loadSnap();   /* 5.3 · звірка на вході, як старий Editor */
   drawEditor();
+  if(S.epub && S.epub.done && !S.epub.shown){ S.epub.shown=true; toast(S.epub.text); }
   Object.assign(window, {set, drawEditor, openGroups, drawGroups, ask, toast, cur, st});
   Object.defineProperty(window, 'gw', {configurable:true, get:()=>gw, set:v=>{gw=v;}});
   })(W0);
@@ -3540,7 +3563,7 @@ async function publish(){
      Pages нові зникли б, видалені повернулись, правки відкотились: публікація виглядала б невдалою. */
   S.RAW.scn = next; S.SCEN = scenOf(next);
   S.edraft = {}; S.edel = {};
-  S.epub = {state:'ok', text:(j.text||'Збережено.')
+  S.epub = {state:'ok', done:true, text:(j.text||'Збережено.')
     + ' Тут уже нова версія; після перезавантаження GitHub Pages покаже її за хвилину-дві.'};
   S.esnap = null;
   render();
